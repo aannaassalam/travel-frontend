@@ -1,0 +1,446 @@
+import Carousel from "@/components/catalog/Carousel";
+import {
+  DealTile,
+  DestinationTile,
+  HotelTile,
+  PropertyTile
+} from "@/components/catalog/cards";
+import RecentlyViewed from "@/components/catalog/RecentlyViewed";
+import SearchWidget from "@/components/search/SearchWidget";
+import { SectionHeading } from "@/components/site/bits";
+import Layout from "@/components/site/Layout";
+import { CardSkeleton } from "@/components/ui/field";
+import { getHomeFeed, getLocations, safely, type ServiceLocation } from "@/lib/api";
+import { cityImage } from "@/lib/catalog";
+import { mediaUrl } from "@/lib/media";
+import { usePrefs } from "@/lib/prefs";
+import { Hotel, Listing } from "@/typescript/interface/domain.interface";
+import {
+  BadgeCheck,
+  Headphones,
+  MapPin,
+  MessageCircle,
+  Phone,
+  Receipt,
+  Smartphone,
+  Sparkles
+} from "lucide-react";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+import { GetStaticProps } from "next";
+import Image from "next/image";
+import Link from "next/link";
+
+interface Props {
+  deals: Listing[];
+  hotels: Hotel[];
+  properties: Listing[];
+  heroImage: string;
+  /** Serviced places, owned by the admin — not a constant in this bundle. */
+  destinations: ServiceLocation[];
+}
+
+/**
+ * Hero backdrop, resolved at build time in this order:
+ *
+ *   1. NEXT_PUBLIC_HERO_IMAGE — wins if set. Takes any form mediaUrl handles,
+ *      so "/uploads/hero/<uuid>.png" from the admin uploader works too.
+ *   2. public/img/hero.{jpg,jpeg,png,webp,avif} — just drop the file in and
+ *      rebuild; no config, no code change.
+ *   3. the generated artwork, so a missing file never breaks the page.
+ *
+ * The filesystem probe runs only inside getStaticProps, so `node:fs` never
+ * reaches the client bundle.
+ */
+// Most-compressed first. next/image re-encodes on demand anyway, but the
+// unoptimised path (any client sending `Accept: image/*`, and the `og:image`
+// crawlers fetch) gets whatever this picks — 75 KB of WebP rather than 1.7 MB
+// of PNG. Drop a file into public/img and it is used; no code change needed.
+const HERO_CANDIDATES = ["hero.avif", "hero.webp", "hero.jpg", "hero.jpeg", "hero.png"];
+const HERO_FALLBACK = "/img/hero-kinshasa.svg";
+
+/** Editorial rail — the "travel inspiration" strip, not another product grid. */
+const INSPIRATION = [
+  {
+    image: "/img/photos/gorillas-kahuzi-biega.webp",
+    href: "/activities?destination=Bukavu",
+    fr: { kicker: "Nature", title: "Gorilles du Kahuzi-Biega", body: "Une journée de pistage avec les rangers du parc." },
+    en: { kicker: "Nature", title: "Kahuzi-Biega gorillas", body: "A day tracking with the park rangers." }
+  },
+  {
+    image: "/img/photos/nyiragongo.webp",
+    href: "/activities?destination=Goma",
+    fr: { kicker: "Aventure", title: "Nuit au sommet du Nyiragongo", body: "Le lac de lave, depuis le refuge du cratère." },
+    en: { kicker: "Adventure", title: "A night atop Nyiragongo", body: "The lava lake, from the crater shelter." }
+  },
+  {
+    image: "/img/photos/congo-sunset.webp",
+    href: "/activities?destination=Kinshasa",
+    fr: { kicker: "Fleuve", title: "Coucher de soleil sur le Congo", body: "Trois heures d'eau depuis la baie de Ngaliema." },
+    en: { kicker: "River", title: "Sunset on the Congo", body: "Three hours on the water from Ngaliema bay." }
+  },
+  {
+    image: "/img/photos/lubumbashi-business.webp",
+    href: "/hotels?destination=Lubumbashi",
+    fr: { kicker: "Affaires", title: "Lubumbashi en semaine", body: "Hôtels proches de Luano, salles de réunion incluses." },
+    en: { kicker: "Business", title: "Lubumbashi midweek", body: "Hotels near Luano, meeting rooms included." }
+  },
+  {
+    image: "/img/photos/road-n1.webp",
+    href: "/bus?destination=Matadi",
+    fr: { kicker: "Route", title: "Kinshasa – Matadi par la nationale 1", body: "Sept heures de route, arrivée au port." },
+    en: { kicker: "Road", title: "Kinshasa – Matadi on the N1", body: "Seven hours by road, arriving at the port." }
+  },
+  {
+    image: "/img/photos/gombe-property.webp",
+    href: "/property/sale/houses",
+    fr: { kicker: "Immobilier", title: "Vivre à Gombe", body: "Villas et appartements, titre foncier vérifié." },
+    en: { kicker: "Property", title: "Living in Gombe", body: "Villas and apartments, title verified." }
+  }
+];
+
+export default function Home({ deals, hotels, properties, heroImage, destinations }: Props) {
+  const { t, locale } = usePrefs();
+  const l = locale === "en" ? "en" : "fr";
+
+  const why = [
+    { Icon: BadgeCheck, title: "home.why1Title", body: "home.why1Body" },
+    { Icon: Smartphone, title: "home.why2Title", body: "home.why2Body" },
+    { Icon: Receipt, title: "home.why3Title", body: "home.why3Body" },
+    { Icon: Headphones, title: "home.why4Title", body: "home.why4Body" }
+  ];
+
+  return (
+    <Layout
+      title={t("brand.tagline")}
+      description={t("home.heroSubtitle")}
+      image={mediaUrl(heroImage)}
+      transparentHeader
+      jsonLd={{
+        "@context": "https://schema.org",
+        "@type": "TravelAgency",
+        name: "CongoTravel",
+        url: "https://congotravel.cd",
+        telephone: "+243810000000",
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: "12, avenue Colonel Lukusa, Gombe",
+          addressLocality: "Kinshasa",
+          addressCountry: "CD"
+        },
+        areaServed: "CD",
+        currenciesAccepted: "USD, CDF, EUR",
+        paymentAccepted: "Mobile money, Cash, Credit card"
+      }}
+    >
+      {/* ------------------------------------------------------------- hero */}
+      <section className="relative isolate">
+        <div className="absolute inset-0 -z-10">
+          <Image
+            src={mediaUrl(heroImage)}
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover"
+          />
+          {/*
+            Three scoped scrims rather than two full-bleed ones.
+
+            The previous pair (a /80→/85 vertical ramp plus a /70 side wash)
+            was tuned for the dark generated artwork; stacked over a bright
+            golden-hour photograph they multiplied to near-opaque and drowned
+            the light, which is the only reason to use this photo at all.
+
+            Now each scrim earns its place: darken the top strip enough for the
+            header, darken the left enough for the headline, and feather the
+            bottom into the trust strip. The right-hand third — the sun, the
+            water, the balcony — is left essentially untouched.
+          */}
+          <div className="absolute inset-x-0 top-0 h-44 bg-linear-to-b from-brand-900/80 via-brand-900/30 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-r from-brand-900/90 via-brand-900/55 to-brand-900/20 sm:from-brand-900/85 sm:via-brand-900/35 sm:to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-32 bg-linear-to-t from-brand-900/75 to-transparent" />
+        </div>
+
+        <div className="container-site relative pb-24 pt-40 sm:pb-28 sm:pt-52">
+          <p className="eyebrow animate-fade-in mb-4 flex items-center gap-2.5 text-accent-500">
+            <span className="h-px w-8 bg-accent-500" aria-hidden="true" />
+            {locale === "fr"
+              ? "République démocratique du Congo"
+              : "Democratic Republic of the Congo"}
+          </p>
+          <h1 className="display animate-fade-up max-w-3xl text-[38px] leading-[1.06] text-white sm:text-[58px]">
+            {t("home.heroTitle")}
+          </h1>
+          <p className="animate-fade-up mt-5 max-w-xl text-[17px] leading-relaxed text-white/80">
+            {t("home.heroSubtitle")}
+          </p>
+
+          <div className="mt-10">
+            <SearchWidget vertical="FLIGHT" variant="hero" />
+          </div>
+        </div>
+      </section>
+
+      {/* ------------------------------------------------------ trust strip */}
+      <section className="border-b border-ink-100/70 bg-white">
+        <ul className="container-site grid divide-y divide-ink-100/70 sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:divide-x lg:divide-ink-100/70">
+          {[
+            { Icon: MapPin, title: t("home.trustOffice"), body: "Av. Colonel Lukusa, Gombe" },
+            { Icon: Phone, title: t("home.trustPhone"), body: "+243 81 000 00 00" },
+            { Icon: MessageCircle, title: "WhatsApp", body: t("home.trustHours") },
+            {
+              Icon: Smartphone,
+              title: locale === "fr" ? "Paiement" : "Payment",
+              body: "Mobile money · Carte · Espèces"
+            }
+          ].map(({ Icon, title, body }) => (
+            <li key={title} className="flex items-center gap-3.5 py-5 lg:px-6">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 ring-1 ring-brand-100 ring-inset">
+                <Icon className="size-4.5 text-brand-500" />
+              </span>
+              <div className="min-w-0">
+                <p className="eyebrow text-ink-300">{title}</p>
+                <p className="truncate text-sm font-medium text-ink-900">{body}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {/* ------------------------------------------------------------ deals */}
+      <section className="container-site py-16">
+        {deals.length === 0 ? (
+          <>
+            <SectionHeading
+              eyebrow={locale === "fr" ? "Stock disponible" : "In stock now"}
+              title={t("home.deals")}
+              subtitle={t("home.dealsSub")}
+              href="/flights"
+              cta={t("home.viewAll")}
+            />
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {Array.from({ length: 4 }, (_, i) => (
+                <CardSkeleton key={i} />
+              ))}
+            </div>
+          </>
+        ) : (
+          <Carousel
+            label={t("home.deals")}
+            eyebrow={locale === "fr" ? "Stock disponible" : "In stock now"}
+            title={t("home.deals")}
+            subtitle={t("home.dealsSub")}
+            href="/flights"
+            cta={t("home.viewAll")}
+          >
+            {deals.map((l) => (
+              <DealTile key={l.id} listing={l} />
+            ))}
+          </Carousel>
+        )}
+      </section>
+
+      {/* ------------------------------------------------------ inspiration */}
+      <section className="wash-dark py-16">
+        <div className="container-site">
+          <Carousel
+            label={locale === "fr" ? "Inspiration" : "Inspiration"}
+            itemClassName="w-[260px] sm:w-[300px]"
+            tone="dark"
+            eyebrow="Inspiration"
+            eyebrowIcon={<Sparkles className="size-3.5" />}
+            title={locale === "fr" ? "Des idées pour partir" : "Ideas worth travelling for"}
+            subtitle={
+              locale === "fr"
+                ? "Six façons de voir le pays, choisies parmi ce que nous avons réellement en stock."
+                : "Six ways to see the country, chosen from what we actually hold."
+            }
+          >
+            {INSPIRATION.map((item) => (
+              <Link
+                key={item.href + item.fr.title}
+                href={item.href}
+                className="group relative block aspect-4/5 overflow-hidden rounded-xl2 ring-1 ring-white/10 transition-shadow hover:shadow-xl"
+              >
+                <Image
+                  src={mediaUrl(item.image)}
+                  alt=""
+                  fill
+                  sizes="300px"
+                  className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.08]"
+                />
+                <div className="absolute inset-0 bg-linear-to-t from-brand-900 via-brand-900/45 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 p-5">
+                  <p className="eyebrow text-accent-500">{item[l].kicker}</p>
+                  <p className="display mt-1.5 text-[19px] leading-tight text-white">
+                    {item[l].title}
+                  </p>
+                  <p className="mt-1.5 text-sm leading-snug text-white/70">{item[l].body}</p>
+                </div>
+              </Link>
+            ))}
+          </Carousel>
+        </div>
+      </section>
+
+      {/* ----------------------------------------------------- destinations */}
+      <section className="container-site py-16">
+        <SectionHeading
+          eyebrow={locale === "fr" ? "Où nous allons" : "Where we go"}
+          title={t("home.destinations")}
+          subtitle={t("home.destinationsSub")}
+        />
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {/* The office's serviced list, not a constant in this bundle. */}
+          {destinations.slice(0, 8).map((c) => (
+            <DestinationTile
+              key={c.slug}
+              city={{
+                slug: c.slug,
+                name: c.name,
+                province: c.province ?? "",
+                image: c.image || cityImage(c.name)
+              }}
+            />
+          ))}
+        </div>
+      </section>
+
+      {/* ----------------------------------------------------------- hotels */}
+      <section className="wash-brand py-16">
+        <div className="container-site">
+          <SectionHeading
+            eyebrow={locale === "fr" ? "Séjours" : "Stays"}
+            title={t("nav.hotels")}
+            subtitle={
+              locale === "fr"
+                ? "Chambres achetées à l'avance dans nos établissements partenaires."
+                : "Rooms bought in advance at our partner properties."
+            }
+            href="/hotels"
+            cta={t("home.viewAll")}
+          />
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {hotels.length === 0
+              ? Array.from({ length: 4 }, (_, i) => <CardSkeleton key={i} />)
+              : hotels.map((h) => <HotelTile key={h.id} hotel={h} />)}
+          </div>
+        </div>
+      </section>
+
+      {/* --------------------------------------------------------- property */}
+      <section className="container-site py-16">
+        <SectionHeading
+          eyebrow={locale === "fr" ? "Vendre et louer" : "Buy and rent"}
+          title={t("home.property")}
+          subtitle={t("home.propertySub")}
+          href="/property"
+          cta={t("home.viewAll")}
+        />
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {properties.length === 0
+            ? Array.from({ length: 4 }, (_, i) => <CardSkeleton key={i} />)
+            : properties.map((p) => <PropertyTile key={p.id} listing={p} />)}
+        </div>
+      </section>
+
+      {/* ---------------------------------------------------- recently seen */}
+      <div className="container-site">
+        <RecentlyViewed />
+      </div>
+
+      {/* -------------------------------------------------------------- why */}
+      <section className="container-site py-20">
+        <div className="mx-auto mb-10 max-w-xl text-center">
+          <p className="eyebrow mb-3 text-brand-500">
+            {locale === "fr" ? "Ce qui nous différencie" : "What sets us apart"}
+          </p>
+          <h2 className="display text-[28px] leading-tight text-brand-900 sm:text-[36px]">
+            {t("home.whyTitle")}
+          </h2>
+        </div>
+        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {why.map(({ Icon, title, body }, i) => (
+            <li key={title} className="surface card-lift flex flex-col p-6">
+              <span className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-brand-900 text-white shadow-sm">
+                <Icon className="size-5" />
+              </span>
+              <span className="eyebrow mb-2 text-ink-300">
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <h3 className="mb-2 text-[17px] font-bold leading-snug text-brand-900">
+                {t(title)}
+              </h3>
+              <p className="text-sm leading-relaxed text-ink-500">{t(body)}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {/* ------------------------------------------------------- office CTA */}
+      <section className="container-site pb-20">
+        <div className="wash-dark grid overflow-hidden rounded-xl2 shadow-xl lg:grid-cols-2">
+          <div className="p-8 lg:p-12">
+            <h2 className="display text-[28px] leading-tight text-white sm:text-[34px]">
+              {locale === "fr"
+                ? "Vous préférez parler à quelqu'un ?"
+                : "Would you rather speak to someone?"}
+            </h2>
+            <p className="mt-3 max-w-md text-white/75">
+              {locale === "fr"
+                ? "Passez à notre bureau de Gombe, appelez-nous, ou écrivez sur WhatsApp. Nous réservons pour vous et vous payez en espèces sur place si vous le souhaitez."
+                : "Come to our Gombe office, call us, or message on WhatsApp. We book for you and you can pay cash on the spot if you prefer."}
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <a href="tel:+243810000000" className="btn btn-lg btn-primary">
+                <Phone className="size-4" />
+                +243 81 000 00 00
+              </a>
+              <Link
+                href="/contact"
+                className="btn btn-lg text-white ring-1 ring-white/30 ring-inset hover:bg-white/10"
+              >
+                {t("footer.contact")}
+              </Link>
+            </div>
+          </div>
+          <div className="relative min-h-56">
+            <Image
+              src="/img/hero-river.svg"
+              alt=""
+              fill
+              sizes="(max-width: 1024px) 100vw, 640px"
+              className="object-cover"
+            />
+          </div>
+        </div>
+      </section>
+    </Layout>
+  );
+}
+
+/**
+ * §11.4: SSR/ISR for catalogue pages — these have to rank. One request covers
+ * every rail, and `safely` means a dev machine without the API running still
+ * produces a page rather than failing the build.
+ */
+export const getStaticProps: GetStaticProps<Props> = async () => {
+  const feed = await safely(() => getHomeFeed(), {
+    deals: [],
+    properties: [],
+    hotels: []
+  });
+
+  // ISR (revalidate below) keeps this in step with the admin without a deploy.
+  const destinations = await safely(() => getLocations(), []);
+
+  const dropped = HERO_CANDIDATES.find((name) =>
+    existsSync(join(process.cwd(), "public", "img", name))
+  );
+  const heroImage =
+    process.env.NEXT_PUBLIC_HERO_IMAGE ||
+    (dropped ? `/img/${dropped}` : HERO_FALLBACK);
+
+  return { props: { ...feed, heroImage, destinations }, revalidate: 120 };
+};

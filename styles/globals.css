@@ -1,0 +1,622 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+/*
+  ---break---
+*/
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --breakpoint-*: initial;
+  --breakpoint-xs: 480px;
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+  --breakpoint-3xl: 1792px;
+
+  /* §11.6 brand palette. Navy + white dominate; amber is the CTA and nothing
+     else, so a call to action is never the same hue as a header or a link. */
+  --color-brand-900: #0a2540;
+  --color-brand-800: #0e2f4f;
+  --color-brand-700: #123a5f;
+  --color-brand-600: #17497a;
+  --color-brand-500: #1e5a8e;
+  --color-brand-400: #3f7fb0;
+  --color-brand-100: #dbe7f2;
+  --color-brand-50: #f1f6fb;
+
+  --color-accent-700: #b87513;
+  --color-accent-600: #d9911a;
+  --color-accent-500: #f5a623;
+  --color-accent-100: #fdf0d9;
+
+  /* A second accent, restrained on purpose. Amber remains the only CTA colour;
+     teal carries availability and "in stock" signals, and gives the dark
+     sections something to sit against so navy + amber is not the whole story.
+     Two accents is variety; five would be the rainbow §14 warns about. */
+  --color-teal-700: #0d5c63;
+  --color-teal-600: #12787f;
+  --color-teal-500: #199aa1;
+  --color-teal-400: #3fb9be;
+  --color-teal-100: #dcf1f2;
+
+  /* Per-vertical tint. Used only for the small category chip on a card, so a
+     grid of six verticals is legible at a glance without becoming a paint box. */
+  --color-v-flight: #1e5a8e;
+  --color-v-hotel: #12787f;
+  --color-v-bus: #7c4d8f;
+  --color-v-car: #b5622e;
+  --color-v-activity: #2f7a52;
+  --color-v-property: #8a5a2b;
+
+  /* Warm neutrals, not cold greys. A page on #FBFAF8 with pure-white cards
+     reads as considered; the same layout on #FFFFFF with grey borders reads as
+     a wireframe. This is the cheapest premium signal in the whole system. */
+  --color-ink-900: #14161a;
+  --color-ink-700: #3d4249;
+  --color-ink-500: #6c7076;
+  --color-ink-300: #a5a7ac;
+  --color-ink-200: #d6d3cc;
+  --color-ink-100: #e7e4dd;
+  --color-ink-50: #f4f2ed;
+  --color-paper: #fbfaf8;
+
+  --color-ok-600: #1f7a4d;
+  --color-ok-100: #e2f2e8;
+  --color-warn-600: #9a6608;
+  --color-warn-100: #fbeed6;
+  --color-bad-600: #b02f24;
+  --color-bad-100: #f9e6e3;
+
+  --font-sans: var(--inter), ui-sans-serif, system-ui, sans-serif;
+  /* Editorial serif for display type only. Body copy stays on Inter, so the
+     second family costs two weights, not a whole UI. */
+  --font-display: var(--fraunces), var(--inter), Georgia, serif;
+
+  /* Elevation. Layered and low-opacity — one hard shadow reads as a 2012 card. */
+  --shadow-xs: 0 1px 2px rgb(20 22 26 / 0.05);
+  --shadow-sm: 0 1px 3px rgb(20 22 26 / 0.07), 0 1px 2px rgb(20 22 26 / 0.04);
+  --shadow-md: 0 6px 16px -4px rgb(20 22 26 / 0.09), 0 2px 5px -2px rgb(20 22 26 / 0.05);
+  --shadow-lg: 0 14px 36px -10px rgb(20 22 26 / 0.14), 0 4px 10px -4px rgb(20 22 26 / 0.07);
+  --shadow-xl: 0 28px 64px -20px rgb(10 37 64 / 0.26), 0 10px 20px -10px rgb(10 37 64 / 0.12);
+  --shadow-ring: 0 0 0 1px rgb(20 22 26 / 0.06);
+
+  --radius-card: 1rem;
+  --radius-xl2: 1.25rem;
+  --radius-xl3: 1.75rem;
+
+  /* 8-point system. Tailwind's base step is 4px, so the even steps (2, 3, 4,
+     6, 8, 10, 12, 16, 20, 24) are the 8pt grid: 8, 12, 16, 24, 32, 40, 48, 64,
+     80, 96. Odd and fractional steps are deliberately not used for layout. */
+  --spacing: 0.25rem;
+
+  /* Type scale. Named steps only — arbitrary px values drift within a week. */
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.125rem;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.375rem;
+  --text-base: 0.9375rem;
+  --text-base--line-height: 1.5rem;
+  --text-md: 1.0625rem;
+  --text-md--line-height: 1.625rem;
+  --text-lg: 1.25rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl: 1.5rem;
+  --text-xl--line-height: 1.875rem;
+  --text-2xl: 1.875rem;
+  --text-2xl--line-height: 2.125rem;
+  --text-3xl: 2.375rem;
+  --text-3xl--line-height: 2.625rem;
+  --text-4xl: 3rem;
+  --text-4xl--line-height: 3.125rem;
+  --text-5xl: 3.75rem;
+  --text-5xl--line-height: 3.875rem;
+
+  /* Motion. 200–300ms, one easing curve, used everywhere. */
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out-soft: cubic-bezier(0.65, 0, 0.35, 1);
+  --animate-fade-up: fade-up 0.32s var(--ease-out-soft) both;
+  --animate-fade-in: fade-in 0.24s var(--ease-out-soft) both;
+  --animate-shimmer: shimmer 1.4s linear infinite;
+
+  /* §11.6 1280px max width. */
+  --container-site: 1280px;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes shimmer {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.141 0.005 285.823);
+  --radius: 0.625rem;
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.141 0.005 285.823);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.141 0.005 285.823);
+  --primary: oklch(0.21 0.006 285.885);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.967 0.001 286.375);
+  --secondary-foreground: oklch(0.21 0.006 285.885);
+  --muted: oklch(0.967 0.001 286.375);
+  --muted-foreground: oklch(0.552 0.016 285.938);
+  --accent: oklch(0.967 0.001 286.375);
+  --accent-foreground: oklch(0.21 0.006 285.885);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.92 0.004 286.32);
+  --input: oklch(0.92 0.004 286.32);
+  --ring: oklch(0.705 0.015 286.067);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.141 0.005 285.823);
+  --sidebar-primary: oklch(0.21 0.006 285.885);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.967 0.001 286.375);
+  --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
+  --sidebar-border: oklch(0.92 0.004 286.32);
+  --sidebar-ring: oklch(0.705 0.015 286.067);
+}
+
+/* No prefers-color-scheme override: the public site is a light marketplace and
+   an auto-dark flip made half the shadcn surfaces unreadable. Dark mode, if it
+   is ever wanted, goes through the `.dark` class below. */
+
+/*
+  ---break---
+*/
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+/*
+  ---break---
+*/
+
+.dark {
+  --background: oklch(0.141 0.005 285.823);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.21 0.006 285.885);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.21 0.006 285.885);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.92 0.004 286.32);
+  --primary-foreground: oklch(0.21 0.006 285.885);
+  --secondary: oklch(0.274 0.006 286.033);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.274 0.006 286.033);
+  --muted-foreground: oklch(0.705 0.015 286.067);
+  --accent: oklch(0.274 0.006 286.033);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.552 0.016 285.938);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.21 0.006 285.885);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.274 0.006 286.033);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.552 0.016 285.938);
+}
+
+/*
+  ---break---
+*/
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/*
+  ---break---
+*/
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    font-family: var(--font-sans);
+    color: var(--color-ink-900);
+    background: var(--color-paper);
+  }
+  /* Display type gets optical tightening; UI type does not. Tracking that is
+     right at 48px is far too tight at 14px. */
+  h1,
+  h2 {
+    letter-spacing: -0.018em;
+  }
+  /* §11.5 WCAG AA: focus must always be visible, never removed for looks. */
+  :focus-visible {
+    outline: 3px solid var(--color-accent-500);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@utility container-site {
+  width: 100%;
+  max-width: var(--container-site);
+  margin-inline: auto;
+  padding-inline: 1rem;
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* A card is a white surface with a hairline ring and soft elevation — not a
+   1px grey box. The lift on hover is small on purpose; big jumps feel cheap. */
+@utility surface {
+  background: #fff;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-ring), var(--shadow-sm);
+}
+
+@utility card-lift {
+  transition:
+    box-shadow 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  &:hover {
+    box-shadow: var(--shadow-ring), var(--shadow-lg);
+    transform: translateY(-3px);
+  }
+}
+
+/* Display headline: serif, tight, and only ever used at large sizes. */
+@utility display {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* Small tracked label above a headline. Used everywhere, defined once. */
+@utility eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Prices must not jitter as digits change. */
+@utility tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Buttons, defined once so every CTA on the site is the same object. */
+@utility btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  transition:
+    background-color 0.22s var(--ease-out-soft),
+    box-shadow 0.22s var(--ease-out-soft),
+    transform 0.22s var(--ease-out-soft),
+    color 0.22s var(--ease-out-soft);
+  /* Scale rather than translate: it reads as a physical press and does not
+     nudge neighbouring layout. */
+  &:hover {
+    transform: scale(1.02);
+  }
+  &:active {
+    transform: scale(0.98);
+  }
+  &:disabled,
+  &[aria-busy="true"] {
+    opacity: 0.55;
+    pointer-events: none;
+    transform: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    &:hover,
+    &:active {
+      transform: none;
+    }
+  }
+}
+
+@utility btn-primary {
+  background: var(--color-accent-500);
+  color: var(--color-brand-900);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.35),
+    var(--shadow-sm);
+  &:hover {
+    background: var(--color-accent-600);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.35),
+      var(--shadow-md);
+  }
+}
+
+@utility btn-dark {
+  background: var(--color-brand-900);
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+  &:hover {
+    background: var(--color-brand-700);
+    box-shadow: var(--shadow-md);
+  }
+}
+
+@utility btn-outline {
+  background: #fff;
+  color: var(--color-brand-700);
+  box-shadow: inset 0 0 0 1.5px var(--color-ink-200);
+  &:hover {
+    background: var(--color-brand-50);
+    box-shadow: inset 0 0 0 1.5px var(--color-brand-400);
+  }
+}
+
+@utility btn-lg {
+  height: 3.25rem;
+  padding-inline: 1.75rem;
+  font-size: 1rem;
+}
+@utility btn-md {
+  height: 2.75rem;
+  padding-inline: 1.25rem;
+  font-size: 0.9375rem;
+}
+@utility btn-sm {
+  height: 2.25rem;
+  padding-inline: 0.875rem;
+  font-size: 0.875rem;
+}
+
+/* --------------------------------------------------------------- forms ---
+   One field primitive with a floating label. The label starts inside the box
+   and rises when the control has focus or a value, so the field is legible
+   empty and still labelled full — which a placeholder-only field never is. */
+
+@utility field {
+  position: relative;
+  display: block;
+  border-radius: 0.75rem;
+  background: #fff;
+  box-shadow: inset 0 0 0 1.5px var(--color-ink-100);
+  transition:
+    box-shadow 0.2s var(--ease-out-soft),
+    background-color 0.2s var(--ease-out-soft);
+  &:hover {
+    box-shadow: inset 0 0 0 1.5px var(--color-ink-200);
+  }
+  &:focus-within {
+    background: #fff;
+    box-shadow:
+      inset 0 0 0 2px var(--color-brand-500),
+      0 0 0 4px rgb(30 90 142 / 0.12);
+  }
+  &[data-invalid="true"] {
+    box-shadow:
+      inset 0 0 0 2px var(--color-bad-600),
+      0 0 0 4px rgb(176 47 36 / 0.1);
+  }
+}
+
+@utility field-label {
+  position: absolute;
+  left: 0.875rem;
+  top: 50%;
+  transform: translateY(-50%);
+  transform-origin: left center;
+  color: var(--color-ink-500);
+  font-size: var(--text-base);
+  pointer-events: none;
+  transition: all 0.2s var(--ease-out-soft);
+  .field:focus-within &,
+  .field:has(:not(:placeholder-shown)) &,
+  .field[data-filled="true"] & {
+    top: 0.625rem;
+    transform: translateY(0) scale(0.78);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-brand-600);
+  }
+}
+
+@utility field-input {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 1.5rem 0.875rem 0.5rem;
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-ink-900);
+  outline: none;
+  &::placeholder {
+    color: transparent;
+  }
+}
+
+/* Skeletons: a moving sheen rather than a pulsing grey block. */
+@utility skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-ink-50) 25%,
+    var(--color-ink-100) 37%,
+    var(--color-ink-50) 63%
+  );
+  background-size: 200% 100%;
+  animation: var(--animate-shimmer);
+  border-radius: 0.5rem;
+}
+
+/* Hairline rule that does not look like a table border. */
+@utility rule {
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--color-ink-100) 12%,
+    var(--color-ink-100) 88%,
+    transparent
+  );
+}
+
+/* Route progress bar: fills fast, then crawls, so a long navigation still
+   looks like it is moving without ever pretending to be finished. */
+@keyframes route-progress {
+  0% {
+    transform: scaleX(0);
+  }
+  40% {
+    transform: scaleX(0.55);
+  }
+  80% {
+    transform: scaleX(0.82);
+  }
+  100% {
+    transform: scaleX(0.94);
+  }
+}
+
+/* A soft radial wash for section backgrounds — colour with no hard edge, so a
+   band of content reads as a different surface without becoming a coloured box. */
+@utility wash-brand {
+  background:
+    radial-gradient(70% 120% at 12% 0%, rgb(30 90 142 / 0.09), transparent 60%),
+    radial-gradient(60% 100% at 92% 20%, rgb(25 154 161 / 0.1), transparent 62%),
+    var(--color-paper);
+}
+
+@utility wash-dark {
+  background:
+    radial-gradient(60% 120% at 10% 0%, rgb(25 154 161 / 0.22), transparent 58%),
+    radial-gradient(55% 110% at 88% 15%, rgb(245 166 35 / 0.16), transparent 60%),
+    var(--color-brand-900);
+}
+
+/* Category chip, tinted per vertical. */
+@utility chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--chip-color, var(--color-brand-500)) 88%, black);
+  background: color-mix(in oklab, var(--chip-color, var(--color-brand-500)) 12%, white);
+  box-shadow: inset 0 0 0 1px
+    color-mix(in oklab, var(--chip-color, var(--color-brand-500)) 22%, transparent);
+}
