@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  deleteAccount,
   getSession,
   logout as apiLogout,
   requestOtp,
+  updateProfile,
   verifyOtp,
   type CustomerSession
 } from "./api";
@@ -49,6 +51,27 @@ export function useVerifyOtp() {
     mutationFn: verifyOtp,
     onSuccess: (customer) => {
       qc.setQueryData(["session"], customer);
+      qc.invalidateQueries({ queryKey: ["my-orders"] });
+    }
+  });
+}
+
+/** Saves the profile and refreshes the cached session in one step. */
+export function useUpdateProfile() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: updateProfile,
+    onSuccess: (customer) => qc.setQueryData(["session"], customer)
+  });
+}
+
+/** Deletes the account, then drops every cached trace of who was signed in. */
+export function useDeleteAccount() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: deleteAccount,
+    onSuccess: () => {
+      qc.setQueryData(["session"], null);
       qc.invalidateQueries({ queryKey: ["my-orders"] });
     }
   });

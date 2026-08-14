@@ -4,7 +4,7 @@ import Layout from "@/components/site/Layout";
 import { useCheckout } from "@/lib/checkout";
 import { isEmail, normalisePhone } from "@/lib/format";
 import { usePrefs } from "@/lib/prefs";
-import { getUser } from "@/lib/store";
+import { useSession } from "@/lib/session";
 import { Info, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -35,11 +35,14 @@ export default function ContactStep() {
     if (ready && !selection) router.replace("/");
   }, [ready, selection, router]);
 
+  // A signed-in customer is known to the server; a guest is not, and that is
+  // fine — the fields simply start empty.
+  const { customer: user } = useSession();
+
   // Prefill from the lead traveller, or from a signed-in customer. Retyping a
   // name you entered on the previous screen is the fastest way to lose someone.
   useEffect(() => {
     if (!ready) return;
-    const user = getUser();
     setValues((v) => ({
       ...v,
       firstName: contact?.firstName || user?.firstName || travellers[0]?.firstName || "",
@@ -47,7 +50,7 @@ export default function ContactStep() {
       phone: contact?.phone || user?.phone || "",
       email: contact?.email || user?.email || ""
     }));
-  }, [ready, contact, travellers]);
+  }, [ready, contact, travellers, user]);
 
   if (!ready || !selection) return null;
 

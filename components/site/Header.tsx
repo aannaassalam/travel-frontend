@@ -1,5 +1,5 @@
 import { usePrefs } from "@/lib/prefs";
-import { getUser, SessionUser } from "@/lib/store";
+import { useSession } from "@/lib/session";
 import {
   CURRENCIES,
   Currency,
@@ -48,14 +48,9 @@ export default function Header({ transparent = false }: { transparent?: boolean 
   const { t, locale, setLocale, currency, setCurrency } = usePrefs();
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [user, setUserState] = useState<SessionUser | null>(null);
-
-  useEffect(() => {
-    setUserState(getUser());
-    const sync = () => setUserState(getUser());
-    window.addEventListener("ct:store", sync);
-    return () => window.removeEventListener("ct:store", sync);
-  }, []);
+  // Server-owned: the session cookie is httpOnly, so this is the only way to
+  // know who is signed in. react-query keeps one answer shared across the app.
+  const { customer: user } = useSession();
 
   useEffect(() => {
     setOpen(false);

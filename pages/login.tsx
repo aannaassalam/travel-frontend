@@ -32,7 +32,17 @@ export default function SignInPage() {
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
-  // Collected only when the code turns out to belong to a brand-new customer.
+  /**
+   * Asked for ONLY after the server says this phone has no account yet.
+   *
+   * The client cannot know in advance whether a number is registered — and it
+   * must not be told, because that would answer "is this person a customer of
+   * yours" to anyone who types a number (§7.4). So sign-in asks for a code and
+   * nothing else; if the verified number turns out to be new, the server
+   * replies NAME_REQUIRED and the same code is submitted again with a name.
+   * A returning customer is never asked to retype their name.
+   */
+  const [needsName, setNeedsName] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const sendCode = useRequestOtp();
@@ -78,21 +88,19 @@ export default function SignInPage() {
       await signIn.mutateAsync({
         phone: e164!,
         code,
-        // Only used when this phone has never transacted before; an existing
-        // contact keeps the name the office already has.
         firstName: firstName.trim() || undefined,
         lastName: lastName.trim() || undefined
       });
       router.push(String(router.query.next || "/account"));
     } catch (err) {
-      const status = err instanceof ApiError ? err.status : 0;
-      setError(
-        status === 429
-          ? t("auth.otpInvalid")
-          : err instanceof Error
-            ? err.message
-            : t("auth.otpInvalid")
-      );
+      // A new number: reveal the name fields and let them resubmit. The code is
+      // still valid — the server only spends it once the sign-in can complete.
+      if (err instanceof ApiError && err.code === "NAME_REQUIRED") {
+        setNeedsName(true);
+        setError("");
+        return;
+      }
+      setError(err instanceof Error ? err.message : t("auth.otpInvalid"));
     } finally {
       setBusy(false);
     }
@@ -182,10 +190,13 @@ export default function SignInPage() {
                     </p>
                   )}
                 </label>
-                {/* Optional, and only used if this number has never booked
-                    before — the server keeps the name the office already holds
-                    for an existing contact, so returning customers never have
-                    to retype it. */}
+                {needsName && (
+                <>
+                <p className="rounded-md bg-accent-100 px-4 py-3 text-sm text-ink-900">
+                  {locale === "fr"
+                    ? "Bienvenue ! Ce numéro est nouveau — indiquez votre nom pour créer votre compte."
+                    : "Welcome! This number is new — add your name to create your account."}
+                </p>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <TextField
                     label={t("checkout.firstName")}
@@ -200,6 +211,8 @@ export default function SignInPage() {
                     autoComplete="family-name"
                   />
                 </div>
+                </>
+                )}
 
                 <button
                   type="submit"

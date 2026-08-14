@@ -1,7 +1,8 @@
 import AccountLayout from "@/components/account/AccountLayout";
 import { isEmail } from "@/lib/format";
 import { usePrefs } from "@/lib/prefs";
-import { SessionUser, setUser } from "@/lib/store";
+import { useDeleteAccount, useUpdateProfile } from "@/lib/session";
+import type { CustomerSession } from "@/lib/api";
 import { Trash2, TriangleAlert } from "lucide-react";
 import { useRouter } from "next/router";
 import { useState } from "react";
@@ -30,7 +31,7 @@ export default function ProfilePage() {
   );
 }
 
-function ProfileBody({ user }: { user: SessionUser }) {
+function ProfileBody({ user }: { user: CustomerSession }) {
   const { t, locale } = usePrefs();
   const router = useRouter();
   const [values, setValues] = useState({
@@ -41,15 +42,23 @@ function ProfileBody({ user }: { user: SessionUser }) {
   const [emailError, setEmailError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  function save(e: React.FormEvent) {
+  const update = useUpdateProfile();
+  const remove = useDeleteAccount();
+
+  async function save(e: React.FormEvent) {
     e.preventDefault();
     if (values.email && !isEmail(values.email)) {
       setEmailError(t("err.email"));
       return;
     }
-    // Saving a profile is also what claims a guest account (§2.1).
-    setUser({ ...user, ...values, state: "ACTIVE" });
-    toast.success(locale === "fr" ? "Profil enregistré" : "Profile saved");
+    try {
+      // Persisted server-side. This used to write to a localStorage copy that
+      // nothing read back, so an edit looked saved and was gone on reload.
+      await update.mutateAsync(values);
+      toast.success(locale === "fr" ? "Profil enregistré" : "Profile saved");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("err.required"));
+    }
   }
 
   return (
@@ -133,9 +142,11 @@ function ProfileBody({ user }: { user: SessionUser }) {
             <button
               type="button"
               onClick={() => {
-                setUser(null);
-                router.push("/");
+                // Server-side: the personal data is actually removed. Clearing
+                // local state alone deleted nothing at all.
+                remove.mutate(undefined, { onSettled: () => router.push("/") });
               }}
+              disabled={remove.isPending}
               className="inline-flex items-center gap-2 rounded-md bg-bad-600 px-4 py-2.5 text-sm font-bold text-white"
             >
               <Trash2 className="size-4" />

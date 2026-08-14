@@ -297,6 +297,8 @@ export interface OrderTimelineEntry {
 export interface Order {
   /** §10.3(4) unguessable — never a sequential integer. */
   reference: string;
+  /** Last four digits of the booking phone, for the confirmation line. */
+  contactPhoneMasked?: string;
   status: OrderStatus;
   paymentStatus: PaymentStatus;
   fulfilmentStatus: FulfilmentStatus;

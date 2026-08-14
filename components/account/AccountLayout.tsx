@@ -1,6 +1,7 @@
 import Layout from "@/components/site/Layout";
 import { usePrefs } from "@/lib/prefs";
-import { getUser, SessionUser, setUser } from "@/lib/store";
+import { useLogout, useSession } from "@/lib/session";
+import type { CustomerSession } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import {
   CURRENCIES,
@@ -18,7 +19,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
 
 const NAV = [
   { href: "/account", key: "account.dashboard", Icon: LayoutDashboard },
@@ -36,20 +36,26 @@ export default function AccountLayout({
   children,
   title
 }: {
-  children: (user: SessionUser) => React.ReactNode;
+  children: (user: CustomerSession) => React.ReactNode;
   title: string;
 }) {
   const { t, locale, setLocale, currency, setCurrency } = usePrefs();
   const router = useRouter();
-  const [user, setUserState] = useState<SessionUser | null | undefined>(undefined);
-
-  useEffect(() => {
-    setUserState(getUser());
-  }, []);
+  /**
+   * The session lives in an httpOnly cookie the browser cannot read, so only
+   * the server can answer "is this person signed in".
+   *
+   * This used to read a `localStorage` copy, which stopped being written the
+   * moment sign-in moved to a real session — so the API happily returned a
+   * valid session while this screen insisted nobody was logged in. Two sources
+   * of truth for identity is one too many.
+   */
+  const { customer, isPending } = useSession();
+  const user = isPending ? undefined : customer;
+  const logout = useLogout();
 
   function signOut() {
-    setUser(null);
-    router.push("/");
+    logout.mutate(undefined, { onSettled: () => router.push("/") });
   }
 
   return (
@@ -61,12 +67,7 @@ export default function AccountLayout({
           </h1>
           {user && (
             <p className="mt-1 text-white/70">
-              {user.firstName ? `${user.firstName} ${user.lastName ?? ""}` : user.phone}
-              {user.state === "UNCLAIMED" && (
-                <span className="ml-2 rounded bg-accent-500 px-2 py-0.5 text-xs font-bold text-brand-900">
-                  {locale === "fr" ? "Compte à activer" : "Account not yet claimed"}
-                </span>
-              )}
+              {user.firstName ? `${user.firstName} ${user.lastName ?? ""}`.trim() : user.phone}
             </p>
           )}
         </div>

@@ -2,9 +2,8 @@ import { OrderDocuments, OrderItems, OrderStatusBadges } from "@/components/acco
 import { SettlementNote } from "@/components/site/bits";
 import Layout from "@/components/site/Layout";
 import { useCheckout } from "@/lib/checkout";
-import { fmtDateTime, maskPhone } from "@/lib/format";
+import { fmtDateTime } from "@/lib/format";
 import { usePrefs } from "@/lib/prefs";
-import { getUser } from "@/lib/store";
 import { useOrder } from "@/lib/orders";
 import { Order } from "@/typescript/interface/domain.interface";
 import {
@@ -17,7 +16,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 /**
  * §11.2 confirmation screen.
@@ -31,16 +30,18 @@ export default function ConfirmationPage() {
   const { t, locale } = usePrefs();
   const router = useRouter();
   const { clear } = useCheckout();
-  const [phone, setPhone] = useState<string | null>(null);
 
   const reference = String(router.query.reference ?? "");
   /** Read from the server, so this page shows the real order, not a local echo. */
   const { data: fetched, isPending, isError } = useOrder(router.isReady ? reference : undefined);
   const order: Order | null | undefined = isPending ? undefined : isError ? null : fetched;
 
+  // From the order itself — the number the customer actually booked with,
+  // signed in or not. Already masked by the API; the full one never leaves it.
+  const phone = order?.contactPhoneMasked ?? null;
+
   useEffect(() => {
     if (!router.isReady) return;
-    setPhone(getUser()?.phone ?? null);
     // The order exists on the server now; nothing should still be in checkout.
     clear();
   }, [router.isReady, clear]);
@@ -89,7 +90,7 @@ export default function ConfirmationPage() {
           <p className="mt-2 text-[15px] text-ink-700">
             {/* §10.7: the number is masked even back to its owner — the last
                 three digits are enough to confirm we used the right one. */}
-            {t("confirm.body", { phone: phone ? maskPhone(phone) : "—" })}
+            {t("confirm.body", { phone: phone ?? "—" })}
           </p>
           <p className="mt-4 text-sm font-semibold uppercase tracking-wide text-ink-500">
             {t("confirm.reference")}

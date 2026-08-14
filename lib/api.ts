@@ -19,7 +19,13 @@ export const API_BASE =
 export class ApiError extends Error {
   constructor(
     message: string,
-    readonly status: number
+    readonly status: number,
+    /**
+     * Machine-readable reason from the API. Callers switch on this, never on
+     * the human-readable message (§8) — the message is translated and rewritten,
+     * the code is a contract.
+     */
+    readonly code?: string
   ) {
     super(message);
   }
@@ -292,7 +298,8 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   if (!res.ok) {
     throw new ApiError(
       data?.message ?? res.headers.get("X-Message") ?? "Request failed",
-      res.status
+      res.status,
+      data?.code
     );
   }
   return data as T;
@@ -314,6 +321,25 @@ export const verifyOtp = (input: {
   lastName?: string;
 }) => post<{ customer: CustomerSession }>("/auth/otp/verify", input).then((r) => r.customer);
 
+/** PATCH /auth/me — the customer editing their own details. */
+export async function updateProfile(patch: {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+}): Promise<CustomerSession> {
+  const res = await fetch(`${API_BASE}/auth/me`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(patch)
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new ApiError(data?.message ?? "Could not save", res.status);
+  }
+  return (data as { customer: CustomerSession }).customer;
+}
+
 /** GET /auth/me — null when there is no session, which is not an error. */
 export async function getSession(): Promise<CustomerSession | null> {
   try {
@@ -323,6 +349,16 @@ export async function getSession(): Promise<CustomerSession | null> {
     if (err instanceof ApiError && err.status === 401) return null;
     throw err;
   }
+}
+
+/** DELETE /auth/me — §12.4 in-app account deletion. */
+export async function deleteAccount(): Promise<void> {
+  const res = await fetch(`${API_BASE}/auth/me`, {
+    method: "DELETE",
+    credentials: "include",
+    headers: { Accept: "application/json" }
+  });
+  if (!res.ok) throw new ApiError("Could not delete the account", res.status);
 }
 
 export const logout = () => post<Record<string, never>>("/auth/logout", {});
