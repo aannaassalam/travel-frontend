@@ -48,7 +48,11 @@ export const queryClient = new QueryClient({
   },
   mutationCache: new MutationCache({
     onSuccess: (data, _variables, _context, mutation) => {
-      const message = (data as AxiosResponse).headers["x-message"];
+      // Not every mutation is an axios call — the catalogue and session helpers
+      // in lib/api.ts use fetch and resolve with the parsed body, which has no
+      // `headers`. Reading it unguarded threw in here, and a throw inside
+      // onSuccess rejects the mutation: a 200 surfaced as an error toast.
+      const message = (data as AxiosResponse)?.headers?.["x-message"];
       const showToast = mutation.meta?.showToast !== false;
       if (showToast && message) {
         toast.success(message);
