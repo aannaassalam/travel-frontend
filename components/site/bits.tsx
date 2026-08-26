@@ -166,13 +166,11 @@ export function PolicyChip() {
  * rather than assembled.
  */
 export function SectionHeading({
-  eyebrow,
   title,
   subtitle,
   href,
   cta
 }: {
-  eyebrow?: string;
   title: string;
   subtitle?: string;
   href?: string;
@@ -181,12 +179,6 @@ export function SectionHeading({
   return (
     <div className="mb-7 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
       <div className="max-w-2xl">
-        {eyebrow && (
-          <p className="eyebrow mb-2 flex items-center gap-2 text-brand-500">
-            <span className="h-px w-6 bg-accent-500" aria-hidden="true" />
-            {eyebrow}
-          </p>
-        )}
         <h2 className="display text-[26px] leading-[1.15] text-brand-900 sm:text-[34px]">
           {title}
         </h2>

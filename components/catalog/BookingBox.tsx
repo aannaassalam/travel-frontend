@@ -1,5 +1,6 @@
 import { Price, SettlementNote, Scarcity } from "@/components/site/bits";
 import { CheckoutSelection, useCheckout } from "@/lib/checkout";
+import { InlineSelect } from "@/components/ui/InlineSelect";
 import { mediaUrl } from "@/lib/media";
 import { multiply, nightsBetween } from "@/lib/money";
 import { usePrefs } from "@/lib/prefs";
@@ -120,22 +121,23 @@ export default function BookingBox({ listing }: { listing: Listing }) {
             </label>
           </div>
         ) : (
-          <label className="block">
+          <div className="block">
             <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">
               {listing.vertical === "ACTIVITY" ? t("search.guests") : t("search.passengers")}
             </span>
-            <select
-              value={quantity}
-              onChange={(e) => setQuantity(Number(e.target.value))}
-              className="w-full rounded-md border border-ink-100 px-3 py-2.5 text-[15px]"
-            >
-              {Array.from({ length: Math.min(9, listing.available) }, (_, i) => (
-                <option key={i} value={i + 1}>
-                  {i + 1} {t(i === 0 ? "common.person" : "common.people")}
-                </option>
-              ))}
-            </select>
-          </label>
+            <InlineSelect
+              ariaLabel={
+                listing.vertical === "ACTIVITY" ? t("search.guests") : t("search.passengers")
+              }
+              value={String(quantity)}
+              onValueChange={(v) => setQuantity(Number(v))}
+              options={Array.from({ length: Math.min(9, listing.available) }, (_, i) => ({
+                value: String(i + 1),
+                label: `${i + 1} ${t(i === 0 ? "common.person" : "common.people")}`
+              }))}
+              triggerClassName="w-full justify-between py-2.5 text-[15px]"
+            />
+          </div>
         )}
       </div>
 

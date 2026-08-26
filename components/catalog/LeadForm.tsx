@@ -1,5 +1,7 @@
 import { TextAreaField, TextField } from "@/components/ui/field";
-import { isEmail, normalisePhone } from "@/lib/format";
+import { isEmail } from "@/lib/format";
+import { DEFAULT_COUNTRY, toE164 } from "@/lib/countries";
+import { PhoneField } from "@/components/ui/PhoneField";
 import { usePrefs } from "@/lib/prefs";
 import { createEnquiry } from "@/lib/api";
 import { saveEnquiry } from "@/lib/store";
@@ -38,6 +40,7 @@ export default function LeadForm({
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
+  const [country, setCountry] = useState(DEFAULT_COUNTRY);
   const [reference, setReference] = useState<string | null>(null);
 
   const set = (k: string, v: string) => {
@@ -49,7 +52,7 @@ export default function LeadForm({
   function validate() {
     const next: Record<string, string> = {};
     if (values.name.trim().length < 3) next.name = t("err.name");
-    if (!normalisePhone(values.phone)) next.phone = t("err.phone");
+    if (!toE164(country, values.phone)) next.phone = t("err.phone");
     if (values.email && !isEmail(values.email)) next.email = t("err.email");
     if (!values.message.trim()) next.message = t("err.required");
     setErrors(next);
@@ -64,7 +67,7 @@ export default function LeadForm({
       kind,
       vertical,
       customerName: values.name.trim(),
-      phone: normalisePhone(values.phone)!,
+      phone: toE164(country, values.phone)!,
       email: values.email.trim() || undefined,
       message: values.message.trim(),
       listingLabel
@@ -126,15 +129,15 @@ export default function LeadForm({
           error={errors.name}
           autoComplete="name"
         />
-        <TextField
+        {/* The acknowledgement SMS goes here, so the dialling code is chosen
+            rather than typed. */}
+        <PhoneField
           label={t("rtb.phone")}
-          value={values.phone}
-          onChange={(e) => set("phone", e.target.value)}
-          onBlur={validate}
+          country={country}
+          national={values.phone}
+          onCountryChange={setCountry}
+          onNationalChange={(v) => set("phone", v)}
           error={errors.phone}
-          inputMode="tel"
-          autoComplete="tel"
-          helper={errors.phone ? undefined : "+243 …"}
         />
       </div>
 

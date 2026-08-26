@@ -122,6 +122,29 @@
   --animate-fade-in: fade-in 0.24s var(--ease-out-soft) both;
   --animate-shimmer: shimmer 1.4s linear infinite;
 
+  /**
+   * The homepage entrance.
+   *
+   * This site sells stock it actually holds, so the search box is the product,
+   * not a banner on top of one. The sequence says exactly that: the promise
+   * settles, then the search arrives last and lowest, landing as the object the
+   * page is built around.
+   *
+   * It runs once, on load, and never again - a page that re-choreographs itself
+   * on every visit is a page that wastes the visitor's time.
+   */
+  --animate-hero-line: hero-line 0.62s var(--ease-out-expo) both;
+  --animate-hero-search: hero-search 0.72s var(--ease-out-expo) both;
+  --animate-rise: rise 0.42s var(--ease-out-expo) both;
+  --animate-settle: settle 0.2s var(--ease-out-soft) both;
+
+  /**
+   * Exponential ease-out. Almost all of the distance is covered immediately and
+   * the tail is long, which is what makes an arrival read as confident rather
+   * than as something being dragged into place.
+   */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
   /* §11.6 1280px max width. */
   --container-site: 1280px;
 }
@@ -144,6 +167,55 @@
     opacity: 1;
   }
 }
+/* The headline clears its own mask rather than sliding in from nowhere. */
+@keyframes hero-line {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 0.42em, 0);
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    clip-path: inset(0 0 -20% 0);
+  }
+}
+
+/* The search lands: it comes from below, slightly small, and settles. */
+@keyframes hero-search {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 28px, 0) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Skeleton handing over to real content: a crossfade, not a hard swap. */
+@keyframes settle {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 4px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @keyframes shimmer {
   from {
     background-position: -200% 0;
@@ -329,15 +401,139 @@
     outline: 3px solid var(--color-accent-500);
     outline-offset: 2px;
   }
+  /**
+   * Reduced motion means less movement, not no feedback.
+   *
+   * The blanket 0.01ms override that used to live here removed the very things
+   * that make a control feel answered: the press, the colour settling, the
+   * skeleton handing over to content. Someone with a vestibular disorder still
+   * needs to see that their tap registered.
+   *
+   * So: spatial movement is removed, and everything that carries meaning by
+   * colour, opacity or state is kept and merely shortened.
+   */
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
     *::after {
-      animation-duration: 0.01ms !important;
-      transition-duration: 0.01ms !important;
+      /* Travel is what causes discomfort; fades and colour changes do not. */
+      animation-duration: 0.16s !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.12s !important;
       scroll-behavior: auto !important;
     }
+    /* The authored entrance arrives, it just does not travel. */
+    .motion-rise,
+    .motion-hero-search,
+    .motion-hero-line,
+    .motion-stagger > * {
+      animation: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+    }
   }
+}
+
+/**
+ * The parts of the page the browser draws for us.
+ *
+ * Selection, caret, scrollbar, checkbox tick and link underline all ship with
+ * defaults that belong to no design system - a blue selection band on a warm
+ * navy-and-amber page is the browser's opinion, not ours.
+ */
+@layer base {
+  ::selection {
+    /* Amber is the action colour, so selection borrows the brand blue instead
+       and keeps the CTA hue meaning exactly one thing. */
+    background: var(--color-brand-100);
+    color: var(--color-brand-900);
+  }
+  html {
+    scrollbar-color: var(--color-ink-200) transparent;
+  }
+  input,
+  textarea {
+    caret-color: var(--color-brand-500);
+  }
+  /* Native checkbox and radio ticks, so the one control we do not redraw still
+     belongs to the palette. */
+  input[type="checkbox"],
+  input[type="radio"] {
+    accent-color: var(--color-brand-500);
+  }
+  a {
+    text-underline-offset: 0.2em;
+    text-decoration-thickness: from-font;
+  }
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-ink-200);
+    border: 3px solid var(--color-paper);
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-ink-300);
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+/* ---------------------------------------------------------------- motion */
+
+/**
+ * The hero entrance, as three utilities rather than one blanket reveal.
+ *
+ * Each carries its own delay so the sequence has an order: promise, then
+ * supporting line, then the search landing last. The delays are small - the
+ * whole thing is over in under three quarters of a second, because a visitor
+ * who has to wait to search is a visitor being made to watch an advert.
+ */
+@utility motion-hero-line {
+  animation: var(--animate-hero-line);
+}
+
+@utility motion-hero-sub {
+  animation: var(--animate-rise);
+  animation-delay: 0.14s;
+}
+
+@utility motion-hero-search {
+  animation: var(--animate-hero-search);
+  animation-delay: 0.2s;
+}
+
+@utility motion-rise {
+  animation: var(--animate-rise);
+}
+
+/**
+ * A capped stagger for things that genuinely arrive as a list.
+ *
+ * Capped at eight: past that the last item waits so long that the delay reads
+ * as the page being slow rather than as choreography. Everything beyond the cap
+ * shares the final delay and arrives together.
+ */
+@utility motion-stagger {
+  & > * {
+    animation: var(--animate-rise);
+  }
+  & > *:nth-child(1) { animation-delay: 0.04s; }
+  & > *:nth-child(2) { animation-delay: 0.08s; }
+  & > *:nth-child(3) { animation-delay: 0.12s; }
+  & > *:nth-child(4) { animation-delay: 0.16s; }
+  & > *:nth-child(5) { animation-delay: 0.2s; }
+  & > *:nth-child(6) { animation-delay: 0.24s; }
+  & > *:nth-child(7) { animation-delay: 0.28s; }
+  & > *:nth-child(n + 8) { animation-delay: 0.32s; }
+}
+
+/** Content replacing its own skeleton. Short: the wait already happened. */
+@utility motion-settle {
+  animation: var(--animate-settle);
 }
 
 @utility container-site {
@@ -403,10 +599,17 @@
   font-weight: 700;
   line-height: 1;
   white-space: nowrap;
+  /**
+   * Transform moves faster than colour on purpose.
+   *
+   * A press is immediate feedback and belongs in the 100-150ms band; at the
+   * 220ms the colours use, the button appeared to lag behind the finger. Colour
+   * and shadow can take their time because nothing is waiting on them.
+   */
   transition:
     background-color 0.22s var(--ease-out-soft),
     box-shadow 0.22s var(--ease-out-soft),
-    transform 0.22s var(--ease-out-soft),
+    transform 0.12s var(--ease-out-expo),
     color 0.22s var(--ease-out-soft);
   /* Scale rather than translate: it reads as a physical press and does not
      nudge neighbouring layout. */
@@ -475,7 +678,9 @@
   font-size: 0.9375rem;
 }
 @utility btn-sm {
-  height: 2.25rem;
+  /* 40px, not 36. This is a phone-first market and the small button is still a
+     real tap target; 36px cleared WCAG AA but was mean with a thumb. */
+  height: 2.5rem;
   padding-inline: 0.875rem;
   font-size: 0.875rem;
 }

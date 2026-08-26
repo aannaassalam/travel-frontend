@@ -771,3 +771,52 @@ export function resultsLabel(locale: Locale, n: number): string {
   if (n === 1) return translate(locale, "results.titleOne");
   return translate(locale, "results.title", { n });
 }
+
+/**
+ * Catalogue vocabulary is stored in French.
+ *
+ * Amenities, vehicle classes and car categories are free text the office types
+ * into the admin once - "Climatisation" - and that single string is what every
+ * locale receives. Names and descriptions avoid this by being `Localized`
+ * fields; these facet values are not, so an English visitor was reading a
+ * French filter sidebar, French chips on every hotel card and a French amenity
+ * list on the detail page.
+ *
+ * Only English is mapped, and only where the word actually differs. Anything
+ * unmapped passes through as typed, which is the right failure: an amenity the
+ * office adds tomorrow shows up in French rather than as a blank row. pt/es
+ * fall back to French, matching `translate`.
+ *
+ * ponytail: a lookup table, not a data model. If the office needs to translate
+ * its own vocabulary, these fields have to become codes carrying a `Localized`
+ * label - the shape listings already use.
+ */
+const CATALOGUE_EN: Record<string, string> = {
+  // Hotel amenities
+  "Wifi gratuit": "Free Wi-Fi",
+  Wifi: "Wi-Fi",
+  Piscine: "Pool",
+  "Salle de sport": "Gym",
+  "Navette aéroport": "Airport shuttle",
+  Climatisation: "Air conditioning",
+  "Groupe électrogène": "Backup generator",
+  "Parking sécurisé": "Secure parking",
+  Blanchisserie: "Laundry",
+  "Salles de réunion": "Meeting rooms",
+  "Vue lac": "Lake view",
+  Jardin: "Garden",
+  "Petit-déjeuner inclus": "Breakfast included",
+  Télévision: "TV",
+  // Bus vehicle classes
+  Climatisé: "Air-conditioned",
+  // Car categories
+  Berline: "Saloon"
+};
+
+/**
+ * Label for a value that came from the catalogue rather than from a key.
+ * Identical in both languages (Restaurant, Bar, SUV, Minibus) needs no entry.
+ */
+export function facetLabel(locale: Locale, value: string): string {
+  return locale === "en" ? CATALOGUE_EN[value] ?? value : value;
+}

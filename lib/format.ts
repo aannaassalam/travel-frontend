@@ -53,16 +53,12 @@ export function formatMinutes(total: number, locale: Locale = "fr") {
   return parts.join(" ") || (locale === "fr" ? "0 min" : "0m");
 }
 
-/** E.164 with the DRC default, per §7.1. Validation only — no formatting magic. */
-export function normalisePhone(input: string): string | null {
-  const digits = input.replace(/[^\d+]/g, "");
-  if (digits.startsWith("+")) {
-    return /^\+\d{9,15}$/.test(digits) ? digits : null;
-  }
-  const local = digits.replace(/^0+/, "");
-  if (!/^\d{9,10}$/.test(local)) return null;
-  return `+243${local}`;
-}
+/**
+ * E.164 now comes from `lib/countries.toE164`, which takes the country as an
+ * explicit choice. The helper that used to live here assumed +243 for anything
+ * without a plus - correct for most customers, silently wrong for the rest, and
+ * the reason a diaspora number could be saved as a Congolese one.
+ */
 
 /** §10.7: never log or display a full number where a partial will do. */
 export const maskPhone = (e164: string) =>

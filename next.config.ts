@@ -44,6 +44,20 @@ const nextConfig: NextConfig = {
     includePaths: [path.join(__dirname, "styles")]
   },
   images: {
+    /**
+     * Keep an optimised variant for a month.
+     *
+     * The source objects in S3 are multi-megabyte PNGs, and a cold fetch of one
+     * from eu-west-3 measured 11s here - past the optimiser's own 7s budget, so
+     * the first request for each image 500s and the card renders broken. A long
+     * TTL means that gamble is taken once per image rather than whenever the
+     * cache turns over.
+     *
+     * This is mitigation, not the fix. The upload path should be writing WebP:
+     * a 1.86 MB PNG is indefensible on the 3G connections this product targets,
+     * and no amount of caching helps the first visitor who waits for it.
+     */
+    minimumCacheTTL: 60 * 60 * 24 * 30,
     // Explicit hosts only. `hostname: "*"` turns the optimiser into an open
     // image proxy for the whole internet, which is both a bandwidth bill and
     // an SSRF-adjacent hazard.

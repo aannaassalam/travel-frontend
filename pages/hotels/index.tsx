@@ -1,5 +1,6 @@
 import SearchResults from "@/components/catalog/SearchResults";
 import { Facets, getFacets, safely } from "@/lib/api";
+import { facetLabel } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
 import { GetStaticProps } from "next";
 
@@ -48,7 +49,11 @@ export default function HotelsPage({ facets }: Props) {
           key: "amenities",
           label: t("results.amenities"),
           type: "checkbox",
-          options: facets.hotelAmenities.slice(0, 10).map((a) => ({ value: a, label: a }))
+          options: facets.hotelAmenities
+            .slice(0, 10)
+            // Stored in French; the filter value stays the stored string so
+            // the query still matches, only the label is translated.
+            .map((a) => ({ value: a, label: facetLabel(locale, a) }))
         }
       ]}
     />

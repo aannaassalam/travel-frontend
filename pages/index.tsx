@@ -22,8 +22,7 @@ import {
   MessageCircle,
   Phone,
   Receipt,
-  Smartphone,
-  Sparkles
+  Smartphone
 } from "lucide-react";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
@@ -163,20 +162,23 @@ export default function Home({ deals, hotels, properties, heroImage, destination
         </div>
 
         <div className="container-site relative pb-24 pt-40 sm:pb-28 sm:pt-52">
-          <p className="eyebrow animate-fade-in mb-4 flex items-center gap-2.5 text-accent-500">
-            <span className="h-px w-8 bg-accent-500" aria-hidden="true" />
-            {locale === "fr"
-              ? "République démocratique du Congo"
-              : "Democratic Republic of the Congo"}
-          </p>
-          <h1 className="display animate-fade-up max-w-3xl text-[38px] leading-[1.06] text-white sm:text-[58px]">
+          {/*
+            The entrance runs in three beats - promise, then the supporting
+            line, then the search landing last and lowest. That order is the
+            argument this page makes: we sell stock we actually hold, so the
+            search box is the product rather than a banner sitting on one.
+
+            The headline clears its own mask instead of sliding in from
+            nowhere, so it reads as being revealed rather than delivered.
+          */}
+          <h1 className="display motion-hero-line max-w-3xl text-[38px] leading-[1.06] text-white sm:text-[58px]">
             {t("home.heroTitle")}
           </h1>
-          <p className="animate-fade-up mt-5 max-w-xl text-[17px] leading-relaxed text-white/80">
+          <p className="motion-hero-sub mt-5 max-w-xl text-[17px] leading-relaxed text-white/80">
             {t("home.heroSubtitle")}
           </p>
 
-          <div className="mt-10">
+          <div className="motion-hero-search mt-10">
             <SearchWidget vertical="FLIGHT" variant="hero" />
           </div>
         </div>
@@ -213,7 +215,6 @@ export default function Home({ deals, hotels, properties, heroImage, destination
         {deals.length === 0 ? (
           <>
             <SectionHeading
-              eyebrow={locale === "fr" ? "Stock disponible" : "In stock now"}
               title={t("home.deals")}
               subtitle={t("home.dealsSub")}
               href="/flights"
@@ -228,7 +229,6 @@ export default function Home({ deals, hotels, properties, heroImage, destination
         ) : (
           <Carousel
             label={t("home.deals")}
-            eyebrow={locale === "fr" ? "Stock disponible" : "In stock now"}
             title={t("home.deals")}
             subtitle={t("home.dealsSub")}
             href="/flights"
@@ -248,8 +248,6 @@ export default function Home({ deals, hotels, properties, heroImage, destination
             label={locale === "fr" ? "Inspiration" : "Inspiration"}
             itemClassName="w-[260px] sm:w-[300px]"
             tone="dark"
-            eyebrow="Inspiration"
-            eyebrowIcon={<Sparkles className="size-3.5" />}
             title={locale === "fr" ? "Des idées pour partir" : "Ideas worth travelling for"}
             subtitle={
               locale === "fr"
@@ -287,7 +285,6 @@ export default function Home({ deals, hotels, properties, heroImage, destination
       {/* ----------------------------------------------------- destinations */}
       <section className="container-site py-16">
         <SectionHeading
-          eyebrow={locale === "fr" ? "Où nous allons" : "Where we go"}
           title={t("home.destinations")}
           subtitle={t("home.destinationsSub")}
         />
@@ -311,7 +308,6 @@ export default function Home({ deals, hotels, properties, heroImage, destination
       <section className="wash-brand py-16">
         <div className="container-site">
           <SectionHeading
-            eyebrow={locale === "fr" ? "Séjours" : "Stays"}
             title={t("nav.hotels")}
             subtitle={
               locale === "fr"
@@ -332,7 +328,6 @@ export default function Home({ deals, hotels, properties, heroImage, destination
       {/* --------------------------------------------------------- property */}
       <section className="container-site py-16">
         <SectionHeading
-          eyebrow={locale === "fr" ? "Vendre et louer" : "Buy and rent"}
           title={t("home.property")}
           subtitle={t("home.propertySub")}
           href="/property"
@@ -353,22 +348,21 @@ export default function Home({ deals, hotels, properties, heroImage, destination
       {/* -------------------------------------------------------------- why */}
       <section className="container-site py-20">
         <div className="mx-auto mb-10 max-w-xl text-center">
-          <p className="eyebrow mb-3 text-brand-500">
-            {locale === "fr" ? "Ce qui nous différencie" : "What sets us apart"}
-          </p>
           <h2 className="display text-[28px] leading-tight text-brand-900 sm:text-[36px]">
             {t("home.whyTitle")}
           </h2>
         </div>
         <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {why.map(({ Icon, title, body }, i) => (
+          {why.map(({ Icon, title, body }) => (
             <li key={title} className="surface card-lift flex flex-col p-6">
               <span className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-brand-900 text-white shadow-sm">
                 <Icon className="size-5" />
               </span>
-              <span className="eyebrow mb-2 text-ink-300">
-                {String(i + 1).padStart(2, "0")}
-              </span>
+              {/*
+                No 01/02/03 counter here. These are four independent reasons,
+                not steps - numbering them implies an order the reader is meant
+                to follow and there isn't one.
+              */}
               <h3 className="mb-2 text-[17px] font-bold leading-snug text-brand-900">
                 {t(title)}
               </h3>

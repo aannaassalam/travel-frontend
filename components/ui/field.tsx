@@ -1,5 +1,12 @@
 import { cn } from "@/lib/utils";
-import { AlertCircle, ChevronDown } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
+import { AlertCircle } from "lucide-react";
 import { useId } from "react";
 
 /**
@@ -118,19 +125,45 @@ export function TextAreaField({
   );
 }
 
+/**
+ * A select built on Radix rather than the native control.
+ *
+ * Same props as before, so every caller is unchanged. The reason for the swap
+ * is that a native `<select>` renders its option list with the operating
+ * system's own styling, which cannot be themed - so on the one screen where the
+ * rest of the form is this design system, the open menu was Chrome's. Radix
+ * renders the list as ordinary DOM, which we style like everything else.
+ *
+ * The trade-off, stated plainly: on a phone, the native control gives the OS
+ * picker, which has bigger touch targets than anything rendered in-page. Radix
+ * keeps full keyboard support and correct ARIA, but it is a considered loss
+ * rather than a free win.
+ */
 export function SelectField({
   label,
   error,
   helper,
   className,
   options,
-  ...props
-}: Base &
-  React.SelectHTMLAttributes<HTMLSelectElement> & {
-    options: { value: string; label: string }[];
-  }) {
+  value,
+  defaultValue,
+  onValueChange,
+  disabled,
+  name,
+  placeholder,
+  id: idProp
+}: Base & {
+  options: { value: string; label: string }[];
+  value?: string;
+  defaultValue?: string;
+  onValueChange?: (value: string) => void;
+  disabled?: boolean;
+  name?: string;
+  placeholder?: string;
+  id?: string;
+}) {
   const auto = useId();
-  const id = props.id ?? auto;
+  const id = idProp ?? auto;
   return (
     <Shell
       id={id}
@@ -138,22 +171,33 @@ export function SelectField({
       error={error}
       helper={helper}
       className={className}
-      // A select always has a value, so its label is always in the raised state.
+      // A select always has a value, so its label is always raised.
       filled
-      trailing={<ChevronDown className="size-4" />}
     >
-      <select
-        {...props}
-        id={id}
-        aria-invalid={Boolean(error)}
-        className="field-input cursor-pointer appearance-none pr-10"
+      <Select
+        value={value}
+        defaultValue={defaultValue}
+        onValueChange={onValueChange}
+        disabled={disabled}
+        name={name}
       >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
+        <SelectTrigger
+          id={id}
+          aria-invalid={Boolean(error)}
+          // Overrides shadcn's own border/height so the trigger is the same
+          // object as every other field: the ring comes from `.field`.
+          className="field-input h-auto w-full cursor-pointer border-0 bg-transparent pr-10 shadow-none focus-visible:ring-0"
+        >
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((o) => (
+            <SelectItem key={o.value} value={o.value}>
+              {o.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </Shell>
   );
 }

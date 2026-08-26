@@ -1,5 +1,6 @@
 import { usePrefs } from "@/lib/prefs";
 import { useSession } from "@/lib/session";
+import { InlineSelect } from "@/components/ui/InlineSelect";
 import {
   CURRENCIES,
   Currency,
@@ -80,37 +81,23 @@ export default function Header({ transparent = false }: { transparent?: boolean 
 
           <div className="flex items-center gap-1.5">
             <div className="hidden items-center rounded-lg bg-white/10 p-0.5 ring-1 ring-white/15 ring-inset sm:flex">
-              <label className="sr-only" htmlFor="currency-select">
-                {t("common.currency")}
-              </label>
-              <select
+              <InlineSelect
                 id="currency-select"
+                tone="dark"
+                ariaLabel={t("common.currency")}
                 value={currency}
-                onChange={(e) => setCurrency(e.target.value as Currency)}
-                className="cursor-pointer rounded-md bg-transparent px-2 py-1.5 text-sm font-semibold text-white outline-none hover:bg-white/10"
-              >
-                {CURRENCIES.map((c) => (
-                  <option key={c} value={c} className="text-ink-900">
-                    {c}
-                  </option>
-                ))}
-              </select>
+                onValueChange={(v) => setCurrency(v as Currency)}
+                options={CURRENCIES.map((c) => ({ value: c, label: c }))}
+              />
               <span className="h-4 w-px bg-white/20" aria-hidden="true" />
-              <label className="sr-only" htmlFor="locale-select">
-                {t("common.language")}
-              </label>
-              <select
+              <InlineSelect
                 id="locale-select"
+                tone="dark"
+                ariaLabel={t("common.language")}
                 value={locale}
-                onChange={(e) => setLocale(e.target.value as Locale)}
-                className="cursor-pointer rounded-md bg-transparent px-2 py-1.5 text-sm font-semibold text-white outline-none hover:bg-white/10"
-              >
-                {ENABLED_LOCALES.map((l) => (
-                  <option key={l} value={l} className="text-ink-900">
-                    {LOCALE_LABEL[l]}
-                  </option>
-                ))}
-              </select>
+                onValueChange={(v) => setLocale(v as Locale)}
+                options={ENABLED_LOCALES.map((l) => ({ value: l, label: LOCALE_LABEL[l] }))}
+              />
             </div>
 
             <Link

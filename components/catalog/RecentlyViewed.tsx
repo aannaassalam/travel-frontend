@@ -58,7 +58,6 @@ export default function RecentlyViewed({ excludeSlug }: { excludeSlug?: string }
   return (
     <section className="mt-16">
       <SectionHeading
-        eyebrow={locale === "fr" ? "Reprendre" : "Pick up where you left off"}
         title={locale === "fr" ? "Vus récemment" : "Recently viewed"}
       />
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">

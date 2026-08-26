@@ -1,6 +1,7 @@
 import { ConsentBox, HoldBanner, Stepper, Summary } from "@/components/checkout/parts";
 import Layout from "@/components/site/Layout";
 import { ApiError, payOrder } from "@/lib/api";
+import { InlineSelect } from "@/components/ui/InlineSelect";
 import { useCheckout } from "@/lib/checkout";
 import { maskPhone } from "@/lib/format";
 import { price } from "@/lib/money";
@@ -33,6 +34,8 @@ export default function PaymentStep() {
 
   const [terms, setTerms] = useState(false);
   const [errors, setErrors] = useState<{ consent?: boolean; terms?: boolean }>({});
+  /** §2.2: both acknowledgements are blocking, and neither is pre-ticked. */
+  const blocked = !consentAccepted || !terms;
   // §9.3: mobile money is push-and-wait. A bare spinner here is the single
   // largest drop-off point in African mobile-money checkouts, so this state
   // says what is happening and what the customer must do.
@@ -184,17 +187,13 @@ export default function PaymentStep() {
                           <span className="mb-1 block text-sm font-semibold text-ink-700">
                             {t("checkout.operator")}
                           </span>
-                          <select
+                          <InlineSelect
+                            ariaLabel={t("checkout.operator")}
                             value={mobileOperator}
-                            onChange={(e) => update({ mobileOperator: e.target.value })}
-                            className="w-full rounded-xl bg-white px-4 py-3 text-base font-semibold shadow-xs ring-1 ring-ink-100 outline-none ring-inset focus:ring-2 focus:ring-brand-500 max-w-xs"
-                          >
-                            {OPERATORS.map((o) => (
-                              <option key={o} value={o}>
-                                {o}
-                              </option>
-                            ))}
-                          </select>
+                            onValueChange={(v) => update({ mobileOperator: v })}
+                            options={OPERATORS.map((o) => ({ value: o, label: o }))}
+                            triggerClassName="w-full max-w-xs justify-between rounded-xl px-4 py-3 text-base shadow-xs"
+                          />
                           <span className="mt-2 block text-xs text-ink-500">
                             {locale === "fr"
                               ? `La demande sera envoyée au ${maskPhone(contact.phone)}.`
@@ -268,13 +267,40 @@ export default function PaymentStep() {
               >
                 {t("checkout.back")}
               </button>
-              <button
-                type="submit"
-                disabled={expired}
-                className="rounded-md bg-accent-500 px-7 py-3.5 text-base font-bold text-brand-900 hover:bg-accent-600 disabled:opacity-50"
-              >
-                {isCash ? t("checkout.reserveCash") : t("checkout.payNow", { amount })}
-              </button>
+              {/*
+                Two different kinds of "you cannot press this".
+
+                The hold expiring is not recoverable on this screen, so that is
+                a real `disabled`. Unticked boxes ARE recoverable, so the button
+                is only styled and announced as unavailable - it stays focusable
+                and clickable, because a truly disabled button is skipped by
+                screen readers and tells a keyboard user nothing about what is
+                missing. Pressing it still marks the box that needs ticking.
+              */}
+              <div className="flex flex-col items-end gap-2">
+                <button
+                  type="submit"
+                  disabled={expired}
+                  aria-disabled={blocked || undefined}
+                  aria-describedby={blocked ? "consent-required" : undefined}
+                  className={cn(
+                    "rounded-md px-7 py-3.5 text-base font-bold text-brand-900 transition-colors",
+                    blocked
+                      ? "cursor-not-allowed bg-accent-500/40"
+                      : "bg-accent-500 hover:bg-accent-600",
+                    "disabled:opacity-50"
+                  )}
+                >
+                  {isCash ? t("checkout.reserveCash") : t("checkout.payNow", { amount })}
+                </button>
+                {blocked && (
+                  <p id="consent-required" className="text-sm text-ink-500">
+                    {locale === "fr"
+                      ? "Cochez les deux cases pour continuer."
+                      : "Tick both boxes to continue."}
+                  </p>
+                )}
+              </div>
             </div>
           </form>
 

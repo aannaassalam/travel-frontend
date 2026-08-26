@@ -3,6 +3,7 @@ import RecentlyViewed, { useRecordView } from "@/components/catalog/RecentlyView
 import Reviews from "@/components/catalog/Reviews";
 import LeadForm from "@/components/catalog/LeadForm";
 import SaveButton from "@/components/catalog/SaveButton";
+import { InlineSelect } from "@/components/ui/InlineSelect";
 import { HotelTile } from "@/components/catalog/cards";
 import {
   Breadcrumbs,
@@ -19,6 +20,7 @@ import { useCheckout } from "@/lib/checkout";
 import { fmtDate } from "@/lib/format";
 import { mediaUrl, mediaUrls } from "@/lib/media";
 import { multiply, nightsBetween } from "@/lib/money";
+import { facetLabel } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
 import { Hotel, RoomType } from "@/typescript/interface/domain.interface";
 import { BedDouble, Check, Clock, MapPin, Maximize, Users } from "lucide-react";
@@ -167,7 +169,7 @@ export default function HotelDetail({ hotel, others }: Props) {
                 {hotel.amenities.map((a) => (
                   <li key={a} className="flex items-center gap-2 text-[15px] text-ink-700">
                     <Check className="size-4 shrink-0 text-ok-600" />
-                    {a}
+                    {facetLabel(locale, a)}
                   </li>
                 ))}
               </ul>
@@ -208,33 +210,25 @@ export default function HotelDetail({ hotel, others }: Props) {
                   <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">
                     {t("search.adults")}
                   </span>
-                  <select
-                    value={adults}
-                    onChange={(e) => setAdults(Number(e.target.value))}
-                    className="w-full rounded-xl bg-white px-4 py-3 text-base font-semibold shadow-xs ring-1 ring-ink-100 outline-none ring-inset focus:ring-2 focus:ring-brand-500"
-                  >
-                    {[1, 2, 3, 4, 5, 6].map((n) => (
-                      <option key={n} value={n}>
-                        {n}
-                      </option>
-                    ))}
-                  </select>
+                  <InlineSelect
+                    ariaLabel={t("search.adults")}
+                    value={String(adults)}
+                    onValueChange={(v) => setAdults(Number(v))}
+                    options={[1, 2, 3, 4, 5, 6].map((n) => ({ value: String(n), label: String(n) }))}
+                    triggerClassName="w-full justify-between rounded-xl px-4 py-3 text-base shadow-xs"
+                  />
                 </label>
                 <label className="flex-1">
                   <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">
                     {t("search.rooms")}
                   </span>
-                  <select
-                    value={rooms}
-                    onChange={(e) => setRooms(Number(e.target.value))}
-                    className="w-full rounded-xl bg-white px-4 py-3 text-base font-semibold shadow-xs ring-1 ring-ink-100 outline-none ring-inset focus:ring-2 focus:ring-brand-500"
-                  >
-                    {[1, 2, 3].map((n) => (
-                      <option key={n} value={n}>
-                        {n}
-                      </option>
-                    ))}
-                  </select>
+                  <InlineSelect
+                    ariaLabel={t("search.rooms")}
+                    value={String(rooms)}
+                    onValueChange={(v) => setRooms(Number(v))}
+                    options={[1, 2, 3].map((n) => ({ value: String(n), label: String(n) }))}
+                    triggerClassName="w-full justify-between rounded-xl px-4 py-3 text-base shadow-xs"
+                  />
                 </label>
               </div>
 

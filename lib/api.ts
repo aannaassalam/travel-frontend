@@ -247,6 +247,8 @@ export interface ServiceLocation {
   country: string;
   kind: "CITY" | "AIRPORT" | "STATION";
   iata?: string;
+  /** Alternative spellings, so "Kin" and "FIH" both find Kinshasa. */
+  aliases?: string[];
   servesVerticals: Vertical[];
   image?: string;
 }
@@ -307,11 +309,11 @@ async function post<T>(path: string, body: unknown): Promise<T> {
 
 /**
  * POST /auth/otp/request — always succeeds in the same way, whether or not the
- * number is known (§7.4). `devHint` is the fixed code, present only outside
- * production.
+ * number is known (§7.4). The code is never in the response — it goes to the
+ * handset via SMS or nowhere at all.
  */
 export const requestOtp = (phone: string) =>
-  post<{ expiresInSeconds: number; devHint?: string }>("/auth/otp/request", { phone });
+  post<{ expiresInSeconds: number }>("/auth/otp/request", { phone });
 
 /** POST /auth/otp/verify — proves the phone and opens a 7-day session cookie. */
 export const verifyOtp = (input: {

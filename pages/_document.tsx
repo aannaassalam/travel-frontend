@@ -7,7 +7,13 @@ export default function Document() {
   return (
     <Html lang="fr">
       <Head>
-        <link rel="icon" href="/img/logo-mark.svg" type="image/svg+xml" />
+        {/* .ico first and unsized: it carries 16/32/48 and is what older
+            browsers and Windows pick up. The 192 is Android's home-screen
+            size; apple-touch-icon is opaque because iOS composites
+            transparency onto black and applies its own rounding. */}
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" href="/img/icon-192.png" type="image/png" sizes="192x192" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
         <meta name="theme-color" content="#0A2540" />
       </Head>
       <body className="antialiased">

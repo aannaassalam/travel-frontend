@@ -2,6 +2,7 @@ import { Breadcrumbs } from "@/components/site/bits";
 import Layout from "@/components/site/Layout";
 import SearchWidget from "@/components/search/SearchWidget";
 import { Skeleton } from "@/components/ui/field";
+import { InlineSelect } from "@/components/ui/InlineSelect";
 import { searchHotels, searchListings } from "@/lib/api";
 import { resultsLabel } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
@@ -150,20 +151,16 @@ export default function SearchResults({
             </div>
           </div>
 
-          <label className="flex items-center gap-3 text-sm">
+          <div className="flex items-center gap-3 text-sm">
             <span className="font-semibold text-ink-500">{t("results.sort")}</span>
-            <select
+            <InlineSelect
+              ariaLabel={t("results.sort")}
               value={q.sort ?? "recommended"}
-              onChange={(e) => setSort(e.target.value)}
-              className="cursor-pointer rounded-xl bg-white px-4 py-2.5 font-semibold text-ink-900 shadow-xs ring-1 ring-ink-100 outline-none ring-inset focus:ring-2 focus:ring-brand-500"
-            >
-              {sortOptions.map(([value, key]) => (
-                <option key={value} value={value}>
-                  {t(key)}
-                </option>
-              ))}
-            </select>
-          </label>
+              onValueChange={setSort}
+              options={sortOptions.map(([value, key]) => ({ value, label: t(key) }))}
+              triggerClassName="rounded-xl px-4 py-2.5 shadow-xs"
+            />
+          </div>
         </div>
 
         <div className="flex flex-col gap-8 lg:flex-row">
@@ -209,9 +206,17 @@ export default function SearchResults({
               />
             ) : (
               <div
-                // Refetches dim the list instead of replacing it with skeletons:
-                // a filter click should feel like a nudge, not a page reload.
-                className={`space-y-4 transition-opacity duration-200 ${
+                /*
+                 * Two different motions, doing two different jobs.
+                 *
+                 * `motion-settle` runs once, when results first take over from
+                 * the skeletons - a hand-off rather than a jump cut.
+                 *
+                 * The dim is for refetches: a filter click should feel like a
+                 * nudge, not a page reload, so the list stays put and fades
+                 * rather than collapsing back to skeletons.
+                 */
+                className={`motion-settle space-y-4 transition-opacity duration-200 ${
                   isFetching ? "opacity-55" : "opacity-100"
                 }`}
               >

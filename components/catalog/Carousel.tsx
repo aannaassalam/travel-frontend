@@ -30,8 +30,6 @@ export default function Carousel({
   className,
   itemClassName = "w-[280px] sm:w-[320px]",
   label,
-  eyebrow,
-  eyebrowIcon,
   title,
   subtitle,
   href,
@@ -43,8 +41,6 @@ export default function Carousel({
   itemClassName?: string;
   /** Accessible name for the scrollable region. */
   label: string;
-  eyebrow?: string;
-  eyebrowIcon?: React.ReactNode;
   title?: string;
   subtitle?: string;
   href?: string;
@@ -104,19 +100,6 @@ export default function Carousel({
       {(title || cta) && (
         <div className="mb-7 flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
           <div className="max-w-2xl">
-            {eyebrow && (
-              <p
-                className={cn(
-                  "eyebrow mb-2 flex items-center gap-2",
-                  dark ? "text-accent-500" : "text-brand-500"
-                )}
-              >
-                {eyebrowIcon ?? (
-                  <span className="h-px w-6 bg-accent-500" aria-hidden="true" />
-                )}
-                {eyebrow}
-              </p>
-            )}
             {title && (
               <h2
                 className={cn(

@@ -1,5 +1,6 @@
 import SearchResults from "@/components/catalog/SearchResults";
 import { Facets, getFacets, safely } from "@/lib/api";
+import { facetLabel } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
 import { GetStaticProps } from "next";
 
@@ -45,7 +46,7 @@ export default function BusPage({ facets }: Props) {
           key: "category",
           label: t("results.category"),
           type: "radio",
-          options: facets.vehicleClasses.map((c) => ({ value: c, label: c }))
+          options: facets.vehicleClasses.map((c) => ({ value: c, label: facetLabel(locale, c) }))
         }
       ]}
     />

@@ -2,6 +2,9 @@ import { VERTICAL_SLUGS } from "@/lib/catalog";
 import { isUnserviced, useLocations, useRoutes } from "@/lib/locations";
 import { usePrefs } from "@/lib/prefs";
 import { cn } from "@/lib/utils";
+import { InlineSelect } from "@/components/ui/InlineSelect";
+import { DateField } from "./DateField";
+import { LocationField } from "./LocationField";
 import { Vertical } from "@/typescript/interface/domain.interface";
 import {
   Building2,
@@ -44,27 +47,53 @@ const today = () => new Date().toISOString().slice(0, 10);
 function Field({
   label,
   children,
-  className
+  className,
+  as: Tag = "label"
 }: {
   label: string;
   children: React.ReactNode;
   className?: string;
+  /**
+   * `div` for anything whose control is a button - a <label> forwards its click
+   * to the control inside, so a Radix trigger in one opens and instantly closes.
+   */
+  as?: "label" | "div";
 }) {
   return (
-    <label
+    <Tag
       className={cn(
-        "flex min-w-0 flex-1 cursor-text flex-col justify-center gap-0.5 rounded-lg bg-ink-50/70 px-3.5 py-2.5 ring-1 ring-transparent transition-colors ring-inset hover:bg-ink-50 focus-within:bg-white focus-within:ring-brand-500",
+        "flex min-w-0 flex-1 flex-col justify-center gap-0.5 rounded-lg bg-ink-50/70 px-3.5 py-2.5 ring-1 ring-transparent transition-colors ring-inset hover:bg-ink-50 focus-within:bg-white focus-within:ring-brand-500",
+        // A text caret over a control you click, not type into, reads as broken.
+        Tag === "label" ? "cursor-text" : "cursor-pointer",
         className
       )}
     >
       <span className="eyebrow text-ink-300">{label}</span>
       {children}
-    </label>
+    </Tag>
   );
 }
 
-const inputCls =
-  "w-full border-0 bg-transparent p-0 text-[15px] font-semibold text-ink-900 outline-none placeholder:font-normal placeholder:text-ink-300";
+/**
+ * Radix Select refuses an item whose value is the empty string - it reserves ""
+ * for "nothing selected" and throws if you use it. This form stores "" to mean
+ * "no filter", so the two are translated at the boundary rather than changing
+ * how the whole widget represents an unset value.
+ */
+const ANY = "__any";
+const toSelect = (v: string) => (v ? v : ANY);
+const fromSelect = (v: string) => (v === ANY ? "" : v);
+
+/**
+ * The same look as `inputCls`, for a Radix trigger rather than an input.
+ *
+ * `ring-0` matters: InlineSelect's light tone carries `ring-1 ring-ink-100` for
+ * standalone use, and inside a Field that plate already draws the border - so
+ * without this the cabin and driver boxes rendered a second outline nested in
+ * the first, which is what made them look broken next to their neighbours.
+ */
+const selectTriggerCls =
+  "h-auto data-[size=default]:h-auto w-full justify-between rounded-none border-0 bg-transparent p-0 text-[15px] font-semibold text-ink-900 shadow-none ring-0 hover:bg-transparent focus-visible:ring-0";
 
 export default function SearchWidget({
   vertical: initialVertical = "FLIGHT",
@@ -159,22 +188,6 @@ export default function SearchWidget({
     router.push(href);
   }
 
-  const cityList = (
-    <>
-      <datalist id="city-list">
-        {(locations ?? []).map((c) => (
-          <option key={c.slug} value={c.name} />
-        ))}
-      </datalist>
-      {/* Separate list for the "to" box: on a flight or a coach it is the
-          routes out of the chosen origin, not every city we touch. */}
-      <datalist id="destination-list">
-        {destinations.map((c) => (
-          <option key={c.slug} value={c.name} />
-        ))}
-      </datalist>
-    </>
-  );
 
   const guests = (
     <details className="relative min-w-0 flex-1 rounded-lg bg-ink-50/70 transition-colors hover:bg-ink-50 open:bg-white open:ring-1 open:ring-brand-500 open:ring-inset">
@@ -196,59 +209,79 @@ export default function SearchWidget({
             : []),
           ...(vertical === "HOTEL" ? ([["rooms", "search.rooms", 1, 5]] as const) : [])
         ].map(([key, label, min, max]) => (
-          <label key={key as string} className="flex items-center justify-between gap-4">
+          <div key={key as string} className="flex items-center justify-between gap-4">
             <span className="text-sm font-medium text-ink-700">{t(label as string)}</span>
-            <select
+            <InlineSelect
+              ariaLabel={t(label as string)}
               value={form[key as string]}
-              onChange={(e) => set(key as string, e.target.value)}
-              className="rounded-lg bg-white px-3 py-2 text-sm font-semibold shadow-xs ring-1 ring-ink-100 ring-inset"
-            >
-              {Array.from({ length: (max as number) - (min as number) + 1 }, (_, i) => (
-                <option key={i} value={String((min as number) + i)}>
-                  {(min as number) + i}
-                </option>
-              ))}
-            </select>
-          </label>
+              onValueChange={(v) => set(key as string, v)}
+              options={Array.from(
+                { length: (max as number) - (min as number) + 1 },
+                (_, i) => ({
+                  value: String((min as number) + i),
+                  label: String((min as number) + i)
+                })
+              )}
+            />
+          </div>
         ))}
       </div>
     </details>
   );
 
+  // Only the homepage widget switches product; see the tablist below.
+  const showTabs = variant === "hero";
+
   return (
     <div className={variant === "hero" ? "" : "bg-brand-800 py-4"}>
       <div className={variant === "hero" ? "" : "container-site"}>
-        {/* Vertical tabs */}
-        <div
-          role="tablist"
-          aria-label={t("footer.services")}
-          className="no-scrollbar -mb-px flex gap-1 overflow-x-auto"
-        >
-          {TABS.map(({ vertical: v, key, Icon }) => (
-            <button
-              key={v}
-              role="tab"
-              type="button"
-              aria-selected={vertical === v}
-              onClick={() => setVertical(v)}
-              // Tabs dock into the panel below rather than floating above it,
-              // so the widget reads as one object instead of two.
-              className={cn(
-                "relative flex shrink-0 items-center gap-2 rounded-t-xl px-4 py-3 text-sm font-semibold transition-colors",
-                vertical === v
-                  ? "bg-white text-brand-900"
-                  : "text-white/75 hover:bg-white/10 hover:text-white"
-              )}
-            >
-              <Icon className="size-4" />
-              {t(key)}
-            </button>
-          ))}
-        </div>
+        {/*
+          * Vertical tabs, on the homepage only.
+          *
+          * A results page already IS a vertical - /hotels is the hotel tab. Two
+          * ways to change the same thing disagree the moment one of them moves:
+          * picking a tab here re-rendered the form in place while the URL, the
+          * heading, the breadcrumb and the filter sidebar all still said hotels.
+          * Switching product on a results page means navigating to that page,
+          * which the header nav already does.
+          */}
+        {showTabs && (
+          <div
+            role="tablist"
+            aria-label={t("footer.services")}
+            className="no-scrollbar -mb-px flex gap-1 overflow-x-auto"
+          >
+            {TABS.map(({ vertical: v, key, Icon }) => (
+              <button
+                key={v}
+                role="tab"
+                type="button"
+                aria-selected={vertical === v}
+                onClick={() => setVertical(v)}
+                // Tabs dock into the panel below rather than floating above it,
+                // so the widget reads as one object instead of two.
+                className={cn(
+                  "relative flex shrink-0 items-center gap-2 rounded-t-xl px-4 py-3 text-sm font-semibold transition-colors",
+                  vertical === v
+                    ? "bg-white text-brand-900"
+                    : "text-white/75 hover:bg-white/10 hover:text-white"
+                )}
+              >
+                <Icon className="size-4" />
+                {t(key)}
+              </button>
+            ))}
+          </div>
+        )}
 
         <form
           onSubmit={submit}
-          className="rounded-xl2 rounded-tl-none bg-white p-2.5 shadow-xl ring-1 ring-brand-900/5"
+          className={cn(
+            "rounded-xl2 bg-white p-2.5 shadow-xl ring-1 ring-brand-900/5",
+            // Square only the corner the active tab sits on. With no tabs there
+            // is nothing to dock into, so the panel keeps all four.
+            showTabs && "rounded-tl-none"
+          )}
         >
           {vertical === "FLIGHT" && (
             <fieldset className="flex flex-wrap items-center gap-4 px-2 pb-2 pt-1">
@@ -285,21 +318,21 @@ export default function SearchWidget({
           <div className="flex flex-col gap-1.5 md:flex-row">
             {(vertical === "FLIGHT" || vertical === "BUS") && (
               <>
-                <Field label={t("search.from")}>
-                  <input
-                    className={inputCls}
-                    list="city-list"
+                <Field as="div" label={t("search.from")}>
+                  <LocationField
                     value={form.origin}
-                    onChange={(e) => set("origin", e.target.value)}
+                    onChange={(v) => set("origin", v)}
+                    options={locations ?? []}
                     placeholder="Kinshasa"
                   />
                 </Field>
-                <Field label={t("search.to")}>
-                  <input
-                    className={inputCls}
-                    list="destination-list"
+                <Field as="div" label={t("search.to")}>
+                  {/* On a pair product this is the routes out of the chosen
+                      origin, not every city we touch. */}
+                  <LocationField
                     value={form.destination}
-                    onChange={(e) => set("destination", e.target.value)}
+                    onChange={(v) => set("destination", v)}
+                    options={destinations}
                     placeholder="Lubumbashi"
                   />
                 </Field>
@@ -310,36 +343,37 @@ export default function SearchWidget({
               vertical === "CAR" ||
               vertical === "ACTIVITY" ||
               vertical === "PROPERTY") && (
-              <Field label={t("search.where")} className="md:flex-[1.4]">
-                <input
-                  className={inputCls}
-                  list="city-list"
+              <Field as="div" label={t("search.where")} className="md:flex-[1.4]">
+                <LocationField
                   value={form.destination}
-                  onChange={(e) => set("destination", e.target.value)}
+                  onChange={(v) => set("destination", v)}
+                  options={locations ?? []}
                   placeholder={t("search.wherePlaceholder")}
                 />
               </Field>
             )}
 
             {vertical === "PROPERTY" && (
-              <Field label={t("search.propertyType")}>
-                <select
-                  className={inputCls}
-                  value={form.propertyType}
-                  onChange={(e) => set("propertyType", e.target.value)}
-                >
-                  <option value="">{locale === "fr" ? "Tous les biens" : "All listings"}</option>
-                  {PROPERTY_TYPES.map((p) => (
-                    <option key={p.value} value={p.value}>
-                      {locale === "fr" ? p.fr : p.en}
-                    </option>
-                  ))}
-                </select>
+              <Field as="div" label={t("search.propertyType")}>
+                <InlineSelect
+                  ariaLabel={t("search.propertyType")}
+                  value={toSelect(form.propertyType)}
+                  onValueChange={(v) => set("propertyType", fromSelect(v))}
+                  options={[
+                    { value: ANY, label: locale === "fr" ? "Tous les biens" : "All listings" },
+                    ...PROPERTY_TYPES.map((p) => ({
+                      value: p.value,
+                      label: locale === "fr" ? p.fr : p.en
+                    }))
+                  ]}
+                  triggerClassName={selectTriggerCls}
+                />
               </Field>
             )}
 
             {vertical !== "PROPERTY" && (
               <Field
+                as="div"
                 label={
                   vertical === "HOTEL"
                     ? t("search.checkin")
@@ -348,14 +382,11 @@ export default function SearchWidget({
                       : t("search.date")
                 }
               >
-                {/* Native date input: correct on mobile, localised for free, no
-                    picker dependency and no 40 KB of JS on a metered network. */}
-                <input
-                  type="date"
-                  className={inputCls}
+                <DateField
                   value={form.from}
-                  min={today()}
-                  onChange={(e) => set("from", e.target.value)}
+                  onChange={(v) => set("from", v)}
+                  placeholder={t("search.date")}
+                  locale={locale}
                 />
               </Field>
             )}
@@ -364,6 +395,7 @@ export default function SearchWidget({
               vertical === "HOTEL" ||
               vertical === "CAR") && (
               <Field
+                as="div"
                 label={
                   vertical === "HOTEL"
                     ? t("search.checkout")
@@ -374,12 +406,13 @@ export default function SearchWidget({
                       : t("search.returnFlight")
                 }
               >
-                <input
-                  type="date"
-                  className={inputCls}
+                <DateField
                   value={form.to}
+                  onChange={(v) => set("to", v)}
+                  placeholder={t("search.date")}
+                  locale={locale}
+                  // A return cannot precede the departure.
                   min={form.from || today()}
-                  onChange={(e) => set("to", e.target.value)}
                 />
               </Field>
             )}
@@ -391,46 +424,52 @@ export default function SearchWidget({
               guests}
 
             {vertical === "FLIGHT" && (
-              <Field label={t("search.cabin")}>
-                <select
-                  className={inputCls}
-                  value={form.cabin}
-                  onChange={(e) => set("cabin", e.target.value)}
-                >
-                  <option value="">{locale === "fr" ? "Toutes" : "Any"}</option>
-                  <option value="ECONOMY">{t("cabin.ECONOMY")}</option>
-                  <option value="BUSINESS">{t("cabin.BUSINESS")}</option>
-                </select>
+              <Field as="div" label={t("search.cabin")}>
+                <InlineSelect
+                  ariaLabel={t("search.cabin")}
+                  value={toSelect(form.cabin)}
+                  onValueChange={(v) => set("cabin", fromSelect(v))}
+                  options={[
+                    { value: ANY, label: locale === "fr" ? "Toutes" : "Any" },
+                    { value: "ECONOMY", label: t("cabin.ECONOMY") },
+                    { value: "BUSINESS", label: t("cabin.BUSINESS") }
+                  ]}
+                  triggerClassName={selectTriggerCls}
+                />
               </Field>
             )}
 
             {vertical === "CAR" && (
-              <Field label={locale === "fr" ? "Chauffeur" : "Driver"}>
-                <select
-                  className={inputCls}
-                  value={form.withDriver}
-                  onChange={(e) => set("withDriver", e.target.value)}
-                >
-                  <option value="">{locale === "fr" ? "Peu importe" : "Either"}</option>
-                  <option value="true">{locale === "fr" ? "Avec chauffeur" : "With driver"}</option>
-                  <option value="false">{locale === "fr" ? "Sans chauffeur" : "Self-drive"}</option>
-                </select>
+              <Field as="div" label={locale === "fr" ? "Chauffeur" : "Driver"}>
+                <InlineSelect
+                  ariaLabel={locale === "fr" ? "Chauffeur" : "Driver"}
+                  value={toSelect(form.withDriver)}
+                  onValueChange={(v) => set("withDriver", fromSelect(v))}
+                  options={[
+                    { value: ANY, label: locale === "fr" ? "Peu importe" : "Either" },
+                    { value: "true", label: locale === "fr" ? "Avec chauffeur" : "With driver" },
+                    { value: "false", label: locale === "fr" ? "Sans chauffeur" : "Self-drive" }
+                  ]}
+                  triggerClassName={selectTriggerCls}
+                />
               </Field>
             )}
 
             {vertical === "PROPERTY" && (
-              <Field label={t("search.budget")}>
-                <select
-                  className={inputCls}
-                  value={form.maxPrice}
-                  onChange={(e) => set("maxPrice", e.target.value)}
-                >
-                  <option value="">{locale === "fr" ? "Tous budgets" : "Any budget"}</option>
-                  <option value="200000">≤ 2 000 $ / mois</option>
-                  <option value="1000000">≤ 10 000 $</option>
-                  <option value="20000000">≤ 200 000 $</option>
-                  <option value="50000000">≤ 500 000 $</option>
-                </select>
+              <Field as="div" label={t("search.budget")}>
+                <InlineSelect
+                  ariaLabel={t("search.budget")}
+                  value={toSelect(form.maxPrice)}
+                  onValueChange={(v) => set("maxPrice", fromSelect(v))}
+                  options={[
+                    { value: ANY, label: locale === "fr" ? "Tous budgets" : "Any budget" },
+                    { value: "200000", label: "≤ 2 000 $ / mois" },
+                    { value: "1000000", label: "≤ 10 000 $" },
+                    { value: "20000000", label: "≤ 200 000 $" },
+                    { value: "50000000", label: "≤ 500 000 $" }
+                  ]}
+                  triggerClassName={selectTriggerCls}
+                />
               </Field>
             )}
 
@@ -454,7 +493,6 @@ export default function SearchWidget({
             </p>
           )}
         </form>
-        {cityList}
 
         {/* Recent searches, then popular destinations as a fallback. Both are
             one tap away from a results page, which matters far more on a phone

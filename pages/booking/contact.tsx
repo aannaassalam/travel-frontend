@@ -2,7 +2,9 @@ import { HoldBanner, Stepper, Summary } from "@/components/checkout/parts";
 import { TextField } from "@/components/ui/field";
 import Layout from "@/components/site/Layout";
 import { useCheckout } from "@/lib/checkout";
-import { isEmail, normalisePhone } from "@/lib/format";
+import { isEmail } from "@/lib/format";
+import { DEFAULT_COUNTRY, fromE164, toE164 } from "@/lib/countries";
+import { PhoneField } from "@/components/ui/PhoneField";
 import { usePrefs } from "@/lib/prefs";
 import { useSession } from "@/lib/session";
 import { Info, UserPlus } from "lucide-react";
@@ -30,6 +32,7 @@ export default function ContactStep() {
     createAccount: true
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [country, setCountry] = useState(DEFAULT_COUNTRY);
 
   useEffect(() => {
     if (ready && !selection) router.replace("/");
@@ -43,11 +46,16 @@ export default function ContactStep() {
   // name you entered on the previous screen is the fastest way to lose someone.
   useEffect(() => {
     if (!ready) return;
+    // A stored number is E.164; split it back so the picker shows the right
+    // country instead of stuffing "+243..." into the national field.
+    const known = contact?.phone || user?.phone || "";
+    const parsed = fromE164(known);
+    if (known) setCountry(parsed.country);
     setValues((v) => ({
       ...v,
       firstName: contact?.firstName || user?.firstName || travellers[0]?.firstName || "",
       lastName: contact?.lastName || user?.lastName || travellers[0]?.lastName || "",
-      phone: contact?.phone || user?.phone || "",
+      phone: parsed.national,
       email: contact?.email || user?.email || ""
     }));
   }, [ready, contact, travellers, user]);
@@ -63,7 +71,7 @@ export default function ContactStep() {
     e.preventDefault();
     const next: Record<string, string> = {};
     if (!values.firstName.trim() || !values.lastName.trim()) next.name = t("err.name");
-    const phone = normalisePhone(values.phone);
+    const phone = toE164(country, values.phone);
     if (!phone) next.phone = t("err.phone");
     if (values.email && !isEmail(values.email)) next.email = t("err.email");
     setErrors(next);
@@ -109,15 +117,16 @@ export default function ContactStep() {
                   onChange={(e) => set("lastName", e.target.value)}
                   autoComplete="family-name"
                 />
-                <TextField
-                  className="sm:col-span-2"
+                {/* This is the number the confirmation and tracking SMS go to,
+                    so the dialling code has to be right - it is a choice here,
+                    not something to remember to type. */}
+                <PhoneField
                   label={t("auth.phone")}
-                  value={values.phone}
-                  onChange={(e) => set("phone", e.target.value)}
+                  country={country}
+                  national={values.phone}
+                  onCountryChange={setCountry}
+                  onNationalChange={(v) => set("phone", v)}
                   error={errors.phone}
-                  inputMode="tel"
-                  autoComplete="tel"
-                  helper={errors.phone ? undefined : "+243 81 000 00 00"}
                 />
                 <TextField
                   className="sm:col-span-2"

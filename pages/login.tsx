@@ -1,15 +1,12 @@
 import Layout from "@/components/site/Layout";
 import { TextField } from "@/components/ui/field";
-import {
-  DEMO_ACCOUNTS,
-  DEMO_OTP,
-  showDemoHint
-} from "@/lib/demoAuth";
-import { maskPhone, normalisePhone } from "@/lib/format";
+import { maskPhone } from "@/lib/format";
+import { DEFAULT_COUNTRY, toE164 } from "@/lib/countries";
+import { PhoneField } from "@/components/ui/PhoneField";
 import { usePrefs } from "@/lib/prefs";
 import { ApiError } from "@/lib/api";
 import { useRequestOtp, useVerifyOtp } from "@/lib/session";
-import { FlaskConical, KeyRound, Loader2, ShieldCheck, Smartphone } from "lucide-react";
+import { KeyRound, Loader2, ShieldCheck, Smartphone } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -27,11 +24,15 @@ import { useState } from "react";
 export default function SignInPage() {
   const { t, locale } = usePrefs();
   const router = useRouter();
-  const [mode, setMode] = useState<"otp" | "password">("otp");
   const [step, setStep] = useState<"phone" | "code">("phone");
+  /**
+   * Country and national number are held separately, so the dialling code is a
+   * choice rather than something to remember to type. E.164 is assembled from
+   * the pair - see lib/countries.
+   */
+  const [country, setCountry] = useState(DEFAULT_COUNTRY);
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
-  const [password, setPassword] = useState("");
   /**
    * Asked for ONLY after the server says this phone has no account yet.
    *
@@ -50,7 +51,7 @@ export default function SignInPage() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const e164 = normalisePhone(phone);
+  const e164 = toE164(country, phone);
 
   /**
    * Real endpoint. The server answers identically whether or not the number is
@@ -118,46 +119,29 @@ export default function SignInPage() {
 
             {step === "phone" ? (
               <form onSubmit={requestCode} noValidate className="mt-8 space-y-4">
-                <TextField
+                <PhoneField
                   label={t("auth.phone")}
-                  value={phone}
-                  onChange={(e) => {
-                    setPhone(e.target.value);
+                  country={country}
+                  national={phone}
+                  onCountryChange={(c) => {
+                    setCountry(c);
+                    setError("");
+                  }}
+                  onNationalChange={(v) => {
+                    setPhone(v);
                     setError("");
                   }}
                   error={error}
-                  helper={error ? undefined : "+243 81 000 00 00"}
-                  inputMode="tel"
-                  autoComplete="tel"
                   autoFocus
                 />
 
-                {mode === "password" && (
-                  <TextField
-                    label={t("auth.password")}
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    autoComplete="current-password"
-                  />
-                )}
-
                 <button
-                  type={mode === "password" ? "button" : "submit"}
-                  onClick={mode === "password" ? verify : undefined}
-                  disabled={busy}
+                  type="submit"
+                  disabled={busy || !e164}
                   className="btn btn-lg btn-primary w-full"
                 >
                   {busy && <Loader2 className="size-4 animate-spin" />}
-                  {mode === "otp" ? t("auth.sendOtp") : t("nav.signin")}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setMode(mode === "otp" ? "password" : "otp")}
-                  className="w-full text-sm font-semibold text-brand-500 hover:underline"
-                >
-                  {mode === "otp" ? t("auth.usePassword") : t("auth.useOtp")}
+                  {t("auth.sendOtp")}
                 </button>
               </form>
             ) : (
@@ -240,50 +224,6 @@ export default function SignInPage() {
               </form>
             )}
 
-            {/*
-              Demo credentials, shown only when NEXT_PUBLIC_DEMO_AUTH=1 so a
-              production build never advertises a shared code. The stub itself
-              lives in lib/demoAuth.ts — one file to delete when real auth lands.
-            */}
-            {showDemoHint && DEMO_ACCOUNTS.length > 0 && (
-              <div className="mt-8 rounded-xl bg-accent-100 p-5 ring-1 ring-accent-500/30 ring-inset">
-                <p className="flex items-center gap-2 text-sm font-bold text-accent-700">
-                  <FlaskConical className="size-4" />
-                  {t("auth.demoTitle")}
-                </p>
-                <p className="mt-1.5 text-sm leading-relaxed text-ink-700">
-                  {t("auth.demoBody")}
-                </p>
-                <ul className="mt-4 space-y-2">
-                  {DEMO_ACCOUNTS.map((a) => (
-                    <li
-                      key={a.phone}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white/70 px-3 py-2.5"
-                    >
-                      <span className="min-w-0">
-                        <span className="tnum block font-mono text-sm font-bold text-ink-900">
-                          {a.phone}
-                        </span>
-                        <span className="tnum block text-xs text-ink-500">
-                          {t("auth.demoCode")} {DEMO_OTP}
-                        </span>
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPhone(a.phone);
-                          setCode(DEMO_OTP);
-                          setError("");
-                        }}
-                        className="btn btn-sm btn-outline shrink-0"
-                      >
-                        {t("auth.demoFill")}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
 
             <p className="mt-6 flex items-start gap-2 rounded-xl bg-ink-50 p-5 ring-1 ring-ink-100 ring-inset text-sm text-ink-700">
               <KeyRound className="mt-0.5 size-4 shrink-0 text-brand-500" />

@@ -2,6 +2,7 @@ import { Price, PolicyChip, RatingBadge, Scarcity, Stars } from "@/components/si
 import { detailHref, hotelHref } from "@/lib/catalog";
 import { mediaUrl } from "@/lib/media";
 import { durationBetween, fmtDate, fmtTime, formatMinutes } from "@/lib/format";
+import { facetLabel } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
 import { cn } from "@/lib/utils";
 import { Hotel, Listing, Money } from "@/typescript/interface/domain.interface";
@@ -362,7 +363,7 @@ export function ActivityRow({ listing }: { listing: Listing }) {
 /* ---------------------------------------------------------------- hotel row */
 
 export function HotelRow({ hotel }: { hotel: Hotel }) {
-  const { t, lz } = usePrefs();
+  const { t, locale, lz } = usePrefs();
   const cheapest = hotel.roomTypes.reduce(
     (best, r) => (r.available > 0 && r.sellPrice < best ? r.sellPrice : best),
     hotel.fromPrice
@@ -387,8 +388,8 @@ export function HotelRow({ hotel }: { hotel: Hotel }) {
         <p className="line-clamp-2 text-sm text-ink-500">{lz(hotel.description)}</p>
         <ul className="flex flex-wrap gap-1.5">
           {hotel.amenities.slice(0, 5).map((a) => (
-            <li key={a} className="rounded bg-ink-50 px-2 py-1 text-xs font-medium text-ink-700">
-              {a}
+            <li key={facetLabel(locale, a)} className="rounded bg-ink-50 px-2 py-1 text-xs font-medium text-ink-700">
+              {facetLabel(locale, a)}
             </li>
           ))}
         </ul>

@@ -1,6 +1,7 @@
 import Layout from "@/components/site/Layout";
 import { usePrefs } from "@/lib/prefs";
 import { useLogout, useSession } from "@/lib/session";
+import { InlineSelect } from "@/components/ui/InlineSelect";
 import type { CustomerSession } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import {
@@ -105,38 +106,33 @@ export default function AccountLayout({
             <h2 className="text-sm font-bold text-brand-900">
               {t("account.preferences")}
             </h2>
-            <label className="block">
+            <div className="block">
               <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">
                 {t("common.language")}
               </span>
-              <select
+              <InlineSelect
+                ariaLabel={t("common.language")}
                 value={locale}
-                onChange={(e) => setLocale(e.target.value as Locale)}
-                className="w-full rounded-md border border-ink-100 px-2.5 py-2 text-sm"
-              >
-                {ENABLED_LOCALES.map((l) => (
-                  <option key={l} value={l}>
-                    {l === "fr" ? "Français" : "English"}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="block">
+                onValueChange={(v) => setLocale(v as Locale)}
+                options={ENABLED_LOCALES.map((l) => ({
+                  value: l,
+                  label: l === "fr" ? "Français" : "English"
+                }))}
+                triggerClassName="w-full justify-between"
+              />
+            </div>
+            <div className="block">
               <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">
                 {t("common.currency")}
               </span>
-              <select
+              <InlineSelect
+                ariaLabel={t("common.currency")}
                 value={currency}
-                onChange={(e) => setCurrency(e.target.value as Currency)}
-                className="w-full rounded-md border border-ink-100 px-2.5 py-2 text-sm"
-              >
-                {CURRENCIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </label>
+                onValueChange={(v) => setCurrency(v as Currency)}
+                options={CURRENCIES.map((c) => ({ value: c, label: c }))}
+                triggerClassName="w-full justify-between"
+              />
+            </div>
           </div>
 
           {user && (

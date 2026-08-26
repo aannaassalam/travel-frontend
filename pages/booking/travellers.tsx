@@ -104,9 +104,9 @@ export default function TravellersStep() {
                           <SelectField
                             label={t("checkout.docType")}
                             value={tr.documentType ?? "PASSPORT"}
-                            onChange={(e) =>
+                            onValueChange={(v) =>
                               setTraveller(i, {
-                                documentType: e.target.value as Traveller["documentType"]
+                                documentType: v as Traveller["documentType"]
                               })
                             }
                             options={[
