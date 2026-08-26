@@ -1,5 +1,6 @@
 // import EventListeners from "@/components/EventListener/EventListener";
 import RouteTransition from "@/components/site/RouteTransition";
+import { CartProvider } from "@/lib/cart";
 import { CheckoutProvider } from "@/lib/checkout";
 import { fraunces, inter } from "@/lib/fonts";
 import { checkWindow } from "@/lib/functions/_helpers.lib";
@@ -87,6 +88,7 @@ export default function CustomApp({ Component, pageProps }: AppProps) {
         {/* Locale + currency first: everything below reads them. */}
         <PrefsProvider>
           <CheckoutProvider>
+            <CartProvider>
             {/* <EventListeners /> */}
             <Toaster
               richColors
@@ -98,6 +100,7 @@ export default function CustomApp({ Component, pageProps }: AppProps) {
             <RouteTransition>
               <Component {...pageProps} />
             </RouteTransition>
+            </CartProvider>
           </CheckoutProvider>
         </PrefsProvider>
       </QueryClientProvider>

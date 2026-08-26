@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   KeyRound,
   MessageSquare,
+  Bike,
   ShieldCheck
 } from "lucide-react";
 import Link from "next/link";
@@ -102,7 +103,37 @@ export default function ConfirmationPage() {
 
         {/* §9.4: cash instructions are the whole point of the screen for a cash
             order — deadline first, in bold, not buried under a voucher link. */}
-        {isCash && order.cashDeadline && (
+        {/* A delivery order is not collected from a counter. Showing the
+            office address and a "bring the reference in" deadline to someone
+            waiting for a driver is the wrong instruction on the one screen
+            that exists to give the right one. */}
+        {order.delivery && (
+          <div className="mt-6 rounded-card bg-brand-50 p-6 ring-1 ring-brand-100 ring-inset">
+            <h2 className="flex items-center gap-2 text-lg font-bold text-brand-900">
+              <Bike className="size-5 text-brand-500" />
+              {locale === "fr" ? "Livraison en cours" : "On its way"}
+            </h2>
+            <p className="mt-2 text-[15px] text-ink-900">{order.delivery.address}</p>
+            {order.delivery.notes && (
+              <p className="mt-1 text-sm text-ink-700">{order.delivery.notes}</p>
+            )}
+            <p className="mt-3 text-sm text-ink-700">
+              {order.delivery.zoneName}
+              {order.delivery.etaMinutes
+                ? ` · ${locale === "fr" ? "environ" : "about"} ${order.delivery.etaMinutes} min`
+                : ""}
+            </p>
+            {isCash && (
+              <p className="mt-3 text-sm font-semibold text-ink-900">
+                {locale === "fr"
+                  ? "Payez le livreur en espèces à la réception de la commande."
+                  : "Pay the driver in cash when the food arrives."}
+              </p>
+            )}
+          </div>
+        )}
+
+        {isCash && !order.delivery && order.cashDeadline && (
           <div className="mt-6 rounded-card bg-warn-100 p-6 ring-2 ring-warn-600/30 ring-inset">
             <h2 className="flex items-center gap-2 text-lg font-bold text-brand-900">
               <Banknote className="size-5 text-warn-600" />

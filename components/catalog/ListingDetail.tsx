@@ -48,6 +48,7 @@ export default function ListingDetail({
     BUS: t("nav.bus"),
     CAR: t("nav.cars"),
     ACTIVITY: t("nav.activities"),
+    RESTAURANT: t("nav.restaurants"),
     HOTEL: t("nav.hotels"),
     PROPERTY: t("nav.property")
   }[listing.vertical];

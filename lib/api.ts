@@ -1,4 +1,11 @@
-import { Hotel, Listing, Locale, Order, Vertical } from "@/typescript/interface/domain.interface";
+import {
+  Hotel,
+  Listing,
+  Locale,
+  Order,
+  Restaurant,
+  Vertical
+} from "@/typescript/interface/domain.interface";
 
 /**
  * The public catalogue client.
@@ -171,6 +178,9 @@ export interface OrderDraft {
     quantity: number;
   }[];
   contact: { firstName: string; lastName: string; phone: string; email?: string };
+  /** Restaurant orders only. The server re-reads the zone and its fee — this
+   *  only says which one was chosen, never what it costs. */
+  delivery?: { address: string; zoneId: string; notes?: string };
   travellers?: {
     firstName: string;
     lastName: string;
@@ -412,3 +422,13 @@ export async function safely<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
     return fallback;
   }
 }
+
+/** GET /restaurants */
+export const searchRestaurants = (
+  q: { city?: string; cuisine?: string; sort?: string; limit?: number },
+  init?: RequestInit
+) => get<Paged<Restaurant>>(`/restaurants${qs(q as never)}`, init);
+
+/** GET /restaurants/:slug — carries the full published menu. */
+export const getRestaurant = (slug: string, init?: RequestInit) =>
+  get<{ restaurant: Restaurant }>(`/restaurants/${encodeURIComponent(slug)}`, init);

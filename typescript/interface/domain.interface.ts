@@ -13,7 +13,8 @@ export const VERTICALS = {
   CAR: "CAR",
   HOTEL: "HOTEL",
   ACTIVITY: "ACTIVITY",
-  PROPERTY: "PROPERTY"
+  PROPERTY: "PROPERTY",
+  RESTAURANT: "RESTAURANT"
 } as const;
 export type Vertical = (typeof VERTICALS)[keyof typeof VERTICALS];
 
@@ -114,7 +115,9 @@ export const ARCHETYPE: Record<Vertical, "INSTANT" | "REQUEST" | "ENQUIRY"> = {
   CAR: "INSTANT",
   HOTEL: "INSTANT",
   ACTIVITY: "INSTANT",
-  PROPERTY: "ENQUIRY"
+  PROPERTY: "ENQUIRY",
+  // Food is bought outright like a seat, not requested like a property.
+  RESTAURANT: "INSTANT"
 };
 
 export type Localized = Partial<Record<Locale, string>>;
@@ -294,7 +297,19 @@ export interface OrderTimelineEntry {
   detail?: string;
 }
 
+export interface OrderDelivery {
+  address: string;
+  zoneName?: string;
+  /** Minor units, USD base — and in the currency actually charged. */
+  fee: number;
+  feeCharged: number;
+  etaMinutes?: number;
+  notes?: string;
+}
+
 export interface Order {
+  /** Restaurant orders only. */
+  delivery?: OrderDelivery;
   /** §10.3(4) unguessable — never a sequential integer. */
   reference: string;
   /** Last four digits of the booking phone, for the confirmation line. */
@@ -333,4 +348,63 @@ export interface Enquiry {
   quotedAmount?: Money;
   quoteExpiresAt?: string;
   createdAt: string;
+}
+
+// ---------------------------------------------------------------------------
+
+/** Mirrors MENU_SECTIONS in the backend, in the order a menu is read. */
+export const MENU_SECTIONS = {
+  STARTER: "STARTER",
+  MAIN: "MAIN",
+  SIDE: "SIDE",
+  DESSERT: "DESSERT",
+  DRINK: "DRINK"
+} as const;
+export type MenuSection = (typeof MENU_SECTIONS)[keyof typeof MENU_SECTIONS];
+
+export interface DeliveryZone {
+  id: string;
+  name: string;
+  /** Per-currency minor units, added to the order total. */
+  fee: Money;
+  /** Food subtotal the order must reach before this zone is offered. */
+  minOrder?: Money;
+  etaMinutes: number;
+}
+
+export interface MenuItem {
+  id: string;
+  restaurantId: string;
+  section: MenuSection;
+  name: Localized;
+  description: Localized;
+  sellPrice: Money;
+  image?: string;
+  /** False means 86'd today: shown, greyed, not orderable. */
+  isAvailable: boolean;
+  sortOrder: number;
+}
+
+export interface Restaurant {
+  id: string;
+  name: Localized;
+  slug: string;
+  description: Localized;
+  cuisines: string[];
+  address: string;
+  city: string;
+  country: string;
+  geo?: { lat: number; lng: number };
+  images: string[];
+  openingHours: string;
+  /** Minutes in the kitchen, before any travel time. */
+  prepTimeMinutes: number;
+  phone?: string;
+  rating?: number;
+  reviewCount?: number;
+  deliveryZones: DeliveryZone[];
+  /** Cheapest available dish, per currency. */
+  fromPrice: Money;
+  /** Present on the detail endpoint only. */
+  menu?: MenuItem[];
 }

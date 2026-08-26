@@ -26,7 +26,8 @@ export const VERTICAL_SLUGS: Record<Vertical, string> = {
   CAR: "cars",
   HOTEL: "hotels",
   ACTIVITY: "activities",
-  PROPERTY: "property"
+  PROPERTY: "property",
+  RESTAURANT: "restaurants"
 };
 
 /** The detail-page segment for each vertical, per the §11.1 architecture. */
@@ -36,7 +37,10 @@ const DETAIL_SEGMENT: Record<Vertical, string> = {
   CAR: "vehicle",
   ACTIVITY: "activity",
   PROPERTY: "listing",
-  HOTEL: "hotel"
+  HOTEL: "hotel",
+  // Restaurants are reached at /restaurants/<slug> directly: there is one
+  // page per restaurant and no intermediate listing to disambiguate.
+  RESTAURANT: ""
 };
 
 export function detailHref(l: Pick<Listing, "vertical" | "slug">): string {
@@ -49,3 +53,5 @@ export const hotelHref = (h: Pick<Hotel, "slug">) => `/hotels/hotel/${h.slug}`;
 export const cityImage = (name: string) =>
   CITIES.find((c) => c.name.toLowerCase() === name.toLowerCase())?.image ??
   "/img/banner-1.svg";
+
+export const restaurantHref = (r: { slug: string }) => `/restaurants/${r.slug}`;

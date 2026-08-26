@@ -11,6 +11,12 @@ import Link from "next/link";
  * again, which keeps the glow and the antialiased edges soft instead of
  * leaving the dark halo a threshold produces.
  *
+ * The lockup is also re-spaced rather than used as supplied: the mark came in
+ * at 2.7x the wordmark's cap height and read as oversized next to the name.
+ * It is set at 1.85x here, and centred on the midpoint of cap-height and
+ * baseline rather than on the wordmark's bounding box — the descenders of 'g'
+ * and 'y' drag that box down and would sit the mark visibly high.
+ *
  * One asset serves both surfaces — the artwork has no tagline band to drop, so
  * `variant` now only decides how tall it is drawn. `compact` swaps in the mark
  * alone for narrow viewports, cropped from the same source at the gap between
@@ -31,7 +37,7 @@ export default function Brand({
   // shifts as the image decodes.
   const [src, width, height] = compact
     ? (["/img/logo-flexi-mark.webp", 160, 177] as const)
-    : (["/img/logo-flexi-h.webp", 640, 180] as const);
+    : (["/img/logo-flexi-h.webp", 860, 179] as const);
 
   return (
     <Link
@@ -44,7 +50,14 @@ export default function Brand({
         alt="Flexi Agency"
         width={width}
         height={height}
-        className={compact ? "h-10 w-auto" : variant === "full" ? "h-16 w-auto" : "h-11 w-auto"}
+        // Heights are set so the WORDMARK renders at the size it always did
+        // (16.2px cap in the header). Shrinking the mark shortened the lockup,
+        // so holding the old 44px would have scaled the name up to fill the
+        // gap the icon left — the text grows and nothing looks smaller. These
+        // are the old heights times the lockup's new ratio, 303/445.
+        className={
+          compact ? "h-10 w-auto" : variant === "full" ? "h-11 w-auto" : "h-[30px] w-auto"
+        }
         priority
       />
     </Link>

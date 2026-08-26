@@ -18,7 +18,7 @@ import {
   Search,
   TrendingUp,
   Users
-} from "lucide-react";
+, UtensilsCrossed } from "lucide-react";
 import { getRecentSearches, pushRecentSearch, RecentSearch } from "@/lib/store";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -30,7 +30,8 @@ const TABS: { vertical: Vertical; key: string; Icon: typeof Plane }[] = [
   { vertical: "BUS", key: "nav.bus", Icon: Bus },
   { vertical: "CAR", key: "nav.cars", Icon: Car },
   { vertical: "ACTIVITY", key: "nav.activities", Icon: Compass },
-  { vertical: "PROPERTY", key: "nav.property", Icon: Building2 }
+  { vertical: "PROPERTY", key: "nav.property", Icon: Building2 },
+  { vertical: "RESTAURANT", key: "nav.restaurants", Icon: UtensilsCrossed }
 ];
 
 const PROPERTY_TYPES = [
@@ -158,6 +159,8 @@ export default function SearchWidget({
       HOTEL: ["destination", "from", "to", "adults", "children", "rooms"],
       BUS: ["origin", "destination", "from", "adults"],
       CAR: ["destination", "from", "to", "withDriver"],
+      // Restaurants are browsed by city; there are no dates to carry.
+      RESTAURANT: ["destination"],
       ACTIVITY: ["destination", "from", "adults"],
       PROPERTY: ["propertyType", "destination", "maxPrice"]
     };
@@ -233,7 +236,7 @@ export default function SearchWidget({
   const showTabs = variant === "hero";
 
   return (
-    <div className={variant === "hero" ? "" : "bg-brand-800 py-4"}>
+    <div className={variant === "hero" ? "" : "bg-brand-900 py-4"}>
       <div className={variant === "hero" ? "" : "container-site"}>
         {/*
           * Vertical tabs, on the homepage only.
@@ -342,7 +345,8 @@ export default function SearchWidget({
             {(vertical === "HOTEL" ||
               vertical === "CAR" ||
               vertical === "ACTIVITY" ||
-              vertical === "PROPERTY") && (
+              vertical === "PROPERTY" ||
+              vertical === "RESTAURANT") && (
               <Field as="div" label={t("search.where")} className="md:flex-[1.4]">
                 <LocationField
                   value={form.destination}
@@ -371,7 +375,7 @@ export default function SearchWidget({
               </Field>
             )}
 
-            {vertical !== "PROPERTY" && (
+            {vertical !== "PROPERTY" && vertical !== "RESTAURANT" && (
               <Field
                 as="div"
                 label={

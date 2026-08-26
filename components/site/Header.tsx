@@ -18,7 +18,7 @@ import {
   Building2,
   User,
   X
-} from "lucide-react";
+, UtensilsCrossed } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
@@ -30,7 +30,8 @@ export const VERTICAL_NAV = [
   { href: "/bus", key: "nav.bus", Icon: Bus },
   { href: "/cars", key: "nav.cars", Icon: Car },
   { href: "/activities", key: "nav.activities", Icon: Compass },
-  { href: "/property", key: "nav.property", Icon: Building2 }
+  { href: "/property", key: "nav.property", Icon: Building2 },
+  { href: "/restaurants", key: "nav.restaurants", Icon: UtensilsCrossed }
 ];
 
 const LOCALE_LABEL: Record<Locale, string> = {
@@ -67,13 +68,22 @@ export default function Header({ transparent = false }: { transparent?: boolean 
           : "sticky top-0 z-40 text-white"
       }
     >
-      {/* One translucent, blurred plate for both variants. Over the hero it
-          lets the photograph through; on inner pages it sits on solid navy. */}
+      {/*
+        * Translucent ONLY over the hero, where there is a photograph worth
+        * letting through. On inner pages it is solid.
+        *
+        * It used to be 95% + blur everywhere, and 5% of the cream page body
+        * bled through: the header painted #17304a while the footer painted
+        * #0a2540 and the search band beneath it #0e2f4f — three different
+        * navies down one screen, and a visible seam under the nav. An opaque
+        * layer also has nothing behind it to blur, so the filter was buying a
+        * compositing layer and no pixels.
+        */}
       <div
         className={
           transparent
             ? "bg-brand-900/55 backdrop-blur-xl"
-            : "bg-brand-900/95 shadow-md backdrop-blur-xl"
+            : "bg-brand-900 shadow-md"
         }
       >
         <div className="container-site flex h-18 items-center justify-between gap-4">
