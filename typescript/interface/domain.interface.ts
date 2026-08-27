@@ -379,7 +379,7 @@ export interface MenuItem {
   name: Localized;
   description: Localized;
   sellPrice: Money;
-  image?: string;
+  images: string[];
   /** False means 86'd today: shown, greyed, not orderable. */
   isAvailable: boolean;
   sortOrder: number;

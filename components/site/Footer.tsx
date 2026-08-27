@@ -1,7 +1,8 @@
 import { usePrefs } from "@/lib/prefs";
-import { MapPin, MessageCircle, Phone, ShieldCheck } from "lucide-react";
+import { MapPin, MessageCircle, Phone, ShieldCheck , Mail } from "lucide-react";
 import Link from "next/link";
 import Brand from "./Brand";
+import { dial, useSiteContact, waLink } from "@/lib/contact";
 import { VERTICAL_NAV } from "./Header";
 
 /** §9.1 — the rails that actually matter in this market, named plainly. */
@@ -16,6 +17,7 @@ const PAYMENT_METHODS = [
 ];
 
 export default function Footer() {
+  const contact = useSiteContact();
   const { t, lowData, setLowData } = usePrefs();
 
   return (
@@ -25,23 +27,38 @@ export default function Footer() {
           {/* Room here for the full lockup, tagline and all. */}
           <Brand variant="full" />
           <p className="max-w-xs text-sm text-white/70">{t("brand.tagline")}</p>
+          {/* Read from Settings, not hardcoded: the office moves and changes
+              numbers, and neither should need a developer (§15). */}
           <ul className="space-y-2 text-sm text-white/80">
             <li className="flex gap-2">
               <MapPin className="mt-0.5 size-4 shrink-0 text-accent-500" />
-              12, avenue Colonel Lukusa, Gombe, Kinshasa
+              {[contact.streetAddress, contact.city].filter(Boolean).join(", ")}
             </li>
             <li className="flex gap-2">
               <Phone className="mt-0.5 size-4 shrink-0 text-accent-500" />
-              <a href="tel:+243810000000" className="hover:underline">
-                +243 81 000 00 00
+              <a href={`tel:${dial(contact.phone)}`} className="hover:underline">
+                {contact.phone}
               </a>
             </li>
             <li className="flex gap-2">
               <MessageCircle className="mt-0.5 size-4 shrink-0 text-accent-500" />
-              <a href="https://wa.me/243810000000" className="hover:underline">
-                WhatsApp — {t("home.trustHours")}
+              <a
+                href={waLink(contact.whatsapp)}
+                className="hover:underline"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                WhatsApp — {contact.officeHours || t("home.trustHours")}
               </a>
             </li>
+            {contact.email && (
+              <li className="flex gap-2">
+                <Mail className="mt-0.5 size-4 shrink-0 text-accent-500" />
+                <a href={`mailto:${contact.email}`} className="hover:underline">
+                  {contact.email}
+                </a>
+              </li>
+            )}
           </ul>
         </div>
 

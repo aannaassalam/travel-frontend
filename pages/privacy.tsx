@@ -40,7 +40,7 @@ const SECTIONS = {
     },
     {
       heading: "Nous contacter",
-      body: "Écrivez à privacy@congotravel.cd ou passez à notre bureau de Gombe. Nous répondons sous 30 jours."
+      body: "Écrivez à privacy@flexiairbnb.com ou passez à notre bureau de Gombe. Nous répondons sous 30 jours."
     }
   ],
   en: [
@@ -70,7 +70,7 @@ const SECTIONS = {
     },
     {
       heading: "Contacting us",
-      body: "Write to privacy@congotravel.cd or come to our Gombe office. We reply within 30 days."
+      body: "Write to privacy@flexiairbnb.com or come to our Gombe office. We reply within 30 days."
     }
   ]
 };

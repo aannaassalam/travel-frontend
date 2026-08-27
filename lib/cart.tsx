@@ -131,7 +131,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
               name: item.name.fr || item.name.en || "",
               unitPrice: item.sellPrice,
               quantity: Math.min(quantity, MAX_QTY),
-              image: item.image
+              image: item.images?.[0]
             }
           ];
 
@@ -180,7 +180,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           name: item.name.fr || item.name.en || "",
           unitPrice: item.sellPrice,
           quantity: 1,
-          image: item.image
+          image: item.images?.[0]
         }
       ]
     });

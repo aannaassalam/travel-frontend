@@ -1,5 +1,6 @@
 import Layout from "@/components/site/Layout";
 import { Breadcrumbs } from "@/components/site/bits";
+import { dial, useSiteContact, waLink } from "@/lib/contact";
 import { usePrefs } from "@/lib/prefs";
 import { MessageCircle, Phone } from "lucide-react";
 import Link from "next/link";
@@ -81,6 +82,7 @@ const FAQ = {
 };
 
 export default function HelpPage() {
+  const contact = useSiteContact();
   const { t, locale } = usePrefs();
   const faq = FAQ[locale === "en" ? "en" : "fr"];
 
@@ -142,14 +144,14 @@ export default function HelpPage() {
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
             <a
-              href="tel:+243810000000"
+              href={`tel:${dial(contact.phone)}`}
               className="inline-flex items-center gap-2 rounded-md bg-accent-500 px-5 py-3 font-bold text-brand-900 hover:bg-accent-600"
             >
               <Phone className="size-4" />
-              +243 81 000 00 00
+              {contact.phone}
             </a>
             <a
-              href="https://wa.me/243810000000"
+              href={waLink(contact.whatsapp)}
               className="inline-flex items-center gap-2 rounded-md border border-white/30 px-5 py-3 font-semibold text-white hover:bg-white/10"
             >
               <MessageCircle className="size-4" />

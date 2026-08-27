@@ -432,3 +432,18 @@ export const searchRestaurants = (
 /** GET /restaurants/:slug — carries the full published menu. */
 export const getRestaurant = (slug: string, init?: RequestInit) =>
   get<{ restaurant: Restaurant }>(`/restaurants/${encodeURIComponent(slug)}`, init);
+
+export interface SiteContact {
+  companyName: string;
+  email: string;
+  phone: string;
+  whatsapp: string;
+  streetAddress: string;
+  city: string;
+  country: string;
+  officeHours: string;
+}
+
+/** GET /site/contact — the office's own details, admin-owned (§15). */
+export const getSiteContact = (init?: RequestInit) =>
+  get<{ contact: SiteContact }>("/site/contact", init);

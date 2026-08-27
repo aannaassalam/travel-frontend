@@ -193,9 +193,9 @@ function MenuRow({ item, restaurant }: { item: MenuItem; restaurant: Restaurant 
       // looking for yesterday's order learns it is off today.
       aria-disabled={soldOut || undefined}
     >
-      {item.image && (
+      {item.images?.[0] && (
         <div className="relative size-20 shrink-0 overflow-hidden rounded-xl bg-ink-50">
-          <Image src={item.image} alt="" fill sizes="80px" className="object-cover" />
+          <Image src={item.images[0]} alt="" fill sizes="80px" className="object-cover" />
         </div>
       )}
       <div className="min-w-0 flex-1">

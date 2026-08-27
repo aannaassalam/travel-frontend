@@ -18,20 +18,28 @@ import {
   Building2,
   User,
   X
-, UtensilsCrossed } from "lucide-react";
+, UtensilsCrossed , Languages, Wallet } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import Brand from "./Brand";
 
+/**
+ * Menu order, and the order the footer and the homepage tabs follow too.
+ *
+ * Not alphabetical and not the order these were built: it is the order the
+ * office sells in, so the two things people come here most for lead. Change it
+ * here and every surface follows — Header, Footer and the hero tabs all read
+ * this one list.
+ */
 export const VERTICAL_NAV = [
-  { href: "/flights", key: "nav.flights", Icon: Plane },
   { href: "/hotels", key: "nav.hotels", Icon: Hotel },
+  { href: "/restaurants", key: "nav.restaurants", Icon: UtensilsCrossed },
+  { href: "/flights", key: "nav.flights", Icon: Plane },
   { href: "/bus", key: "nav.bus", Icon: Bus },
   { href: "/cars", key: "nav.cars", Icon: Car },
-  { href: "/activities", key: "nav.activities", Icon: Compass },
   { href: "/property", key: "nav.property", Icon: Building2 },
-  { href: "/restaurants", key: "nav.restaurants", Icon: UtensilsCrossed }
+  { href: "/activities", key: "nav.activities", Icon: Compass }
 ];
 
 const LOCALE_LABEL: Record<Locale, string> = {
@@ -196,6 +204,48 @@ export default function Header({ transparent = false }: { transparent?: boolean 
               <LifeBuoy className="size-5" />
               {t("nav.help")}
             </Link>
+
+            {/*
+              * Currency and language, which used to exist only in the desktop
+              * bar (`hidden sm:flex`) — so on a phone, the one device most of
+              * this audience browses on, there was no way to switch either. A
+              * visitor who wants prices in CDF could not ask for them.
+              *
+              * Given as full rows rather than the compact desktop pill: 44px
+              * targets, and the label spelled out instead of inferred from a
+              * three-letter code.
+              */}
+            <div className="my-1 h-px bg-white/15" />
+            <div className="grid gap-2 px-3 py-2">
+              <label className="flex items-center justify-between gap-3 text-[15px] font-medium">
+                <span className="flex items-center gap-3">
+                  <Wallet className="size-5" />
+                  {t("common.currency")}
+                </span>
+                <InlineSelect
+                  tone="dark"
+                  ariaLabel={t("common.currency")}
+                  value={currency}
+                  onValueChange={(v) => setCurrency(v as Currency)}
+                  options={CURRENCIES.map((c) => ({ value: c, label: c }))}
+                  triggerClassName="rounded-lg bg-white/10 px-3 py-2 ring-1 ring-white/15 ring-inset"
+                />
+              </label>
+              <label className="flex items-center justify-between gap-3 text-[15px] font-medium">
+                <span className="flex items-center gap-3">
+                  <Languages className="size-5" />
+                  {t("common.language")}
+                </span>
+                <InlineSelect
+                  tone="dark"
+                  ariaLabel={t("common.language")}
+                  value={locale}
+                  onValueChange={(v) => setLocale(v as Locale)}
+                  options={ENABLED_LOCALES.map((l) => ({ value: l, label: LOCALE_LABEL[l] }))}
+                  triggerClassName="rounded-lg bg-white/10 px-3 py-2 ring-1 ring-white/15 ring-inset"
+                />
+              </label>
+            </div>
           </div>
         </nav>
       )}

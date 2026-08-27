@@ -5,7 +5,12 @@ import { useRouter } from "next/router";
 import Footer from "./Footer";
 import Header from "./Header";
 
-const SITE = "https://congotravel.cd";
+/**
+ * The canonical origin every absolute URL on the site is built from: the
+ * canonical link, og:url, og:image, hreflang and the JSON-LD. Overridable by
+ * env so a staging deploy does not advertise production URLs to crawlers.
+ */
+export const SITE = (process.env.NEXT_PUBLIC_SITE_URL || "https://flexiairbnb.com").replace(/\/$/, "");
 
 /**
  * §11.4: every page gets a title, a description, a canonical and hreflang

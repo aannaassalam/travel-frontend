@@ -8,11 +8,12 @@ import {
 import RecentlyViewed from "@/components/catalog/RecentlyViewed";
 import SearchWidget from "@/components/search/SearchWidget";
 import { SectionHeading } from "@/components/site/bits";
-import Layout from "@/components/site/Layout";
+import Layout, { SITE } from "@/components/site/Layout";
 import { CardSkeleton } from "@/components/ui/field";
 import { getHomeFeed, getLocations, safely, type ServiceLocation } from "@/lib/api";
 import { cityImage } from "@/lib/catalog";
 import { mediaUrl } from "@/lib/media";
+import { dial, useSiteContact } from "@/lib/contact";
 import { usePrefs } from "@/lib/prefs";
 import { Hotel, Listing } from "@/typescript/interface/domain.interface";
 import {
@@ -99,6 +100,7 @@ const INSPIRATION = [
 ];
 
 export default function Home({ deals, hotels, properties, heroImage, destinations }: Props) {
+  const contact = useSiteContact();
   const { t, locale } = usePrefs();
   const l = locale === "en" ? "en" : "fr";
 
@@ -118,14 +120,14 @@ export default function Home({ deals, hotels, properties, heroImage, destination
       jsonLd={{
         "@context": "https://schema.org",
         "@type": "TravelAgency",
-        name: "CongoTravel",
-        url: "https://congotravel.cd",
-        telephone: "+243810000000",
+        name: contact.companyName,
+        url: SITE,
+        telephone: dial(contact.phone),
         address: {
           "@type": "PostalAddress",
-          streetAddress: "12, avenue Colonel Lukusa, Gombe",
-          addressLocality: "Kinshasa",
-          addressCountry: "CD"
+          streetAddress: contact.streetAddress,
+          addressLocality: contact.city,
+          addressCountry: contact.country
         },
         areaServed: "CD",
         currenciesAccepted: "USD, CDF, EUR",
@@ -179,7 +181,7 @@ export default function Home({ deals, hotels, properties, heroImage, destination
           </p>
 
           <div className="motion-hero-search mt-10">
-            <SearchWidget vertical="FLIGHT" variant="hero" />
+            <SearchWidget variant="hero" />
           </div>
         </div>
       </section>
@@ -188,9 +190,9 @@ export default function Home({ deals, hotels, properties, heroImage, destination
       <section className="border-b border-ink-100/70 bg-white">
         <ul className="container-site grid divide-y divide-ink-100/70 sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:divide-x lg:divide-ink-100/70">
           {[
-            { Icon: MapPin, title: t("home.trustOffice"), body: "Av. Colonel Lukusa, Gombe" },
-            { Icon: Phone, title: t("home.trustPhone"), body: "+243 81 000 00 00" },
-            { Icon: MessageCircle, title: "WhatsApp", body: t("home.trustHours") },
+            { Icon: MapPin, title: t("home.trustOffice"), body: contact.streetAddress },
+            { Icon: Phone, title: t("home.trustPhone"), body: contact.phone },
+            { Icon: MessageCircle, title: "WhatsApp", body: contact.officeHours || t("home.trustHours") },
             {
               Icon: Smartphone,
               title: locale === "fr" ? "Paiement" : "Payment",
@@ -387,9 +389,9 @@ export default function Home({ deals, hotels, properties, heroImage, destination
                 : "Come to our Gombe office, call us, or message on WhatsApp. We book for you and you can pay cash on the spot if you prefer."}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <a href="tel:+243810000000" className="btn btn-lg btn-primary">
+              <a href={`tel:${dial(contact.phone)}`} className="btn btn-lg btn-primary">
                 <Phone className="size-4" />
-                +243 81 000 00 00
+                {contact.phone}
               </a>
               <Link
                 href="/contact"

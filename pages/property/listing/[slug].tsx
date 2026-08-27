@@ -3,7 +3,7 @@ import RecentlyViewed, { useRecordView } from "@/components/catalog/RecentlyView
 import LeadForm from "@/components/catalog/LeadForm";
 import { PROPERTY_LABEL, PropertyTile } from "@/components/catalog/cards";
 import { Breadcrumbs, Price } from "@/components/site/bits";
-import Layout from "@/components/site/Layout";
+import Layout, { SITE } from "@/components/site/Layout";
 import { getListing, getSlugs, safely } from "@/lib/api";
 import { mediaUrl, mediaUrls } from "@/lib/media";
 import { usePrefs } from "@/lib/prefs";
@@ -50,7 +50,7 @@ export default function PropertyDetail({ listing, related }: Props) {
         name: lz(listing.title),
         description: lz(listing.description),
         image: mediaUrls(listing.images),
-        url: `https://congotravel.cd/property/listing/${listing.slug}`,
+        url: `${SITE}/property/listing/${listing.slug}`,
         address: {
           "@type": "PostalAddress",
           addressLocality: listing.city,

@@ -24,14 +24,17 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
+// Same order as VERTICAL_NAV in the header — the hero tabs and the menu
+// disagreeing about what comes first is the kind of small wrongness people
+// notice without being able to name.
 const TABS: { vertical: Vertical; key: string; Icon: typeof Plane }[] = [
-  { vertical: "FLIGHT", key: "nav.flights", Icon: Plane },
   { vertical: "HOTEL", key: "nav.hotels", Icon: Hotel },
+  { vertical: "RESTAURANT", key: "nav.restaurants", Icon: UtensilsCrossed },
+  { vertical: "FLIGHT", key: "nav.flights", Icon: Plane },
   { vertical: "BUS", key: "nav.bus", Icon: Bus },
   { vertical: "CAR", key: "nav.cars", Icon: Car },
-  { vertical: "ACTIVITY", key: "nav.activities", Icon: Compass },
   { vertical: "PROPERTY", key: "nav.property", Icon: Building2 },
-  { vertical: "RESTAURANT", key: "nav.restaurants", Icon: UtensilsCrossed }
+  { vertical: "ACTIVITY", key: "nav.activities", Icon: Compass }
 ];
 
 const PROPERTY_TYPES = [
@@ -97,7 +100,9 @@ const selectTriggerCls =
   "h-auto data-[size=default]:h-auto w-full justify-between rounded-none border-0 bg-transparent p-0 text-[15px] font-semibold text-ink-900 shadow-none ring-0 hover:bg-transparent focus-visible:ring-0";
 
 export default function SearchWidget({
-  vertical: initialVertical = "FLIGHT",
+  // Hotels, matching the tab order and the nav: the first tab being the
+  // selected one is what makes the row read as a row rather than a puzzle.
+  vertical: initialVertical = "HOTEL",
   variant = "hero",
   initial = {}
 }: {

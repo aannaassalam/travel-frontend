@@ -3,6 +3,7 @@ import { SettlementNote } from "@/components/site/bits";
 import Layout from "@/components/site/Layout";
 import { useCheckout } from "@/lib/checkout";
 import { fmtDateTime } from "@/lib/format";
+import { useSiteContact } from "@/lib/contact";
 import { usePrefs } from "@/lib/prefs";
 import { useOrder } from "@/lib/orders";
 import { Order } from "@/typescript/interface/domain.interface";
@@ -28,6 +29,7 @@ import { useEffect } from "react";
  * enforced in the query, not checked after the fetch).
  */
 export default function ConfirmationPage() {
+  const contact = useSiteContact();
   const { t, locale } = usePrefs();
   const router = useRouter();
   const { clear } = useCheckout();
@@ -146,7 +148,8 @@ export default function ConfirmationPage() {
               })}
             </p>
             <p className="mt-3 text-sm text-ink-700">
-              12, avenue Colonel Lukusa, Gombe, Kinshasa · {t("home.trustHours")}
+              {[contact.streetAddress, contact.city].filter(Boolean).join(", ")} ·{" "}
+              {contact.officeHours || t("home.trustHours")}
             </p>
           </div>
         )}

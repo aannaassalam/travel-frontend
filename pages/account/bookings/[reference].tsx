@@ -7,6 +7,7 @@ import {
 } from "@/components/account/order";
 import { SettlementNote } from "@/components/site/bits";
 import { fmtDateTime } from "@/lib/format";
+import { dial, useSiteContact, waLink } from "@/lib/contact";
 import { usePrefs } from "@/lib/prefs";
 import { useOrder } from "@/lib/orders";
 import { Order } from "@/typescript/interface/domain.interface";
@@ -16,6 +17,7 @@ import { useRouter } from "next/router";
 
 /** §11.2 booking detail — status timeline, documents, support. No cancel button. */
 export default function BookingDetail() {
+  const contact = useSiteContact();
   const { t, locale } = usePrefs();
   const router = useRouter();
   /** Server-owned: cash received, documents issued and cancellations all
@@ -130,13 +132,13 @@ export default function BookingDetail() {
               <p className="mt-2 text-sm text-ink-700">{t("account.cancelNote")}</p>
               <div className="mt-4 flex flex-wrap gap-3">
                 <a
-                  href="tel:+243810000000"
+                  href={`tel:${dial(contact.phone)}`}
                   className="rounded-md bg-brand-900 px-4 py-2.5 text-sm font-bold text-white"
                 >
-                  +243 81 000 00 00
+                  {contact.phone}
                 </a>
                 <a
-                  href={`https://wa.me/243810000000?text=${encodeURIComponent(order.reference)}`}
+                  href={`${waLink(contact.whatsapp)}?text=${encodeURIComponent(order.reference)}`}
                   className="rounded-md border border-brand-500 px-4 py-2.5 text-sm font-bold text-brand-500 hover:bg-brand-50"
                 >
                   WhatsApp

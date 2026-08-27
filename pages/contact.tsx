@@ -1,11 +1,13 @@
 import LeadForm from "@/components/catalog/LeadForm";
 import Layout from "@/components/site/Layout";
 import { Breadcrumbs } from "@/components/site/bits";
+import { dial, useSiteContact } from "@/lib/contact";
 import { usePrefs } from "@/lib/prefs";
-import { Clock, MapPin, MessageCircle, Phone } from "lucide-react";
+import { Clock, MapPin, MessageCircle, Phone , Mail } from "lucide-react";
 import Image from "next/image";
 
 export default function ContactPage() {
+  const contact = useSiteContact();
   const { t, locale } = usePrefs();
 
   return (
@@ -20,14 +22,14 @@ export default function ContactPage() {
       jsonLd={{
         "@context": "https://schema.org",
         "@type": "TravelAgency",
-        name: "CongoTravel",
-        telephone: "+243810000000",
-        openingHours: "Mo-Sa 08:00-18:00",
+        name: contact.companyName,
+        telephone: dial(contact.phone),
+        ...(contact.officeHours ? { openingHours: contact.officeHours } : {}),
         address: {
           "@type": "PostalAddress",
-          streetAddress: "12, avenue Colonel Lukusa, Gombe",
-          addressLocality: "Kinshasa",
-          addressCountry: "CD"
+          streetAddress: contact.streetAddress,
+          addressLocality: contact.city,
+          addressCountry: contact.country
         }
       }}
     >
@@ -51,27 +53,29 @@ export default function ContactPage() {
                 {
                   Icon: MapPin,
                   title: t("home.trustOffice"),
-                  lines: ["12, avenue Colonel Lukusa", "Gombe, Kinshasa", "République démocratique du Congo"]
+                  lines: [contact.streetAddress, contact.city].filter(Boolean)
                 },
                 {
                   Icon: Phone,
                   title: t("home.trustPhone"),
-                  lines: ["+243 81 000 00 00", "+243 99 000 00 00"]
+                  lines: [contact.phone].filter(Boolean)
                 },
                 {
                   Icon: MessageCircle,
                   title: "WhatsApp",
-                  lines: ["+243 81 000 00 00"]
+                  lines: [contact.whatsapp].filter(Boolean)
                 },
                 {
                   Icon: Clock,
                   title: locale === "fr" ? "Horaires" : "Opening hours",
-                  lines: [
-                    locale === "fr" ? "Lundi – Vendredi : 08 h 00 – 18 h 00" : "Monday – Friday: 08:00 – 18:00",
-                    locale === "fr" ? "Samedi : 09 h 00 – 14 h 00" : "Saturday: 09:00 – 14:00",
-                    locale === "fr" ? "Dimanche : fermé" : "Sunday: closed"
-                  ]
-                }
+                  lines: [contact.officeHours].filter(Boolean)
+                },
+                ...(contact.email
+                  ? [{ Icon: Mail, title: "Email", lines: [contact.email] }]
+                  : [])
+                // Every line comes from Settings, so the office edits its own
+                // details. `.filter(Boolean)` keeps a blank field from
+                // rendering an empty row under a heading.
               ].map(({ Icon, title, lines }) => (
                 <li
                   key={title}
