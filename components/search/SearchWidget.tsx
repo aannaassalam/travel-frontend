@@ -29,10 +29,10 @@ import { useEffect, useState } from "react";
 // notice without being able to name.
 const TABS: { vertical: Vertical; key: string; Icon: typeof Plane }[] = [
   { vertical: "HOTEL", key: "nav.hotels", Icon: Hotel },
-  { vertical: "RESTAURANT", key: "nav.restaurants", Icon: UtensilsCrossed },
   { vertical: "FLIGHT", key: "nav.flights", Icon: Plane },
   { vertical: "BUS", key: "nav.bus", Icon: Bus },
   { vertical: "CAR", key: "nav.cars", Icon: Car },
+  { vertical: "RESTAURANT", key: "nav.restaurants", Icon: UtensilsCrossed },
   { vertical: "PROPERTY", key: "nav.property", Icon: Building2 },
   { vertical: "ACTIVITY", key: "nav.activities", Icon: Compass }
 ];

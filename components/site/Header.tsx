@@ -34,10 +34,10 @@ import Brand from "./Brand";
  */
 export const VERTICAL_NAV = [
   { href: "/hotels", key: "nav.hotels", Icon: Hotel },
-  { href: "/restaurants", key: "nav.restaurants", Icon: UtensilsCrossed },
   { href: "/flights", key: "nav.flights", Icon: Plane },
   { href: "/bus", key: "nav.bus", Icon: Bus },
   { href: "/cars", key: "nav.cars", Icon: Car },
+  { href: "/restaurants", key: "nav.restaurants", Icon: UtensilsCrossed },
   { href: "/property", key: "nav.property", Icon: Building2 },
   { href: "/activities", key: "nav.activities", Icon: Compass }
 ];
