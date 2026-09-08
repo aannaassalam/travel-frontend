@@ -284,11 +284,17 @@ export default function PaymentStep() {
                   aria-disabled={blocked || undefined}
                   aria-describedby={blocked ? "consent-required" : undefined}
                   className={cn(
-                    "rounded-md px-7 py-3.5 text-base font-bold text-brand-900 transition-colors",
+                    "btn btn-lg",
+                    /*
+                      Blocked is not disabled (see above), so it cannot use the
+                      system's disabled styling — it stays pressable and only
+                      LOOKS unavailable. Everything else comes from `btn`, so
+                      the most important button on the site finally has the same
+                      press feedback and reduced-motion handling as the rest.
+                    */
                     blocked
-                      ? "cursor-not-allowed bg-accent-500/40"
-                      : "bg-accent-500 hover:bg-accent-600",
-                    "disabled:opacity-50"
+                      ? "cursor-not-allowed bg-accent-500/40 text-brand-900"
+                      : "btn-primary"
                   )}
                 >
                   {isCash ? t("checkout.reserveCash") : t("checkout.payNow", { amount })}

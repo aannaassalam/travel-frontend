@@ -1,8 +1,8 @@
 import Layout from "@/components/site/Layout";
 import SearchWidget from "@/components/search/SearchWidget";
 import { usePrefs } from "@/lib/prefs";
-import { Compass } from "lucide-react";
 import Link from "next/link";
+import { LostWaySpot } from "@/components/art/spots";
 
 /**
  * §14: no dead ends. A 404 gets the search widget, not an apology and a link
@@ -14,7 +14,7 @@ export default function NotFound() {
     <Layout title={t("common.notFound")} description={t("common.notFoundBody")} noindex>
       <div className="bg-brand-900 py-12">
         <div className="container-site text-center">
-          <Compass className="mx-auto mb-4 size-12 text-accent-500" />
+          <LostWaySpot className="mx-auto mb-4 w-full max-w-[220px] text-white" />
           <h1 className="display text-3xl text-white">{t("common.notFound")}</h1>
           <p className="mx-auto mt-2 max-w-md text-white/75">{t("common.notFoundBody")}</p>
         </div>

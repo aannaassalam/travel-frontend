@@ -68,5 +68,23 @@
     "subject": "Town of red-tiled roofs below a ridge",
     "source": "https://images.unsplash.com/photo-1693902997450-7e912c0d3554?w=1600&q=80&fm=jpg",
     "page": "https://unsplash.com/photos/1693902997450-7e912c0d3554"
+  },
+  "yaligimba-village": {
+    "subject": "Stilt fishermen's village on still water, Yaligimba, Mongala, DRC",
+    "credit": "Toza Productions on Unsplash",
+    "source": "https://images.unsplash.com/photo-1761998940280-eec36b52f196?w=1100&h=1490&fit=crop&q=85&fm=jpg",
+    "page": "https://unsplash.com/photos/M9DrzDPI2Nk"
+  },
+  "tshopo-village": {
+    "subject": "Aerial view of a village among palms and jungle, Tshopo, DRC",
+    "credit": "Toza Productions on Unsplash",
+    "source": "https://images.unsplash.com/photo-1761998892643-fbf39c6f058f?w=1000&h=680&fit=crop&q=85&fm=jpg",
+    "page": "https://unsplash.com/photos/An0MWLmaHh8"
+  },
+  "kinshasa-street": {
+    "subject": "Street traffic at Gare Centrale, Kinshasa, DRC",
+    "credit": "Trésor Kande (@travyskande) on Unsplash",
+    "source": "https://images.unsplash.com/photo-1729006122953-e3cafd3dd875?w=1000&h=620&fit=crop&q=85&fm=jpg",
+    "page": "https://unsplash.com/photos/dRcmuwABzKI"
   }
 }

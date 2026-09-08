@@ -38,7 +38,7 @@ export default function BookingDetail() {
             <p className="mt-1 text-sm text-ink-500">{t("common.notFoundBody")}</p>
             <Link
               href="/account/bookings"
-              className="mt-4 inline-flex rounded-md bg-accent-500 px-4 py-2.5 text-sm font-bold text-brand-900"
+              className="btn btn-sm btn-primary mt-4"
             >
               {t("account.bookings")}
             </Link>
@@ -133,13 +133,13 @@ export default function BookingDetail() {
               <div className="mt-4 flex flex-wrap gap-3">
                 <a
                   href={`tel:${dial(contact.phone)}`}
-                  className="rounded-md bg-brand-900 px-4 py-2.5 text-sm font-bold text-white"
+                  className="btn btn-sm btn-dark"
                 >
                   {contact.phone}
                 </a>
                 <a
                   href={`${waLink(contact.whatsapp)}?text=${encodeURIComponent(order.reference)}`}
-                  className="rounded-md border border-brand-500 px-4 py-2.5 text-sm font-bold text-brand-500 hover:bg-brand-50"
+                  className="btn btn-sm btn-outline"
                 >
                   WhatsApp
                 </a>

@@ -7,7 +7,7 @@ import { DEFAULT_COUNTRY, fromE164, toE164 } from "@/lib/countries";
 import { PhoneField } from "@/components/ui/PhoneField";
 import { usePrefs } from "@/lib/prefs";
 import { useSession } from "@/lib/session";
-import { Info, UserPlus } from "lucide-react";
+import { Info } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
@@ -15,9 +15,11 @@ import { useEffect, useState } from "react";
 /**
  * §11.3 step 2 of 3 — contact details.
  *
- * §2.1 deferred account creation is resolved here: the customer is never
- * blocked, and the account is created behind the scenes from the phone number
- * so every booking still has an owner.
+ * §2.1 deferred account creation: the customer is never blocked, and the
+ * booking is always filed against a customer record so the office knows who
+ * bought. That record is a CONTACT, not an account — an account needs the phone
+ * proved by code and a password chosen, which is offered on the confirmation
+ * screen once the money is safely through.
  */
 export default function ContactStep() {
   const { t, locale } = usePrefs();
@@ -28,8 +30,7 @@ export default function ContactStep() {
     firstName: "",
     lastName: "",
     phone: "",
-    email: "",
-    createAccount: true
+    email: ""
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [country, setCountry] = useState(DEFAULT_COUNTRY);
@@ -82,8 +83,7 @@ export default function ContactStep() {
         firstName: values.firstName.trim(),
         lastName: values.lastName.trim(),
         phone: phone!,
-        email: values.email.trim() || undefined,
-        createAccount: values.createAccount
+        email: values.email.trim() || undefined
       }
     });
     router.push("/booking/payment");
@@ -147,74 +147,52 @@ export default function ContactStep() {
               </div>
             </div>
 
-            {/* §2.1: both "account required" and "guest checkout" satisfied. */}
-            <div className="surface p-6">
-              <h2 className="mb-3 flex items-center gap-2 text-base font-bold text-brand-900">
-                <UserPlus className="size-4 text-brand-500" />
-                {locale === "fr" ? "Suivi de votre réservation" : "Tracking your booking"}
-              </h2>
-              <div className="space-y-3">
-                <label className="flex cursor-pointer gap-3 rounded-xl p-4 ring-1 ring-ink-100 ring-inset transition-colors has-checked:bg-brand-50 has-checked:ring-2 has-checked:ring-brand-500">
-                  <input
-                    type="radio"
-                    name="account"
-                    checked={values.createAccount}
-                    onChange={() => set("createAccount", true)}
-                    className="mt-0.5 size-4 accent-brand-500"
-                  />
-                  <span>
-                    <span className="block font-semibold text-ink-900">
-                      {locale === "fr"
-                        ? "Créer mon compte avec ce numéro"
-                        : "Create my account with this number"}
-                    </span>
-                    <span className="block text-sm text-ink-500">
-                      {t("checkout.guestNote")}
-                    </span>
-                  </span>
-                </label>
+            {/*
+              This was a two-option radio: "create my account with this number"
+              against "continue as guest". Both did exactly the same thing — the
+              API has never read the flag, and `hasAccount` is deliberately left
+              untouched by checkout (§7.2), because buying something does not
+              prove the number belongs to whoever typed it.
 
-                <label className="flex cursor-pointer gap-3 rounded-xl p-4 ring-1 ring-ink-100 ring-inset transition-colors has-checked:bg-brand-50 has-checked:ring-2 has-checked:ring-brand-500">
-                  <input
-                    type="radio"
-                    name="account"
-                    checked={!values.createAccount}
-                    onChange={() => set("createAccount", false)}
-                    className="mt-0.5 size-4 accent-brand-500"
-                  />
-                  <span>
-                    <span className="block font-semibold text-ink-900">
-                      {t("checkout.guest")}
-                    </span>
-                    <span className="block text-sm text-ink-500">
-                      {locale === "fr"
-                        ? "Vous recevrez tout de même un lien SMS pour retrouver la réservation plus tard."
-                        : "You will still get an SMS link to find the booking later."}
-                    </span>
-                  </span>
-                </label>
+              A choice that changes nothing is worse than no choice: it spends
+              the customer's attention on the money path and quietly promises an
+              account that is not created. So this states what actually happens,
+              and the real offer to open an account is made on the confirmation
+              screen, once the booking is safely filed.
+            */}
+            <div className="surface flex items-start gap-3 p-5">
+              <Info className="mt-0.5 size-4 shrink-0 text-brand-500" />
+              <div className="min-w-0 text-sm">
+                <p className="font-semibold text-ink-900">
+                  {locale === "fr"
+                    ? "Votre confirmation part par SMS à ce numéro."
+                    : "Your confirmation goes by SMS to this number."}
+                </p>
+                <p className="mt-1 text-ink-500">
+                  {locale === "fr"
+                    ? "La référence suffit pour retrouver la réservation. Vous pourrez créer un compte avec ce même numéro juste après le paiement."
+                    : "The reference is all you need to find the booking again. You can create an account with this same number right after payment."}
+                </p>
+                <p className="mt-2 text-ink-500">
+                  {locale === "fr" ? (
+                    <>
+                      Déjà client ?{" "}
+                      <Link href="/login" className="font-semibold text-brand-500 hover:underline">
+                        Connectez-vous
+                      </Link>{" "}
+                      pour réutiliser vos coordonnées.
+                    </>
+                  ) : (
+                    <>
+                      Already a customer?{" "}
+                      <Link href="/login" className="font-semibold text-brand-500 hover:underline">
+                        Sign in
+                      </Link>{" "}
+                      to reuse your details.
+                    </>
+                  )}
+                </p>
               </div>
-
-              <p className="mt-3 flex items-start gap-2 text-xs text-ink-500">
-                <Info className="mt-0.5 size-3.5 shrink-0" />
-                {locale === "fr" ? (
-                  <span>
-                    Déjà client ?{" "}
-                    <Link href="/login" className="text-brand-500 underline">
-                      Connectez-vous
-                    </Link>{" "}
-                    pour retrouver vos coordonnées.
-                  </span>
-                ) : (
-                  <span>
-                    Already a customer?{" "}
-                    <Link href="/login" className="text-brand-500 underline">
-                      Sign in
-                    </Link>{" "}
-                    to reuse your details.
-                  </span>
-                )}
-              </p>
             </div>
 
             <div className="flex items-center justify-between gap-3">

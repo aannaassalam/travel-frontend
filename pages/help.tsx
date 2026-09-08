@@ -145,7 +145,7 @@ export default function HelpPage() {
           <div className="mt-5 flex flex-wrap gap-3">
             <a
               href={`tel:${dial(contact.phone)}`}
-              className="inline-flex items-center gap-2 rounded-md bg-accent-500 px-5 py-3 font-bold text-brand-900 hover:bg-accent-600"
+              className="btn btn-lg btn-primary"
             >
               <Phone className="size-4" />
               {contact.phone}

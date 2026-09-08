@@ -3,6 +3,7 @@ import { Hotel, Listing, Vertical } from "@/typescript/interface/domain.interfac
 import { SearchX } from "lucide-react";
 import { DealTile, HotelTile } from "./cards";
 import LeadForm from "./LeadForm";
+import { NoResultsSpot } from "@/components/art/spots";
 
 /**
  * §1: "the empty state is the most-used screen on this platform. Every
@@ -38,6 +39,7 @@ export default function EmptyState({
     <div className="space-y-8">
       <div className="grid gap-6 rounded-card bg-brand-50 p-6 ring-1 ring-brand-100 ring-inset lg:grid-cols-2 lg:p-8">
         <div>
+          <NoResultsSpot className="mb-4 w-36 text-brand-900" />
           <p className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-brand-700">
             <SearchX className="size-4" />
             {unservicedPlace

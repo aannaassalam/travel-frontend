@@ -37,6 +37,20 @@ export function Price({
   );
 }
 
+/**
+ * Whether there is a real price to show.
+ *
+ * A zero is not a price, it is a missing one — and "from $0" on a hotel is not
+ * a bargain, it is a broken promise on the one surface where the number is the
+ * whole point. Callers that show a "from" figure must gate on this: the API can
+ * legitimately return 0 when a listing has no bookable inventory priced yet.
+ */
+export function hasPrice(money: Money | number | undefined): boolean {
+  if (money === undefined || money === null) return false;
+  if (typeof money === "number") return money > 0;
+  return Object.values(money).some((v) => typeof v === "number" && v > 0);
+}
+
 /** §5: never leave the settlement currency ambiguous — that is what disputes are made of. */
 export function SettlementNote({ money }: { money: Money | number | undefined }) {
   const { currency, locale } = usePrefs();

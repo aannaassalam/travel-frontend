@@ -70,7 +70,7 @@ export default function BookingBox({ listing }: { listing: Listing }) {
         <p className="mt-3 text-sm text-ink-700">{t("empty.body")}</p>
         <a
           href="#request"
-          className="mt-4 flex w-full items-center justify-center rounded-md bg-accent-500 px-5 py-3 font-bold text-brand-900 hover:bg-accent-600"
+          className="btn btn-lg btn-primary mt-4 w-full"
         >
           {t("empty.cta")}
         </a>
@@ -163,7 +163,7 @@ export default function BookingBox({ listing }: { listing: Listing }) {
       <button
         type="button"
         onClick={book}
-        className="mt-4 flex w-full items-center justify-center rounded-md bg-accent-500 px-5 py-3.5 text-base font-bold text-brand-900 transition-colors hover:bg-accent-600"
+        className="btn btn-lg btn-primary mt-4 w-full"
       >
         {t("listing.book")}
       </button>

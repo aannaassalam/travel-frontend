@@ -120,7 +120,7 @@ function ProfileBody({ user }: { user: CustomerSession }) {
         </div>
         <button
           type="submit"
-          className="mt-4 rounded-md bg-accent-500 px-5 py-2.5 font-bold text-brand-900 hover:bg-accent-600"
+          className="btn btn-md btn-primary mt-4"
         >
           {t("common.save")}
         </button>

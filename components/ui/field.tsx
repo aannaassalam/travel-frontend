@@ -6,8 +6,8 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { AlertCircle } from "lucide-react";
-import { useId } from "react";
+import { AlertCircle, Eye, EyeOff } from "lucide-react";
+import { useId, useState } from "react";
 
 /**
  * The form primitive.
@@ -99,6 +99,52 @@ export function TextField({
         aria-invalid={Boolean(error)}
         className="field-input"
       />
+    </Shell>
+  );
+}
+
+/**
+ * A password field with a visibility toggle.
+ *
+ * WCAG 2.2 "Accessible Authentication": a password nobody can see is a memory
+ * test with no way to check your work, and it is the reason people pick short
+ * ones. The toggle is a real button — labelled, keyboard-reachable, and inside
+ * the field's focus ring rather than floating beside it.
+ *
+ * Paste is deliberately not blocked: a password manager is the single biggest
+ * thing a customer can do for their own security, and `onpaste` handlers are
+ * the single most common way sites break it.
+ */
+export function PasswordField({
+  label,
+  error,
+  helper,
+  className,
+  ...props
+}: Base & Omit<React.InputHTMLAttributes<HTMLInputElement>, "type">) {
+  const auto = useId();
+  const id = props.id ?? auto;
+  const [shown, setShown] = useState(false);
+  return (
+    <Shell id={id} label={label} error={error} helper={helper} className={className}>
+      <input
+        {...props}
+        id={id}
+        type={shown ? "text" : "password"}
+        placeholder={props.placeholder ?? " "}
+        aria-invalid={Boolean(error)}
+        className="field-input pr-12"
+      />
+      <button
+        type="button"
+        onClick={() => setShown((v) => !v)}
+        aria-pressed={shown}
+        aria-controls={id}
+        aria-label={shown ? "Hide password" : "Show password"}
+        className="absolute right-1 top-1/2 grid size-11 -translate-y-1/2 place-items-center rounded-lg text-ink-500 transition-colors hover:text-brand-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
+      >
+        {shown ? <EyeOff className="size-[18px]" /> : <Eye className="size-[18px]" />}
+      </button>
     </Shell>
   );
 }

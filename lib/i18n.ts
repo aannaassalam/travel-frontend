@@ -156,6 +156,7 @@ const fr: Dict = {
   "listing.details": "Voir les détails",
   "listing.enquire": "Demander des informations",
   "listing.gallery": "Voir les {n} photos",
+  "listing.gallery1": "Voir la photo",
   "listing.description": "Description",
   "listing.included": "Ce qui est inclus",
   "listing.excluded": "Non inclus",
@@ -311,11 +312,32 @@ const fr: Dict = {
   "auth.usePassword": "Utiliser un mot de passe",
   "auth.useOtp": "Utiliser un code SMS",
   "auth.password": "Mot de passe",
-  "auth.forgot": "Mot de passe oublié",
+  "auth.forgot": "Mot de passe oublié ?",
   "auth.verify": "Valider",
+  "auth.signIn": "Se connecter",
+  "auth.signUp": "Créer un compte",
+  "auth.signUpSubtitle":
+    "Un code SMS pour confirmer votre numéro — une seule fois.",
+  "auth.signInCta": "Se connecter",
+  "auth.signUpCta": "Créer mon compte",
+  "auth.passwordHint": "8 caractères minimum.",
+  "auth.newPassword": "Nouveau mot de passe",
+  "auth.forgotTitle": "Réinitialiser le mot de passe",
+  "auth.forgotSubtitle":
+    "Nous envoyons un code à votre numéro. Choisissez ensuite un nouveau mot de passe.",
+  "auth.resetCta": "Enregistrer le mot de passe",
+  "auth.backToSignIn": "Retour à la connexion",
+  "auth.signupOtpBody":
+    "Code envoyé au {phone}. Saisissez-le, puis choisissez votre mot de passe.",
+  "auth.yourDetails": "Vos informations",
   "auth.noAccountNote":
-    "Pas encore de compte ? Il est créé automatiquement lors de votre première réservation.",
+    "Le code SMS ne sert qu'une fois, à la création du compte. Ensuite, votre numéro et votre mot de passe suffisent.",
   "auth.otpInvalid": "Code incorrect. Vérifiez le SMS et réessayez.",
+  "auth.badCredentials": "Numéro ou mot de passe incorrect.",
+  "auth.accountExists":
+    "Ce numéro a déjà un compte. Connectez-vous avec votre mot de passe.",
+  "auth.noAccountYet":
+    "Aucun compte sur ce numéro. Créez-en un — cela prend une minute.",
   "auth.demoTitle": "Connexion de démonstration",
   "auth.demoBody":
     "L'authentification réelle n'est pas encore branchée. Utilisez ce numéro et ce code pour entrer.",
@@ -380,6 +402,7 @@ const fr: Dict = {
   "err.name": "Indiquez votre nom complet.",
   "err.email": "Adresse e-mail invalide.",
   "err.otp": "Code à 6 chiffres attendu.",
+  "err.password": "8 caractères minimum.",
   "err.required": "Ce champ est obligatoire."
 };
 
@@ -520,6 +543,7 @@ const en: Dict = {
   "listing.details": "See details",
   "listing.enquire": "Request information",
   "listing.gallery": "See all {n} photos",
+  "listing.gallery1": "See the photo",
   "listing.description": "Description",
   "listing.included": "What's included",
   "listing.excluded": "Not included",
@@ -675,11 +699,31 @@ const en: Dict = {
   "auth.usePassword": "Use a password",
   "auth.useOtp": "Use an SMS code",
   "auth.password": "Password",
-  "auth.forgot": "Forgot password",
+  "auth.forgot": "Forgot your password?",
   "auth.verify": "Verify",
+  "auth.signIn": "Sign in",
+  "auth.signUp": "Create account",
+  "auth.signUpSubtitle": "One SMS code to confirm your number — just once.",
+  "auth.signInCta": "Sign in",
+  "auth.signUpCta": "Create my account",
+  "auth.passwordHint": "At least 8 characters.",
+  "auth.newPassword": "New password",
+  "auth.forgotTitle": "Reset your password",
+  "auth.forgotSubtitle":
+    "We\u2019ll send a code to your number. Then choose a new password.",
+  "auth.resetCta": "Save new password",
+  "auth.backToSignIn": "Back to sign in",
+  "auth.signupOtpBody":
+    "Code sent to {phone}. Enter it, then choose your password.",
+  "auth.yourDetails": "Your details",
   "auth.noAccountNote":
-    "No account yet? One is created automatically with your first booking.",
+    "The SMS code is used once, when you create your account. After that your number and password are all you need.",
   "auth.otpInvalid": "Incorrect code. Check the SMS and try again.",
+  "auth.badCredentials": "That phone number or password is not correct.",
+  "auth.accountExists":
+    "This number already has an account. Sign in with your password.",
+  "auth.noAccountYet":
+    "No account on this number yet. Creating one takes a minute.",
   "auth.demoTitle": "Demo sign-in",
   "auth.demoBody":
     "Real authentication is not wired up yet. Use this number and code to get in.",
@@ -742,6 +786,7 @@ const en: Dict = {
   "err.name": "Enter your full name.",
   "err.email": "Invalid email address.",
   "err.otp": "A 6-digit code is expected.",
+  "err.password": "Use at least 8 characters.",
   "err.required": "This field is required."
 };
 

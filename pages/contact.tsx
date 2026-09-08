@@ -13,12 +13,17 @@ export default function ContactPage() {
   return (
     <Layout
       title={t("footer.contact")}
+      /*
+        Was hardcoded to "Gombe, Kinshasa" while Settings say the office is in
+        Kolwezi — the same drift the homepage CTA had. The city comes from the
+        admin now, so it cannot go stale again.
+      */
       description={
         locale === "fr"
-          ? "Bureau à Gombe, Kinshasa. Téléphone, WhatsApp et paiement en espèces sur place."
-          : "Office in Gombe, Kinshasa. Phone, WhatsApp and cash payment on site."
+          ? `Bureau${contact.city ? ` à ${contact.city}` : ""}. Téléphone, WhatsApp et paiement en espèces sur place.`
+          : `Office${contact.city ? ` in ${contact.city}` : ""}. Phone, WhatsApp and cash payment on site.`
       }
-      image="/img/dest-kinshasa.svg"
+      image="/img/photos/tshopo-village.webp"
       jsonLd={{
         "@context": "https://schema.org",
         "@type": "TravelAgency",
@@ -96,10 +101,18 @@ export default function ContactPage() {
               ))}
             </ul>
 
-            <div className="relative h-56 overflow-hidden rounded-lg">
+            {/*
+              Decorative, and deliberately not captioned as a place: the office
+              is in Kolwezi, which has no photography on Unsplash at all, so
+              labelling any picture as "our city" would be a claim we cannot
+              support. This is the country they operate in — Tshopo province,
+              by Toza Productions — with an empty alt so a screen reader skips
+              it rather than being told a location that is not the office.
+            */}
+            <div className="relative h-56 overflow-hidden rounded-card">
               <Image
-                src="/img/dest-kinshasa.svg"
-                alt="Kinshasa"
+                src="/img/photos/tshopo-village.webp"
+                alt=""
                 fill
                 sizes="(max-width: 1024px) 100vw, 600px"
                 className="object-cover"

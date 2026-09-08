@@ -2,8 +2,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   deleteAccount,
   getSession,
+  login,
   logout as apiLogout,
   requestOtp,
+  resetPassword,
   updateProfile,
   verifyOtp,
   type CustomerSession
@@ -49,6 +51,34 @@ export function useVerifyOtp() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: verifyOtp,
+    onSuccess: (customer) => {
+      qc.setQueryData(["session"], customer);
+      qc.invalidateQueries({ queryKey: ["my-orders"] });
+    }
+  });
+}
+
+/**
+ * Signs in with phone + password — the everyday route, and the one that costs
+ * no SMS. Same cache invalidation as the code path: whatever opened the
+ * session, the header and the bookings list are now someone else's.
+ */
+export function useLogin() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: login,
+    onSuccess: (customer) => {
+      qc.setQueryData(["session"], customer);
+      qc.invalidateQueries({ queryKey: ["my-orders"] });
+    }
+  });
+}
+
+/** Sets a new password from an SMS code, and signs in with it. */
+export function useResetPassword() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: resetPassword,
     onSuccess: (customer) => {
       qc.setQueryData(["session"], customer);
       qc.invalidateQueries({ queryKey: ["my-orders"] });

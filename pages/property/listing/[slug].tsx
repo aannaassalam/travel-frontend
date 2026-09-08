@@ -198,7 +198,7 @@ export default function PropertyDetail({ listing, related }: Props) {
               <div className="mb-4 flex gap-2">
                 <a
                   href="tel:+243810000000"
-                  className="flex flex-1 items-center justify-center gap-2 rounded-md border border-brand-500 px-3 py-2.5 text-sm font-semibold text-brand-500 hover:bg-brand-50"
+                  className="btn btn-sm btn-outline flex-1"
                 >
                   <Phone className="size-4" />
                   {t("enquiry.callNow")}

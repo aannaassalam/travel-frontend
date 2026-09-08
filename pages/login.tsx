@@ -1,30 +1,54 @@
 import Layout from "@/components/site/Layout";
-import { TextField } from "@/components/ui/field";
-import { maskPhone } from "@/lib/format";
-import { DEFAULT_COUNTRY, toE164 } from "@/lib/countries";
+import { PasswordField, TextField } from "@/components/ui/field";
 import { PhoneField } from "@/components/ui/PhoneField";
-import { usePrefs } from "@/lib/prefs";
 import { ApiError } from "@/lib/api";
-import { useRequestOtp, useVerifyOtp } from "@/lib/session";
-import { KeyRound, Loader2, ShieldCheck, Smartphone } from "lucide-react";
+import { DEFAULT_COUNTRY, toE164 } from "@/lib/countries";
+import { maskPhone } from "@/lib/format";
+import { usePrefs } from "@/lib/prefs";
+import {
+  useLogin,
+  useRequestOtp,
+  useResetPassword,
+  useVerifyOtp
+} from "@/lib/session";
+import { KeyRound, Loader2, ShieldCheck } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /**
- * §7.1/§7.2 — phone-first sign-in. Card and e-mail penetration are low relative
- * to mobile, so SMS OTP is the credential customers actually have.
+ * §7.1/§7.2 — the phone is still the identity, but it is only proved by SMS
+ * ONCE, when the account is created. After that it is number + password.
  *
- * §7.4 anti-enumeration: this screen never reveals whether a number is already
- * registered. "We sent a code" is shown either way, because a differing message
- * hands the client's entire customer list to anyone iterating +243 numbers.
- * That is the most likely real-world data leak in a phone-first system.
+ * That is a cost decision as much as a UX one: every code is a paid message to
+ * a network that is not always reachable, and a customer standing in a booking
+ * office with no signal could not get into their own account. A password works
+ * offline-ish, works on a borrowed handset, and works when Twilio is having a
+ * bad afternoon. The SMS is kept for the two moments where possession of the
+ * handset is the only thing we can trust: creating the account, and recovering
+ * it.
+ *
+ * §7.4 anti-enumeration: sign-in fails with one message for every cause, so
+ * this screen never reveals whether a number is registered. Sign-up is the
+ * exception and unavoidably so — "this number already has an account" is the
+ * only useful thing to say to someone who is about to create a second one.
  */
+
+const MIN_PASSWORD = 8;
+/** Matches the server's resend cooldown, so the button re-enables when it works. */
+const RESEND_SECONDS = 60;
+
+type Mode = "signin" | "signup" | "forgot";
+
 export default function SignInPage() {
   const { t, locale } = usePrefs();
   const router = useRouter();
-  const [step, setStep] = useState<"phone" | "code">("phone");
+
+  const [mode, setMode] = useState<Mode>("signin");
+  /** Only the two SMS flows have a second step; sign-in is a single form. */
+  const [sent, setSent] = useState(false);
+
   /**
    * Country and national number are held separately, so the dialling code is a
    * choice rather than something to remember to type. E.164 is assembled from
@@ -32,26 +56,81 @@ export default function SignInPage() {
    */
   const [country, setCountry] = useState(DEFAULT_COUNTRY);
   const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
-  /**
-   * Asked for ONLY after the server says this phone has no account yet.
-   *
-   * The client cannot know in advance whether a number is registered — and it
-   * must not be told, because that would answer "is this person a customer of
-   * yours" to anyone who types a number (§7.4). So sign-in asks for a code and
-   * nothing else; if the verified number turns out to be new, the server
-   * replies NAME_REQUIRED and the same code is submitted again with a name.
-   * A returning customer is never asked to retype their name.
-   */
-  const [needsName, setNeedsName] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const sendCode = useRequestOtp();
-  const signIn = useVerifyOtp();
+
   const [error, setError] = useState("");
+  const [fieldError, setFieldError] = useState<"phone" | "password" | "code" | null>(
+    null
+  );
   const [busy, setBusy] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const codeRef = useRef<HTMLInputElement>(null);
+
+  const sendCode = useRequestOtp();
+  const signUp = useVerifyOtp();
+  const signIn = useLogin();
+  const reset = useResetPassword();
 
   const e164 = toE164(country, phone);
+
+  // The resend countdown. Nothing else ticks on this page, so one interval that
+  // stops at zero is the whole mechanism.
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const id = setInterval(() => setCooldown((n) => n - 1), 1000);
+    return () => clearInterval(id);
+  }, [cooldown]);
+
+  /** Moving between flows must not carry a half-typed code or a stale error. */
+  function go(next: Mode) {
+    setMode(next);
+    setSent(false);
+    setCode("");
+    setPassword("");
+    setError("");
+    setFieldError(null);
+  }
+
+  function clearError() {
+    setError("");
+    setFieldError(null);
+  }
+
+  /**
+   * The server's `code` is the contract; its English message is a fallback for
+   * anything new. Translating here is what keeps a French customer from being
+   * told "That code is not valid" in the middle of a French page.
+   */
+  function show(err: unknown) {
+    const known: Record<string, { message: string; field: typeof fieldError }> = {
+      BAD_CREDENTIALS: { message: t("auth.badCredentials"), field: "password" },
+      OTP_INVALID: { message: t("auth.otpInvalid"), field: "code" },
+      OTP_LOCKED: { message: t("auth.otpInvalid"), field: "code" },
+      PASSWORD_WEAK: { message: t("err.password"), field: "password" },
+      ACCOUNT_EXISTS: { message: t("auth.accountExists"), field: null },
+      NO_ACCOUNT: { message: t("auth.noAccountYet"), field: null }
+    };
+    const hit = err instanceof ApiError && err.code ? known[err.code] : undefined;
+    setError(hit?.message ?? (err instanceof Error ? err.message : t("err.required")));
+    setFieldError(hit?.field ?? null);
+  }
+
+  async function run(fn: () => Promise<void>) {
+    clearError();
+    setBusy(true);
+    try {
+      await fn();
+    } catch (err) {
+      show(err);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const done = () => router.push(String(router.query.next || "/account"));
 
   /**
    * Real endpoint. The server answers identically whether or not the number is
@@ -59,82 +138,236 @@ export default function SignInPage() {
    * a handset the caller chose, so an unthrottled version of this is both a
    * security hole and a way to bill us for harassing a stranger.
    */
-  async function requestCode(e: React.FormEvent) {
-    e.preventDefault();
-    if (!e164) return setError(t("err.phone"));
-    setError("");
-    setBusy(true);
-    try {
-      await sendCode.mutateAsync(e164);
-      setStep("code");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t("err.required"));
-    } finally {
-      setBusy(false);
+  const requestCode = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!e164) {
+      setError(t("err.phone"));
+      setFieldError("phone");
+      return;
     }
-  }
+    return run(async () => {
+      await sendCode.mutateAsync(e164);
+      setSent(true);
+      setCooldown(RESEND_SECONDS);
+      // The code is the only thing being asked for now; put the caret in it.
+      setTimeout(() => codeRef.current?.focus(), 0);
+    });
+  };
 
-  /**
-   * The code is checked server-side, and the session comes back as an httpOnly
-   * cookie — §7.3: never localStorage for tokens. A wrong code fails the same
-   * way whether or not the number is known, so nothing here branches on the
-   * account existing.
-   */
-  async function verify(e: React.FormEvent) {
+  const submitSignIn = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!/^\d{4,8}$/.test(code)) return setError(t("err.otp"));
-    setError("");
-    setBusy(true);
-    try {
-      await signIn.mutateAsync({
+    if (!e164) {
+      setError(t("err.phone"));
+      setFieldError("phone");
+      return;
+    }
+    return run(async () => {
+      await signIn.mutateAsync({ phone: e164, password });
+      done();
+    });
+  };
+
+  const submitSignUp = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!/^\d{4,8}$/.test(code)) {
+      setError(t("err.otp"));
+      setFieldError("code");
+      return;
+    }
+    if (password.length < MIN_PASSWORD) {
+      setError(t("err.password"));
+      setFieldError("password");
+      return;
+    }
+    return run(async () => {
+      await signUp.mutateAsync({
         phone: e164!,
         code,
-        firstName: firstName.trim() || undefined,
-        lastName: lastName.trim() || undefined
+        firstName: firstName.trim(),
+        lastName: lastName.trim() || undefined,
+        password
       });
-      router.push(String(router.query.next || "/account"));
-    } catch (err) {
-      // A new number: reveal the name fields and let them resubmit. The code is
-      // still valid — the server only spends it once the sign-in can complete.
-      if (err instanceof ApiError && err.code === "NAME_REQUIRED") {
-        setNeedsName(true);
-        setError("");
-        return;
-      }
-      setError(err instanceof Error ? err.message : t("auth.otpInvalid"));
-    } finally {
-      setBusy(false);
+      done();
+    });
+  };
+
+  const submitReset = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!/^\d{4,8}$/.test(code)) {
+      setError(t("err.otp"));
+      setFieldError("code");
+      return;
     }
-  }
+    if (password.length < MIN_PASSWORD) {
+      setError(t("err.password"));
+      setFieldError("password");
+      return;
+    }
+    return run(async () => {
+      await reset.mutateAsync({ phone: e164!, code, password });
+      done();
+    });
+  };
+
+  const heading =
+    mode === "signin"
+      ? t("auth.title")
+      : mode === "signup"
+        ? t("auth.signUp")
+        : t("auth.forgotTitle");
+  const subheading =
+    mode === "signin"
+      ? t("auth.subtitle")
+      : mode === "signup"
+        ? t("auth.signUpSubtitle")
+        : t("auth.forgotSubtitle");
+
+  /** The one place a page-level error is rendered, so it cannot be duplicated. */
+  const banner =
+    error && !fieldError ? (
+      <p
+        role="alert"
+        className="rounded-xl bg-bad-100 px-4 py-3 text-sm font-medium text-bad-600 ring-1 ring-bad-600/15 ring-inset"
+      >
+        {error}
+      </p>
+    ) : null;
+
+  const codeInput = (
+    <label className="block">
+      <span className="eyebrow mb-2 block text-brand-600">{t("auth.otpTitle")}</span>
+      {/* Six wide, tracked digits: the code is the thing being asked for, so it
+          gets the whole field. `one-time-code` lets the OS offer it from the SMS. */}
+      <input
+        ref={codeRef}
+        className="w-full rounded-xl bg-white py-4 text-center font-mono text-3xl font-bold tracking-[0.4em] text-ink-900 shadow-xs ring-1 ring-ink-100 outline-none ring-inset focus:ring-2 focus:ring-brand-500 aria-invalid:ring-2 aria-invalid:ring-bad-600"
+        value={code}
+        onChange={(e) => {
+          setCode(e.target.value.replace(/\D/g, "").slice(0, 6));
+          clearError();
+        }}
+        inputMode="numeric"
+        autoComplete="one-time-code"
+        maxLength={6}
+        aria-invalid={fieldError === "code"}
+        aria-describedby={fieldError === "code" ? "code-error" : undefined}
+      />
+      {fieldError === "code" && (
+        <p id="code-error" role="alert" className="mt-2 text-sm font-medium text-bad-600">
+          {error}
+        </p>
+      )}
+    </label>
+  );
+
+  const codeStepFooter = (
+    <div className="flex items-center justify-between text-sm">
+      <button
+        type="button"
+        onClick={() => {
+          setSent(false);
+          setCode("");
+          clearError();
+        }}
+        className="font-semibold text-brand-500 hover:underline"
+      >
+        {t("auth.otpChange")}
+      </button>
+      <button
+        type="button"
+        onClick={() => requestCode()}
+        disabled={busy || cooldown > 0}
+        className="font-semibold text-brand-500 hover:underline disabled:text-ink-300 disabled:no-underline"
+      >
+        {cooldown > 0 ? `${t("auth.otpResend")} (${cooldown}s)` : t("auth.otpResend")}
+      </button>
+    </div>
+  );
 
   return (
-    <Layout title={t("auth.title")} description={t("auth.subtitle")} noindex>
+    <Layout title={heading} description={subheading} noindex>
       <div className="grid lg:grid-cols-2">
         <div className="flex items-center justify-center px-4 py-14">
           <div className="w-full max-w-md">
-            <h1 className="display text-2xl text-brand-900 sm:text-3xl">
-              {t("auth.title")}
-            </h1>
-            <p className="mt-2 text-[15px] text-ink-500">{t("auth.subtitle")}</p>
+            {/* Two-step flows say where they are. One line beats a progress bar
+                for a journey this short, and it stops "enter the code" feeling
+                like the form changed under you. */}
+            {mode !== "signin" && (
+              <p className="mb-2 text-sm font-semibold text-brand-600">
+                {locale === "fr"
+                  ? `Étape ${sent ? 2 : 1} sur 2`
+                  : `Step ${sent ? 2 : 1} of 2`}
+              </p>
+            )}
+            <h1 className="display text-2xl text-brand-900 sm:text-3xl">{heading}</h1>
+            <p className="mt-2 text-[15px] text-ink-500">{subheading}</p>
 
-            {step === "phone" ? (
-              <form onSubmit={requestCode} noValidate className="mt-8 space-y-4">
+            {mode === "signin" && (
+              <form onSubmit={submitSignIn} noValidate className="mt-8 space-y-4">
+                {banner}
                 <PhoneField
                   label={t("auth.phone")}
                   country={country}
                   national={phone}
                   onCountryChange={(c) => {
                     setCountry(c);
-                    setError("");
+                    clearError();
                   }}
                   onNationalChange={(v) => {
                     setPhone(v);
-                    setError("");
+                    clearError();
                   }}
-                  error={error}
+                  error={fieldError === "phone" ? error : undefined}
                   autoFocus
                 />
+                <PasswordField
+                  label={t("auth.password")}
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    clearError();
+                  }}
+                  autoComplete="current-password"
+                  error={fieldError === "password" ? error : undefined}
+                />
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => go("forgot")}
+                    className="text-sm font-semibold text-brand-500 hover:underline"
+                  >
+                    {t("auth.forgot")}
+                  </button>
+                </div>
+                <button
+                  type="submit"
+                  disabled={busy || !e164 || !password}
+                  className="btn btn-lg btn-primary w-full"
+                >
+                  {busy && <Loader2 className="size-4 animate-spin" />}
+                  {t("auth.signInCta")}
+                </button>
+              </form>
+            )}
 
+            {mode === "signup" && !sent && (
+              <form onSubmit={requestCode} noValidate className="mt-8 space-y-4">
+                {banner}
+                <PhoneField
+                  label={t("auth.phone")}
+                  country={country}
+                  national={phone}
+                  onCountryChange={(c) => {
+                    setCountry(c);
+                    clearError();
+                  }}
+                  onNationalChange={(v) => {
+                    setPhone(v);
+                    clearError();
+                  }}
+                  error={fieldError === "phone" ? error : undefined}
+                  autoFocus
+                />
                 <button
                   type="submit"
                   disabled={busy || !e164}
@@ -144,49 +377,22 @@ export default function SignInPage() {
                   {t("auth.sendOtp")}
                 </button>
               </form>
-            ) : (
-              <form onSubmit={verify} noValidate className="mt-8 space-y-4">
+            )}
+
+            {mode === "signup" && sent && (
+              <form onSubmit={submitSignUp} noValidate className="mt-8 space-y-4">
+                {banner}
                 <p className="rounded-md bg-brand-50 px-4 py-3 text-sm text-ink-700">
-                  {t("auth.otpBody", { phone: maskPhone(e164 ?? phone) })}
+                  {t("auth.signupOtpBody", { phone: maskPhone(e164 ?? phone) })}
                 </p>
-                <label className="block">
-                  <span className="eyebrow mb-2 block text-brand-600">
-                    {t("auth.otpTitle")}
-                  </span>
-                  {/* Six wide, tracked digits: the code is the only thing on
-                      this screen, so it gets the whole field. */}
-                  <input
-                    className="w-full rounded-xl bg-white py-4 text-center font-mono text-3xl tracking-[0.4em] font-bold text-ink-900 shadow-xs ring-1 ring-ink-100 outline-none ring-inset focus:ring-2 focus:ring-brand-500 aria-invalid:ring-2 aria-invalid:ring-bad-600"
-                    value={code}
-                    onChange={(e) => {
-                      setCode(e.target.value.replace(/\D/g, "").slice(0, 6));
-                      setError("");
-                    }}
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    maxLength={6}
-                    aria-invalid={Boolean(error)}
-                    autoFocus
-                  />
-                  {error && (
-                    <p role="alert" className="mt-2 text-sm font-medium text-bad-600">
-                      {error}
-                    </p>
-                  )}
-                </label>
-                {needsName && (
-                <>
-                <p className="rounded-md bg-accent-100 px-4 py-3 text-sm text-ink-900">
-                  {locale === "fr"
-                    ? "Bienvenue ! Ce numéro est nouveau — indiquez votre nom pour créer votre compte."
-                    : "Welcome! This number is new — add your name to create your account."}
-                </p>
+                {codeInput}
                 <div className="grid gap-3 sm:grid-cols-2">
                   <TextField
                     label={t("checkout.firstName")}
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     autoComplete="given-name"
+                    required
                   />
                   <TextField
                     label={t("checkout.lastName")}
@@ -195,37 +401,108 @@ export default function SignInPage() {
                     autoComplete="family-name"
                   />
                 </div>
-                </>
-                )}
-
+                <PasswordField
+                  label={t("auth.password")}
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    clearError();
+                  }}
+                  autoComplete="new-password"
+                  helper={t("auth.passwordHint")}
+                  error={fieldError === "password" ? error : undefined}
+                />
                 <button
                   type="submit"
-                  disabled={busy}
+                  disabled={busy || !firstName.trim()}
                   className="btn btn-lg btn-primary w-full"
                 >
                   {busy && <Loader2 className="size-4 animate-spin" />}
-                  {t("auth.verify")}
+                  {t("auth.signUpCta")}
                 </button>
-                <div className="flex justify-between text-sm">
-                  <button
-                    type="button"
-                    onClick={() => setStep("phone")}
-                    className="font-semibold text-brand-500 hover:underline"
-                  >
-                    {t("auth.otpChange")}
-                  </button>
-                  <button
-                    type="button"
-                    className="font-semibold text-brand-500 hover:underline"
-                  >
-                    {t("auth.otpResend")}
-                  </button>
-                </div>
+                {codeStepFooter}
               </form>
             )}
 
+            {mode === "forgot" && !sent && (
+              <form onSubmit={requestCode} noValidate className="mt-8 space-y-4">
+                {banner}
+                <PhoneField
+                  label={t("auth.phone")}
+                  country={country}
+                  national={phone}
+                  onCountryChange={(c) => {
+                    setCountry(c);
+                    clearError();
+                  }}
+                  onNationalChange={(v) => {
+                    setPhone(v);
+                    clearError();
+                  }}
+                  error={fieldError === "phone" ? error : undefined}
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  disabled={busy || !e164}
+                  className="btn btn-lg btn-primary w-full"
+                >
+                  {busy && <Loader2 className="size-4 animate-spin" />}
+                  {t("auth.sendOtp")}
+                </button>
+              </form>
+            )}
 
-            <p className="mt-6 flex items-start gap-2 rounded-xl bg-ink-50 p-5 ring-1 ring-ink-100 ring-inset text-sm text-ink-700">
+            {mode === "forgot" && sent && (
+              <form onSubmit={submitReset} noValidate className="mt-8 space-y-4">
+                {banner}
+                <p className="rounded-md bg-brand-50 px-4 py-3 text-sm text-ink-700">
+                  {t("auth.otpBody", { phone: maskPhone(e164 ?? phone) })}
+                </p>
+                {codeInput}
+                <PasswordField
+                  label={t("auth.newPassword")}
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    clearError();
+                  }}
+                  autoComplete="new-password"
+                  helper={t("auth.passwordHint")}
+                  error={fieldError === "password" ? error : undefined}
+                />
+                <button type="submit" disabled={busy} className="btn btn-lg btn-primary w-full">
+                  {busy && <Loader2 className="size-4 animate-spin" />}
+                  {t("auth.resetCta")}
+                </button>
+                {codeStepFooter}
+              </form>
+            )}
+
+            <p className="mt-6 text-sm text-ink-500">
+              {mode === "signin" ? (
+                <>
+                  {locale === "fr" ? "Nouveau ici ?" : "New here?"}{" "}
+                  <button
+                    type="button"
+                    onClick={() => go("signup")}
+                    className="font-semibold text-brand-500 hover:underline"
+                  >
+                    {t("auth.signUp")}
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => go("signin")}
+                  className="font-semibold text-brand-500 hover:underline"
+                >
+                  {t("auth.backToSignIn")}
+                </button>
+              )}
+            </p>
+
+            <p className="mt-6 flex items-start gap-2 rounded-xl bg-ink-50 p-5 text-sm text-ink-700 ring-1 ring-ink-100 ring-inset">
               <KeyRound className="mt-0.5 size-4 shrink-0 text-brand-500" />
               {t("auth.noAccountNote")}
             </p>
@@ -233,8 +510,8 @@ export default function SignInPage() {
             <p className="mt-4 flex items-start gap-2 text-xs text-ink-500">
               <ShieldCheck className="mt-0.5 size-3.5 shrink-0" />
               {locale === "fr"
-                ? "Nous ne demandons jamais votre code par téléphone ou par SMS. Ne le communiquez à personne."
-                : "We never ask for your code by phone or SMS. Do not share it with anyone."}
+                ? "Nous ne demandons jamais votre code ni votre mot de passe par téléphone ou par SMS."
+                : "We never ask for your code or password by phone or SMS. Do not share them with anyone."}
             </p>
 
             <p className="mt-6 text-sm text-ink-500">
@@ -245,23 +522,41 @@ export default function SignInPage() {
           </div>
         </div>
 
+        {/*
+          Sourced at 1100×1490 for this panel specifically, not reused from the
+          card library where every file is 720×900 and goes soft stretched
+          across half a screen.
+
+          A stilt fishermen's village at Yaligimba, Mongala — Toza Productions.
+          Still water, deep green forest and a long reflection: calm rather than
+          dramatic, which is what an account screen wants, and its greens sit
+          with the brand navy and teal instead of fighting them. Credited in
+          public/img/photos/credits.json.
+
+          Desktop only: at `lg` and below the form takes the whole width, so a
+          phone never pays for these pixels — which matters in this market.
+        */}
         <div className="relative hidden lg:block">
           <Image
-            src="/img/banner-2.svg"
+            src="/img/photos/yaligimba-village.webp"
             alt=""
             fill
             sizes="50vw"
+            priority
             className="object-cover"
+          />
+          {/* White text needs its own ground; weighted to the bottom so the
+              landscape keeps the top two-thirds. */}
+          <div
+            className="absolute inset-0 bg-linear-to-t from-brand-900/92 via-brand-900/35 to-brand-900/5"
+            aria-hidden
           />
           <div className="absolute inset-0 flex items-end p-10">
             <div className="max-w-sm text-white">
-              <Smartphone className="mb-4 size-8 text-accent-500" />
-              <p className="text-xl font-bold">
-                {locale === "fr"
-                  ? "Votre numéro suffit."
-                  : "Your number is enough."}
+              <p className="display text-2xl leading-tight">
+                {locale === "fr" ? "Votre numéro suffit." : "Your number is enough."}
               </p>
-              <p className="mt-2 text-white/75">
+              <p className="mt-3 text-[15px] leading-relaxed text-white/75">
                 {locale === "fr"
                   ? "Pas besoin d'adresse e-mail. Vos réservations, vos documents et vos demandes sont liés à votre téléphone."
                   : "No email needed. Your bookings, documents and requests are tied to your phone."}

@@ -20,16 +20,22 @@ export default function Footer() {
   const contact = useSiteContact();
   const { t, lowData, setLowData } = usePrefs();
 
+  /*
+   * `wash-dark` rather than flat brand-900: it is the treatment the hero and
+   * the office card already use — teal and amber washes over navy — and the
+   * footer was the only dark surface on the site not using it, which is why it
+   * read as a slab bolted to the bottom rather than part of the page.
+   */
   return (
-    <footer className="mt-16 bg-brand-900 text-white">
+    <footer className="wash-dark mt-16 text-white">
       <div className="container-site grid gap-10 py-12 md:grid-cols-2 lg:grid-cols-4">
         <div className="space-y-4">
           {/* Room here for the full lockup, tagline and all. */}
           <Brand variant="full" />
-          <p className="max-w-xs text-sm text-white/70">{t("brand.tagline")}</p>
+          <p className="display max-w-xs text-[17px] leading-snug text-white/90">{t("brand.tagline")}</p>
           {/* Read from Settings, not hardcoded: the office moves and changes
               numbers, and neither should need a developer (§15). */}
-          <ul className="space-y-2 text-sm text-white/80">
+          <ul className="space-y-2 text-sm text-white/70">
             <li className="flex gap-2">
               <MapPin className="mt-0.5 size-4 shrink-0 text-accent-500" />
               {[contact.streetAddress, contact.city].filter(Boolean).join(", ")}
@@ -63,13 +69,13 @@ export default function Footer() {
         </div>
 
         <nav aria-labelledby="f-services">
-          <h2 id="f-services" className="mb-3 text-sm font-bold uppercase tracking-wide text-white/60">
+          <h2 id="f-services" className="eyebrow mb-4 text-white/60">
             {t("footer.services")}
           </h2>
           <ul className="space-y-2 text-sm">
             {VERTICAL_NAV.map(({ href, key }) => (
               <li key={href}>
-                <Link href={href} className="text-white/85 hover:text-white hover:underline">
+                <Link href={href} className="text-white/75 transition-colors hover:text-white">
                   {t(key)}
                 </Link>
               </li>
@@ -78,27 +84,27 @@ export default function Footer() {
         </nav>
 
         <nav aria-labelledby="f-company">
-          <h2 id="f-company" className="mb-3 text-sm font-bold uppercase tracking-wide text-white/60">
+          <h2 id="f-company" className="eyebrow mb-4 text-white/60">
             {t("footer.company")}
           </h2>
           <ul className="space-y-2 text-sm">
             <li>
-              <Link href="/about" className="text-white/85 hover:text-white hover:underline">
+              <Link href="/about" className="text-white/75 transition-colors hover:text-white">
                 {t("footer.about")}
               </Link>
             </li>
             <li>
-              <Link href="/contact" className="text-white/85 hover:text-white hover:underline">
+              <Link href="/contact" className="text-white/75 transition-colors hover:text-white">
                 {t("footer.contact")}
               </Link>
             </li>
             <li>
-              <Link href="/help" className="text-white/85 hover:text-white hover:underline">
+              <Link href="/help" className="text-white/75 transition-colors hover:text-white">
                 {t("footer.help")}
               </Link>
             </li>
             <li>
-              <Link href="/account" className="text-white/85 hover:text-white hover:underline">
+              <Link href="/account" className="text-white/75 transition-colors hover:text-white">
                 {t("nav.account")}
               </Link>
             </li>
@@ -106,25 +112,25 @@ export default function Footer() {
         </nav>
 
         <nav aria-labelledby="f-legal">
-          <h2 id="f-legal" className="mb-3 text-sm font-bold uppercase tracking-wide text-white/60">
+          <h2 id="f-legal" className="eyebrow mb-4 text-white/60">
             {t("footer.legal")}
           </h2>
           <ul className="space-y-2 text-sm">
             <li>
-              <Link href="/terms" className="text-white/85 hover:text-white hover:underline">
+              <Link href="/terms" className="text-white/75 transition-colors hover:text-white">
                 {t("footer.terms")}
               </Link>
             </li>
             <li>
               <Link
                 href="/terms#no-refund"
-                className="text-white/85 hover:text-white hover:underline"
+                className="text-white/75 transition-colors hover:text-white"
               >
                 {t("footer.policy")}
               </Link>
             </li>
             <li>
-              <Link href="/privacy" className="text-white/85 hover:text-white hover:underline">
+              <Link href="/privacy" className="text-white/75 transition-colors hover:text-white">
                 {t("footer.privacy")}
               </Link>
             </li>
@@ -146,13 +152,15 @@ export default function Footer() {
       <div className="border-t border-white/15">
         <div className="container-site flex flex-col gap-4 py-6">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-white/60">
+            {/* Its own line on a phone: inline, the label ate the row and left the
+                first chip stranded on the end of it. */}
+            <span className="eyebrow w-full text-white/60 sm:mr-1 sm:w-auto">
               {t("footer.payments")}
             </span>
             {PAYMENT_METHODS.map((p) => (
               <span
                 key={p}
-                className="rounded border border-white/20 bg-white/5 px-2.5 py-1 text-xs font-medium text-white/85"
+                className="rounded-lg bg-white/8 px-2.5 py-1.5 text-xs font-semibold text-white/85 ring-1 ring-white/15 ring-inset"
               >
                 {p}
               </span>

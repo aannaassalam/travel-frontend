@@ -10,13 +10,13 @@ import { Order } from "@/typescript/interface/domain.interface";
 import {
   Banknote,
   CalendarPlus,
-  CheckCircle2,
   KeyRound,
   MessageSquare,
   Bike,
   ShieldCheck
 } from "lucide-react";
 import Link from "next/link";
+import { BookingConfirmedSpot } from "@/components/art/spots";
 import { useRouter } from "next/router";
 import { useEffect } from "react";
 
@@ -67,7 +67,7 @@ export default function ConfirmationPage() {
           <p className="mt-2 text-ink-500">{t("common.notFoundBody")}</p>
           <Link
             href="/"
-            className="mt-6 inline-flex rounded-md bg-accent-500 px-5 py-3 font-bold text-brand-900"
+            className="btn btn-lg btn-primary mt-6"
           >
             {t("common.backHome")}
           </Link>
@@ -86,7 +86,7 @@ export default function ConfirmationPage() {
     >
       <div className="container-site max-w-3xl py-10">
         <div className="rounded-card bg-ok-100 p-6 ring-1 ring-ok-600/20 ring-inset text-center">
-          <CheckCircle2 className="mx-auto mb-3 size-12 text-ok-600" />
+          <BookingConfirmedSpot className="mx-auto mb-2 w-full max-w-[200px] text-brand-900" />
           <h1 className="display text-2xl text-brand-900">
             {isCash ? t("confirm.titleCash") : t("confirm.title")}
           </h1>
@@ -192,7 +192,7 @@ export default function ConfirmationPage() {
           <div className="mt-5 flex flex-wrap gap-3">
             <Link
               href={`/account/bookings/${order.reference}`}
-              className="rounded-md bg-accent-500 px-5 py-3 font-bold text-brand-900 hover:bg-accent-600"
+              className="btn btn-lg btn-primary"
             >
               {t("confirm.viewBooking")}
             </Link>
@@ -214,7 +214,7 @@ export default function ConfirmationPage() {
           <p className="mt-1 text-[15px] text-ink-700">{t("confirm.claimBody")}</p>
           <Link
             href="/login"
-            className="mt-3 inline-flex rounded-md border border-brand-500 px-4 py-2.5 text-sm font-bold text-brand-500 hover:bg-white"
+            className="btn btn-sm btn-outline mt-3"
           >
             {t("confirm.claimCta")}
           </Link>

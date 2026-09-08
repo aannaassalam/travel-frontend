@@ -67,7 +67,7 @@ export function HoldBanner() {
         <p className="flex-1 text-sm font-medium text-ink-900">{t("checkout.holdExpired")}</p>
         <Link
           href="/"
-          className="rounded-md bg-brand-900 px-3 py-2 text-sm font-semibold text-white"
+          className="btn btn-sm btn-dark"
         >
           {t("checkout.holdRestart")}
         </Link>

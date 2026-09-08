@@ -36,7 +36,7 @@ export default function EnquiriesPage() {
               </p>
               <Link
                 href="/property"
-                className="mt-4 inline-flex rounded-md bg-accent-500 px-4 py-2.5 text-sm font-bold text-brand-900"
+                className="btn btn-sm btn-primary mt-4"
               >
                 {t("account.browse")}
               </Link>

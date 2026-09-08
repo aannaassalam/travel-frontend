@@ -1,4 +1,5 @@
-import { Price, PolicyChip, RatingBadge, Scarcity, Stars } from "@/components/site/bits";
+import { NoImageSpot } from "@/components/art/spots";
+import { Price, PolicyChip, RatingBadge, Scarcity, Stars, hasPrice } from "@/components/site/bits";
 import { detailHref, hotelHref } from "@/lib/catalog";
 import { mediaUrl } from "@/lib/media";
 import { durationBetween, fmtDate, fmtTime, formatMinutes } from "@/lib/format";
@@ -20,6 +21,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 
 /** Per-vertical chip tint. Amber stays reserved for calls to action. */
 const VERTICAL_COLOR: Record<string, string> = {
@@ -74,10 +76,21 @@ function Thumb({
   priority?: boolean;
 }) {
   const { lowData } = usePrefs();
+  /**
+   * `mediaUrl` covers a MISSING image; this covers one that fails to arrive —
+   * a dead S3 object, a storage hiccup, a bad migration. Without it next/image
+   * leaves the box empty, and a grid of blank grey rectangles reads as broken
+   * software rather than as a listing without a photo.
+   */
+  const [failed, setFailed] = useState(false);
   return (
     <div className={cn("relative shrink-0 overflow-hidden bg-ink-50", className)}>
       {lowData ? (
         <div className="size-full bg-linear-to-br from-brand-100 to-brand-500/30" aria-hidden />
+      ) : failed ? (
+        <div className="grid size-full place-items-center bg-brand-50">
+          <NoImageSpot className="w-2/3 max-w-[160px] text-brand-900" />
+        </div>
       ) : (
         <>
           <Image
@@ -87,6 +100,7 @@ function Thumb({
             sizes="(max-width: 640px) 100vw, 320px"
             className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
             priority={priority}
+            onError={() => setFailed(true)}
           />
           {/* A whisper of a scrim so the image edge never fights the card edge. */}
           <div
@@ -582,12 +596,26 @@ export function HotelTile({ hotel }: { hotel: Hotel }) {
         </p>
         <RatingBadge rating={hotel.rating} count={hotel.reviewCount} size="sm" />
         <div className="mt-auto pt-3">
-          <p className="eyebrow text-ink-300">{t("listing.from")}</p>
-          <Price
-            money={hotel.fromPrice}
-            className="display block text-[24px] leading-none text-brand-900"
-          />
-          <p className="mt-1 text-xs text-ink-500">{t("listing.perNight")}</p>
+          {/*
+            No price rather than a wrong one. The related-hotels projection can
+            return 0 where no room has been priced for the dates, and "from $0"
+            on a hotel card is worse than silence — it is the number the whole
+            card is selling.
+          */}
+          {hasPrice(hotel.fromPrice) ? (
+            <>
+              <p className="eyebrow text-ink-300">{t("listing.from")}</p>
+              <Price
+                money={hotel.fromPrice}
+                className="display block text-[24px] leading-none text-brand-900"
+              />
+              <p className="mt-1 text-xs text-ink-500">{t("listing.perNight")}</p>
+            </>
+          ) : (
+            <p className="text-sm font-semibold text-brand-600">
+              {t("listing.details")}
+            </p>
+          )}
         </div>
       </div>
     </article>

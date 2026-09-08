@@ -385,8 +385,8 @@ export default function Home({ deals, hotels, properties, heroImage, destination
             </h2>
             <p className="mt-3 max-w-md text-white/75">
               {locale === "fr"
-                ? "Passez à notre bureau de Gombe, appelez-nous, ou écrivez sur WhatsApp. Nous réservons pour vous et vous payez en espèces sur place si vous le souhaitez."
-                : "Come to our Gombe office, call us, or message on WhatsApp. We book for you and you can pay cash on the spot if you prefer."}
+                ? `Passez à notre bureau${contact.city ? ` de ${contact.city}` : ""}, appelez-nous, ou écrivez sur WhatsApp. Nous réservons pour vous et vous payez en espèces sur place si vous le souhaitez.`
+                : `Come to our ${contact.city || ""} office, call us, or message on WhatsApp. We book for you and you can pay cash on the spot if you prefer.`}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <a href={`tel:${dial(contact.phone)}`} className="btn btn-lg btn-primary">
@@ -401,14 +401,44 @@ export default function Home({ deals, hotels, properties, heroImage, destination
               </Link>
             </div>
           </div>
-          <div className="relative min-h-56">
+          {/*
+            Was a river landscape — decorative, and saying nothing about the
+            offer. This panel exists to make a physical office feel real, so it
+            now shows one, with the address and hours read from Settings rather
+            than invented here.
+          */}
+          {/*
+            A real street rather than a drawing: Gare Centrale in Kinshasa, the
+            country this agency actually works in. The address and hours stay on
+            top of it — the panel's job is still to make a physical office feel
+            reachable, and a picture alone would drop the only two facts that
+            let someone turn up.
+          */}
+          <div className="relative min-h-56 overflow-hidden">
             <Image
-              src="/img/hero-river.svg"
+              src="/img/photos/kinshasa-street.webp"
               alt=""
               fill
               sizes="(max-width: 1024px) 100vw, 640px"
               className="object-cover"
             />
+            {/*
+              Two layers. The flat tint pulls the photograph's dusk sky — which
+              runs magenta — back into the brand navy so the panel reads as one
+              surface rather than a bright rectangle pasted onto a dark card.
+              The gradient on top then buys contrast for the address.
+            */}
+            <div className="absolute inset-0 bg-brand-900/45" aria-hidden />
+            <div
+              className="absolute inset-0 bg-linear-to-t from-brand-900/95 via-brand-900/45 to-transparent"
+              aria-hidden
+            />
+            <div className="absolute inset-x-0 bottom-0 p-8 text-sm text-white/80">
+              <p className="font-semibold text-white">
+                {[contact.streetAddress, contact.city].filter(Boolean).join(", ")}
+              </p>
+              <p className="mt-1">{contact.officeHours || t("home.trustHours")}</p>
+            </div>
           </div>
         </div>
       </section>

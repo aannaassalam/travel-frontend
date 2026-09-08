@@ -728,7 +728,20 @@
   .field:focus-within &,
   .field:has(:not(:placeholder-shown)) &,
   .field[data-filled="true"] & {
-    top: 0.625rem;
+    /*
+      The floated label used to sit at 0.625rem with the value starting at
+      1.5rem, which left the two touching — the label read as part of the value
+      rather than a caption above it. Lifting the label and dropping the value
+      opens a real gap without changing the label's size or the field's shape.
+    */
+    top: 0.5rem;
+    /*
+      Hug the glyphs. At the inherited line-height the label's line box is ~22px
+      tall, so even lifted it still ran into the value below — the gap measured
+      exactly 0. Tightening the line box opens real space without making the
+      field taller.
+    */
+    line-height: 1;
     transform: translateY(0) scale(0.78);
     font-weight: 700;
     letter-spacing: 0.06em;
@@ -741,7 +754,8 @@
   width: 100%;
   border: 0;
   background: transparent;
-  padding: 1.5rem 0.875rem 0.5rem;
+  /* Top padding clears the floated label — see field-label for the spacing. */
+  padding: 1.75rem 0.875rem 0.5rem;
   font-size: var(--text-base);
   font-weight: 600;
   color: var(--color-ink-900);
@@ -813,6 +827,17 @@
 @utility chip {
   display: inline-flex;
   align-items: center;
+  /*
+    A chip hugs its label, always.
+
+    `inline-flex` is not enough on its own: as a direct child of a `flex-col`
+    the default `align-items: stretch` sets the cross size, and the pill spans
+    the whole column (ActivityRow put a city chip on its own, without the
+    wrapper row every other card happens to have). An explicit cross size beats
+    stretch, and in a row it is the natural width anyway — so this fixes the
+    misuse everywhere without touching alignment.
+  */
+  width: fit-content;
   gap: 0.375rem;
   border-radius: 0.5rem;
   padding: 0.25rem 0.5rem;

@@ -94,7 +94,9 @@ export default function Gallery({
             className="absolute bottom-3 right-3 inline-flex items-center gap-2 rounded-md bg-white px-3 py-2 text-sm font-semibold text-brand-900 shadow-md hover:bg-ink-50"
           >
             <Images className="size-4" />
-            {t("listing.gallery", { n: resolved.length })}
+            {resolved.length === 1
+              ? t("listing.gallery1")
+              : t("listing.gallery", { n: resolved.length })}
           </button>
         </DialogTrigger>
         <DialogContent

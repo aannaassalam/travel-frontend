@@ -325,13 +325,36 @@ async function post<T>(path: string, body: unknown): Promise<T> {
 export const requestOtp = (phone: string) =>
   post<{ expiresInSeconds: number }>("/auth/otp/request", { phone });
 
-/** POST /auth/otp/verify — proves the phone and opens a 7-day session cookie. */
+/**
+ * POST /auth/otp/verify — sign-up. Proves the phone, creates the account with
+ * the password the customer chose, and opens a 7-day session cookie.
+ *
+ * This is the ONLY time an SMS is needed to get in. Every later sign-in is
+ * /auth/login.
+ */
 export const verifyOtp = (input: {
   phone: string;
   code: string;
   firstName?: string;
   lastName?: string;
+  password?: string;
 }) => post<{ customer: CustomerSession }>("/auth/otp/verify", input).then((r) => r.customer);
+
+/** POST /auth/login — the everyday way in: phone + password, no SMS. */
+export const login = (input: { phone: string; password: string }) =>
+  post<{ customer: CustomerSession }>("/auth/login", input).then((r) => r.customer);
+
+/**
+ * POST /auth/password/reset — spends a code from /auth/otp/request and sets the
+ * new password. The server signs them in on success, so there is no login form
+ * waiting on the other side of a password chosen ten seconds ago.
+ */
+export const resetPassword = (input: {
+  phone: string;
+  code: string;
+  password: string;
+}) =>
+  post<{ customer: CustomerSession }>("/auth/password/reset", input).then((r) => r.customer);
 
 /** PATCH /auth/me — the customer editing their own details. */
 export async function updateProfile(patch: {

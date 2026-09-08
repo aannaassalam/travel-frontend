@@ -6,6 +6,7 @@ import { usePrefs } from "@/lib/prefs";
 import { useMyOrders } from "@/lib/orders";
 import { Order } from "@/typescript/interface/domain.interface";
 import Link from "next/link";
+import { NoBookingsSpot } from "@/components/art/spots";
 import { useState } from "react";
 
 export default function BookingsPage() {
@@ -41,11 +42,12 @@ export default function BookingsPage() {
 
           {shown.length === 0 ? (
             <div className="surface p-10 text-center">
+              <NoBookingsSpot className="mx-auto mb-4 w-full max-w-[180px] text-brand-900" />
               <p className="font-semibold text-brand-900">{t("account.noBookings")}</p>
               <p className="mt-1 text-sm text-ink-500">{t("account.noBookingsBody")}</p>
               <Link
                 href="/"
-                className="mt-4 inline-flex rounded-md bg-accent-500 px-4 py-2.5 text-sm font-bold text-brand-900"
+                className="btn btn-sm btn-primary mt-4"
               >
                 {t("account.browse")}
               </Link>

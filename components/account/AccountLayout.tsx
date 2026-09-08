@@ -19,6 +19,7 @@ import {
   UserRound
 } from "lucide-react";
 import Link from "next/link";
+import { ClaimAccountSpot } from "@/components/art/spots";
 import { useRouter } from "next/router";
 
 const NAV = [
@@ -154,14 +155,14 @@ export default function AccountLayout({
             children(user)
           ) : (
             <div className="surface p-8 text-center">
-              <UserRound className="mx-auto mb-3 size-10 text-ink-300" />
+              <ClaimAccountSpot className="mx-auto mb-4 w-full max-w-[180px] text-brand-900" />
               <h2 className="text-lg font-bold text-brand-900">{t("auth.title")}</h2>
               <p className="mx-auto mt-1 max-w-sm text-sm text-ink-500">
                 {t("auth.subtitle")} {t("auth.noAccountNote")}
               </p>
               <Link
                 href="/login"
-                className="mt-5 inline-flex rounded-md bg-accent-500 px-5 py-3 font-bold text-brand-900 hover:bg-accent-600"
+                className="btn btn-md btn-primary mt-5"
               >
                 {t("nav.signin")}
               </Link>

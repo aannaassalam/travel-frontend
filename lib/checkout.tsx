@@ -53,7 +53,6 @@ export interface ContactDetails {
   lastName: string;
   phone: string;
   email?: string;
-  createAccount: boolean;
 }
 
 interface CheckoutState {
@@ -255,8 +254,9 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
        * belongs to whoever typed it, so treating checkout as authentication
        * would hand out a session nobody verified — and would silently claim a
        * number that might be someone else's. An account is created only by
-       * verifying a one-time code; `createAccount` on the contact step routes
-       * the customer to that, it does not stand in for it.
+       * verifying a one-time code and choosing a password, which is what the
+       * confirmation screen invites the customer to do once the booking is
+       * safely filed.
        */
       rememberOrderRef(order.reference);
       return order;

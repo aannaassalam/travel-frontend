@@ -3,6 +3,7 @@ import { DealTile, HotelTile, PropertyTile } from "@/components/catalog/cards";
 import { CardSkeleton } from "@/components/ui/field";
 import { getHotel, getListing } from "@/lib/api";
 import { usePrefs } from "@/lib/prefs";
+import { NoSavedSpot } from "@/components/art/spots";
 import { getSaved } from "@/lib/store";
 import { Hotel, Listing } from "@/typescript/interface/domain.interface";
 import { useQuery } from "@tanstack/react-query";
@@ -59,6 +60,7 @@ function SavedList() {
   if (items.length === 0) {
     return (
       <div className="surface p-12 text-center">
+        <NoSavedSpot className="mx-auto mb-4 w-full max-w-[180px] text-brand-900" />
         <p className="font-semibold text-brand-900">{t("account.noSaved")}</p>
         <Link href="/" className="btn btn-md btn-primary mt-5">
           {t("account.browse")}

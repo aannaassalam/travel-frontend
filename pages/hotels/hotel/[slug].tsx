@@ -17,6 +17,7 @@ import {
 import Layout from "@/components/site/Layout";
 import { getHotel, getSlugs, safely } from "@/lib/api";
 import { useCheckout } from "@/lib/checkout";
+import { cn } from "@/lib/utils";
 import { fmtDate } from "@/lib/format";
 import { mediaUrl, mediaUrls } from "@/lib/media";
 import { multiply, nightsBetween } from "@/lib/money";
@@ -296,7 +297,21 @@ export default function HotelDetail({ hotel, others }: Props) {
                           type="button"
                           disabled={soldOut}
                           onClick={() => book(room)}
-                          className="rounded-md bg-accent-500 px-4 py-2.5 text-sm font-bold text-brand-900 hover:bg-accent-600 disabled:cursor-not-allowed disabled:bg-ink-100 disabled:text-ink-500"
+                          className={cn(
+                            "btn btn-sm",
+                            /*
+                              Sold out is a real `disabled` — it cannot be
+                              recovered from on this screen. But the system's
+                              disabled styling fades to 55% opacity, and a grey
+                              button at 55% puts "Épuisé" under the contrast
+                              floor. Supplying a solid unavailable colour is
+                              clearer than a faint one, so the opacity is
+                              overridden rather than the semantics.
+                            */
+                            soldOut
+                              ? "cursor-not-allowed bg-ink-100 text-ink-500 disabled:opacity-100"
+                              : "btn-primary"
+                          )}
                         >
                           {soldOut ? t("listing.soldOut") : t("listing.book")}
                         </button>
@@ -377,7 +392,7 @@ export default function HotelDetail({ hotel, others }: Props) {
               <p className="text-sm text-ink-500">{t("listing.perNight")}</p>
               <a
                 href="#rooms"
-                className="mt-4 flex w-full items-center justify-center rounded-md bg-accent-500 px-5 py-3.5 text-base font-bold text-brand-900 hover:bg-accent-600"
+                className="btn btn-lg btn-primary mt-4 w-full"
               >
                 {t("listing.rooms")}
               </a>
