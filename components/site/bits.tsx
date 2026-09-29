@@ -127,7 +127,7 @@ export function Scarcity({
   const { t } = usePrefs();
   if (available <= 0) {
     return (
-      <span className="inline-flex items-center rounded-md bg-ink-50 px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-ink-500 ring-1 ring-ink-100 ring-inset">
+      <span className="inline-flex shrink-0 items-center rounded-md bg-ink-50 px-2 py-1 text-[11px] font-bold whitespace-nowrap uppercase tracking-wide text-ink-500 ring-1 ring-ink-100 ring-inset">
         {t("listing.soldOut")}
       </span>
     );
@@ -140,7 +140,14 @@ export function Scarcity({
         ? "listing.roomsLeft"
         : "listing.unitsLeft";
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-md bg-bad-100 px-2 py-1 text-[11px] font-bold text-bad-600 ring-1 ring-bad-600/15 ring-inset">
+    /*
+      `shrink-0` and `whitespace-nowrap` together, because this badge always
+      sits beside a price. A CDF amount is seven digits wide, which took the
+      whole row and squeezed the badge down to one word per line - "4 / seats /
+      left" stacked into the card's edge. A badge is a label; it either fits on
+      its line or wraps onto the next one whole.
+    */
+    <span className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-bad-100 px-2 py-1 text-[11px] font-bold whitespace-nowrap text-bad-600 ring-1 ring-bad-600/15 ring-inset">
       <span className="size-1.5 rounded-full bg-bad-600" aria-hidden="true" />
       {t(key, { n: available })}
     </span>

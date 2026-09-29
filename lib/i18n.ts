@@ -222,6 +222,34 @@ const fr: Dict = {
   "checkout.payWith": "Mode de paiement",
   "checkout.mobileMoney": "Mobile money",
   "checkout.card": "Carte bancaire",
+  "pay.errProvider": "Le paiement n'a pas pu être ouvert. Notre prestataire a refusé la demande.",
+  "pay.errUnreachable": "Notre prestataire de paiement est injoignable pour le moment.",
+  "pay.errUnavailable": "Le paiement en ligne est momentanément indisponible.",
+  "pay.errSoldOut": "Ce stock vient d'être vendu. Revenez en arrière pour choisir autre chose.",
+  "pay.errGeneric": "Le paiement n'a pas pu être lancé.",
+  "pay.errCancelled":
+    "Cette réservation a expiré et les places ont été remises en vente.",
+  "pay.retry": "Reprendre la réservation",
+  "pay.errTooSmall":
+    "Ce montant est trop faible pour le paiement en ligne.",
+  "pay.errAmount":
+    "Ce montant ne peut pas être réglé en ligne.",
+  "pay.errMethod":
+    "Ce moyen de paiement n'est pas disponible pour le moment.",
+  "pay.errCurrency":
+    "Cette réservation a été calculée dans une autre devise.",
+  "pay.errMethodBody":
+    "Choisissez un autre moyen de paiement — mobile money, espèces au bureau ou virement.",
+  "pay.errTooSmallBody":
+    "Choisissez le paiement en espèces au bureau, ou par virement — la réservation reste valable.",
+  "pay.errCancelledBody":
+    "Le stock n'est tenu que quelques minutes. Rien n'a été débité — relancez la recherche pour réserver à nouveau.",
+  "pay.errNoCharge": "Rien n'a été débité. Réessayez, ou choisissez le paiement en espèces au bureau.",
+  "checkout.wallet": "Portefeuille électronique",
+  "checkout.walletNote": "MaxiCash, PayPal et autres portefeuilles.",
+  "checkout.bankTransfer": "Virement bancaire",
+  "checkout.bankTransferNote":
+    "Payez depuis votre banque via notre prestataire. Confirmation immédiate.",
   "checkout.cash": "Espèces en agence",
   "checkout.mobileMoneyNote":
     "Vous recevrez une demande de confirmation sur votre téléphone. Gardez-le à portée de main.",
@@ -609,6 +637,29 @@ const en: Dict = {
   "checkout.payWith": "Payment method",
   "checkout.mobileMoney": "Mobile money",
   "checkout.card": "Bank card",
+  "pay.errProvider": "The payment could not be opened. Our provider refused the request.",
+  "pay.errUnreachable": "Our payment provider is unreachable right now.",
+  "pay.errUnavailable": "Online payment is temporarily unavailable.",
+  "pay.errSoldOut": "That stock just sold. Go back and choose something else.",
+  "pay.errGeneric": "The payment could not be started.",
+  "pay.errCancelled": "This booking expired and the seats went back on sale.",
+  "pay.retry": "Take the booking again",
+  "pay.errTooSmall": "This amount is too small to pay online.",
+  "pay.errAmount": "This amount cannot be paid online.",
+  "pay.errMethod": "That payment method is not available right now.",
+  "pay.errCurrency": "This booking was priced in a different currency.",
+  "pay.errMethodBody":
+    "Choose another method — mobile money, cash at the office, or bank transfer.",
+  "pay.errTooSmallBody":
+    "Choose cash at the office or bank transfer instead — your booking still stands.",
+  "pay.errCancelledBody":
+    "Stock is only held for a few minutes. You have not been charged — start a new search to book again.",
+  "pay.errNoCharge": "You have not been charged. Try again, or choose to pay cash at the office.",
+  "checkout.wallet": "Digital wallet",
+  "checkout.walletNote": "MaxiCash, PayPal and other wallets.",
+  "checkout.bankTransfer": "Bank transfer",
+  "checkout.bankTransferNote":
+    "Pay from your bank through our provider. Confirmed immediately.",
   "checkout.cash": "Cash at our office",
   "checkout.mobileMoneyNote":
     "You will receive a confirmation request on your phone. Keep it to hand.",

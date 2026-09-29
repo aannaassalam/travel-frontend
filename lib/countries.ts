@@ -65,13 +65,40 @@ export function toE164(country: Country, national: string): string | null {
   return `${country.dial}${digits}`;
 }
 
+/** Longest prefix first, so +1 never wins over a +1xx style code. */
+const BY_DIAL_LENGTH = [...COUNTRIES].sort((a, b) => b.dial.length - a.dial.length);
+
 /** Splits a stored E.164 back into a country and its national part. */
 export function fromE164(value?: string | null): { country: Country; national: string } {
   if (!value?.startsWith("+")) return { country: DEFAULT_COUNTRY, national: "" };
-  // Longest prefix first, so +1 never wins over a +1xx style code.
-  const match = [...COUNTRIES]
-    .sort((a, b) => b.dial.length - a.dial.length)
-    .find((c) => value.startsWith(c.dial));
+  const match = BY_DIAL_LENGTH.find((c) => value.startsWith(c.dial));
   if (!match) return { country: DEFAULT_COUNTRY, national: value.replace(/^\+/, "") };
   return { country: match, national: value.slice(match.dial.length) };
+}
+
+/**
+ * Normalises whatever lands in the national box.
+ *
+ * Nobody types their number the way the field wants it. They paste
+ * "+243 81 000 00 00" from WhatsApp, and the browser autofills `tel-national`
+ * with the full international number it has on file — in both cases the dial
+ * code used to be stripped of its plus and left sitting in the national part,
+ * so the number failed the length check under whichever country happened to be
+ * selected, which is not the one the number belongs to.
+ *
+ * A value only counts as international when it carries a plus, or when it is
+ * longer than the selected country allows AND opens with a dial code we know:
+ * a local number typed with its trunk zero must never reselect the country.
+ */
+export function splitNational(
+  value: string,
+  current: Country
+): { country: Country; national: string } {
+  const digits = value.replace(/\D/g, "");
+  const international = value.trim().startsWith("+") || digits.length > current.digits[1];
+  if (international) {
+    const match = BY_DIAL_LENGTH.find((c) => digits.startsWith(c.dial.slice(1)));
+    if (match) return { country: match, national: digits.slice(match.dial.length - 1) };
+  }
+  return { country: current, national: digits };
 }

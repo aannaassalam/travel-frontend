@@ -754,6 +754,16 @@
   width: 100%;
   border: 0;
   background: transparent;
+  /*
+    One height for every control in a field.
+    An `<input>`, a Radix select trigger and the date button all size themselves
+    from their own line box, so the date and the document type sat visibly
+    shorter than the text fields beside them. Declaring the box here is the only
+    version that cannot drift: 1.75rem + 1.5rem + 0.5rem, the padding below plus
+    one line.
+  */
+  min-height: 3.75rem;
+  line-height: 1.5rem;
   /* Top padding clears the floated label — see field-label for the spacing. */
   padding: 1.75rem 0.875rem 0.5rem;
   font-size: var(--text-base);
@@ -762,6 +772,14 @@
   outline: none;
   &::placeholder {
     color: transparent;
+  }
+  /*
+    The date field wears this class on a wrapper, not on the input, so its
+    placeholder needs colouring one level down - it is the dd/mm/yyyy hint, and
+    a box holding nothing but a calendar icon tells the visitor nothing.
+  */
+  & input::placeholder {
+    color: var(--color-ink-300);
   }
 }
 

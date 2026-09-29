@@ -1,4 +1,5 @@
 import CartBar from "@/components/restaurant/CartBar";
+import LocationMap from "@/components/catalog/LocationMap";
 import { Breadcrumbs } from "@/components/site/bits";
 import Layout from "@/components/site/Layout";
 import { getRestaurant } from "@/lib/api";
@@ -170,6 +171,28 @@ export default function RestaurantPage() {
               </ul>
             </section>
           ))}
+
+          {/*
+            Where it is. A delivery customer never needs this, but someone
+            deciding whether to walk over does — and the address alone does not
+            answer "how far is that from me".
+          */}
+          <section>
+              <h2 className="mb-4 text-xl font-bold text-brand-900">
+                {t("listing.location")}
+              </h2>
+              <div className="overflow-hidden rounded-card ring-1 ring-ink-100 ring-inset">
+                <LocationMap
+                  geo={r.geo}
+                  city={r.city}
+                  label={`${name} — ${r.address}`}
+                  className="h-64"
+                />
+                <p className="p-4 text-[15px] text-ink-700">
+                  {r.address}, {r.city}
+                </p>
+              </div>
+          </section>
         </div>
       </div>
 

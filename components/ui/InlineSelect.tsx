@@ -49,7 +49,10 @@ export function InlineSelect({
           "h-auto data-[size=default]:h-auto w-auto cursor-pointer gap-1.5 border-0 text-sm font-semibold shadow-none focus-visible:ring-2 focus-visible:ring-offset-0",
           tone === "dark"
             ? "bg-transparent px-2 py-1.5 text-white hover:bg-white/10 focus-visible:ring-white/40 [&_svg]:opacity-70"
-            : "rounded-lg bg-white px-3 py-2 text-ink-900 ring-1 ring-ink-100 ring-inset hover:bg-ink-50 focus-visible:ring-brand-500",
+            // Same 44px floor as the text inputs and the date button: a select
+            // that renders 6px shorter than the field next to it reads as a
+            // different, lesser control.
+            : "min-h-11 rounded-lg bg-white px-3 py-2 text-ink-900 ring-1 ring-ink-100 ring-inset hover:bg-ink-50 focus-visible:ring-brand-500",
           className,
           triggerClassName
         )}

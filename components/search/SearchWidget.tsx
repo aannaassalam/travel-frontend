@@ -3,7 +3,7 @@ import { isUnserviced, useLocations, useRoutes } from "@/lib/locations";
 import { usePrefs } from "@/lib/prefs";
 import { cn } from "@/lib/utils";
 import { InlineSelect } from "@/components/ui/InlineSelect";
-import { DateField } from "./DateField";
+import { DatePicker } from "@/components/ui/DatePicker";
 import { LocationField } from "./LocationField";
 import { Vertical } from "@/typescript/interface/domain.interface";
 import {
@@ -97,7 +97,21 @@ const fromSelect = (v: string) => (v === ANY ? "" : v);
  * the first, which is what made them look broken next to their neighbours.
  */
 const selectTriggerCls =
-  "h-auto data-[size=default]:h-auto w-full justify-between rounded-none border-0 bg-transparent p-0 text-[15px] font-semibold text-ink-900 shadow-none ring-0 hover:bg-transparent focus-visible:ring-0";
+  "h-6 min-h-0 data-[size=default]:h-6 w-full justify-between rounded-none border-0 bg-transparent p-0 text-[15px] font-semibold text-ink-900 shadow-none ring-0 hover:bg-transparent focus-visible:ring-0";
+
+/**
+ * The height every value row in the bar shares.
+ *
+ * `Field` centres label-and-value as one stack, so the label's position is set
+ * by however tall the control below it is. A 24px text input next to a 44px
+ * Radix trigger therefore pushed the two labels 10px out of line — measured,
+ * not guessed — which is what made the whole bar look crooked.
+ *
+ * 44px is the right tap target in a form, and wrong in a compact search bar
+ * where the padded `Field` already provides it. So the controls are pinned to
+ * one line box here and nowhere else.
+ */
+const compactControlCls = "min-h-0 h-6";
 
 export default function SearchWidget({
   // Hotels, matching the tab order and the nav: the first tab being the
@@ -383,6 +397,7 @@ export default function SearchWidget({
             {vertical !== "PROPERTY" && vertical !== "RESTAURANT" && (
               <Field
                 as="div"
+                className="cursor-text"
                 label={
                   vertical === "HOTEL"
                     ? t("search.checkin")
@@ -391,11 +406,14 @@ export default function SearchWidget({
                       : t("search.date")
                 }
               >
-                <DateField
+                <DatePicker
+                  triggerClassName={compactControlCls}
                   value={form.from}
                   onChange={(v) => set("from", v)}
                   placeholder={t("search.date")}
                   locale={locale}
+                  // Yesterday is never a departure date.
+                  min={today()}
                 />
               </Field>
             )}
@@ -405,6 +423,7 @@ export default function SearchWidget({
               vertical === "CAR") && (
               <Field
                 as="div"
+                className="cursor-text"
                 label={
                   vertical === "HOTEL"
                     ? t("search.checkout")
@@ -415,7 +434,8 @@ export default function SearchWidget({
                       : t("search.returnFlight")
                 }
               >
-                <DateField
+                <DatePicker
+                  triggerClassName={compactControlCls}
                   value={form.to}
                   onChange={(v) => set("to", v)}
                   placeholder={t("search.date")}

@@ -46,6 +46,18 @@ export default function SignInPage() {
   const router = useRouter();
 
   const [mode, setMode] = useState<Mode>("signin");
+
+  /**
+   * A link can open a specific flow: the confirmation page's "set my password"
+   * sends a guest to `?mode=signup`, because the sign-in tab is meaningless to
+   * someone who has no password yet. Read once the router knows its query;
+   * anything unrecognised falls back to sign-in.
+   */
+  useEffect(() => {
+    if (!router.isReady) return;
+    const wanted = String(router.query.mode ?? "");
+    if (wanted === "signup" || wanted === "forgot") setMode(wanted);
+  }, [router.isReady, router.query.mode]);
   /** Only the two SMS flows have a second step; sign-in is a single form. */
   const [sent, setSent] = useState(false);
 

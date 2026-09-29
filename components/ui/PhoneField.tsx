@@ -1,4 +1,4 @@
-import { COUNTRIES, Country, findCountry } from "@/lib/countries";
+import { COUNTRIES, Country, findCountry, splitNational } from "@/lib/countries";
 import {
   Select,
   SelectContent,
@@ -100,9 +100,14 @@ export function PhoneField({
         <input
           id={id}
           value={national}
-          // Digits only: a pasted "+243 81 000 00 00" would otherwise end up
-          // appended to the dial code the select already supplies.
-          onChange={(e) => onNationalChange(e.target.value.replace(/\D/g, ""))}
+          // A pasted or autofilled "+243 81 000 00 00" carries its own country:
+          // take it, rather than stripping the plus and leaving "243..." to be
+          // dialled after whatever the picker happens to say.
+          onChange={(e) => {
+            const split = splitNational(e.target.value, country);
+            if (split.country !== country) onCountryChange(split.country);
+            onNationalChange(split.national);
+          }}
           inputMode="tel"
           autoComplete="tel-national"
           autoFocus={autoFocus}

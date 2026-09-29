@@ -1,14 +1,23 @@
 import { ConsentBox, HoldBanner, Stepper, Summary } from "@/components/checkout/parts";
 import Layout from "@/components/site/Layout";
-import { ApiError, payOrder } from "@/lib/api";
+import { ApiError, startPayment } from "@/lib/api";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { useCheckout } from "@/lib/checkout";
 import { maskPhone } from "@/lib/format";
 import { price } from "@/lib/money";
 import { usePrefs } from "@/lib/prefs";
 import { cn } from "@/lib/utils";
-import { PaymentRail } from "@/typescript/interface/domain.interface";
-import { Banknote, CreditCard, Loader2, Lock, Smartphone } from "lucide-react";
+import { ONLINE_RAILS, PaymentRail } from "@/typescript/interface/domain.interface";
+import {
+  AlertTriangle,
+  Banknote,
+  CreditCard,
+  Landmark,
+  Loader2,
+  Lock,
+  Smartphone,
+  Wallet
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
@@ -29,7 +38,9 @@ export default function PaymentStep() {
     consentAccepted,
     update,
     confirm,
-    expired
+    expired,
+    clear,
+    retryAttempt
   } = useCheckout();
 
   const [terms, setTerms] = useState(false);
@@ -42,6 +53,12 @@ export default function PaymentStep() {
   const [waiting, setWaiting] = useState(false);
   /** Server-side checkout failures — a sold-out race is the common one. */
   const [error, setError] = useState<string | null>(null);
+  /** Set when the order can no longer be paid, so "try again" is not offered. */
+  const [dead, setDead] = useState(false);
+  /** Below the provider floor — an online retry can never succeed. */
+  const [tooSmall, setTooSmall] = useState(false);
+  /** The provider's own reason code, for picking the right guidance below. */
+  const [code, setCode] = useState<string | undefined>();
 
   useEffect(() => {
     if (ready && (!selection || !contact)) router.replace("/");
@@ -49,11 +66,15 @@ export default function PaymentStep() {
 
   if (!ready || !selection || !contact) return null;
 
-  const isCash = paymentRail === "CASH";
+  const isCash = !ONLINE_RAILS.includes(paymentRail);
   const amount = price(total, currency, locale);
 
   function setRail(rail: PaymentRail) {
-    update({ paymentRail: rail, paymentMethod: rail === "CASH" ? "CASH" : "ONLINE" });
+    update({
+      paymentRail: rail,
+      // Only the provider rails are ONLINE; the rest the office collects.
+      paymentMethod: ONLINE_RAILS.includes(rail) ? "ONLINE" : "CASH"
+    });
   }
 
   /**
@@ -68,26 +89,72 @@ export default function PaymentStep() {
     setError(null);
     try {
       const order = await confirm({ currency, locale });
-      if (order.paymentMethod !== "CASH") {
-        // ponytail: stands in for the provider. `payOrder` is the only thing
-        // that marks an order paid, so replacing it with a real redirect plus
-        // a webhook is a change here and in one handler, nowhere else.
-        await payOrder(order.reference, paymentRail);
+
+      /**
+       * Cash and bank transfer are settled at the office, so there is nothing
+       * to redirect to — the confirmation screen carries the instructions.
+       */
+      if (!ONLINE_RAILS.includes(paymentRail)) {
+        await startPayment(order.reference, paymentRail, locale);
+        router.push(`/booking/confirmation/${order.reference}`);
+        return;
+      }
+
+      const result = await startPayment(order.reference, paymentRail, locale);
+      if (result.status === "PAID") {
+        router.push(`/booking/confirmation/${order.reference}`);
+        return;
+      }
+      if (result.status === "REDIRECT") {
+        /**
+         * The reference has to survive the round trip to MaxiCash: the return
+         * URL is fixed at initialisation and comes back without it, so the
+         * screen on the other side would have nothing to ask about.
+         */
+        try {
+          window.sessionStorage.setItem("pendingOrderRef", order.reference);
+        } catch {
+          /* private mode — the return screen falls back to asking. */
+        }
+        // Full navigation, not router.push: this leaves our origin entirely.
+        window.location.assign(result.paymentUrl);
+        return;
       }
       router.push(`/booking/confirmation/${order.reference}`);
     } catch (err) {
       setWaiting(false);
       // A sold-out race is the expected failure and needs to say so plainly —
       // §11.6: never leave someone staring at a spinner that has given up.
+      /**
+       * The server's `code` is the contract; its English message is operational
+       * detail, not customer copy. Showing it raw put "The payment provider
+       * refused the request" in the middle of a French checkout.
+       */
       const status = err instanceof ApiError ? err.status : 0;
+      const code = err instanceof ApiError ? err.code : undefined;
+      setCode(code);
+      setDead(code === "ORDER_CANCELLED" || code === "CURRENCY_CHANGED");
+      // Retrying the same amount cannot help; the copy points at the office.
+      setTooSmall(code === "AMOUNT_BELOW_MINIMUM" || code === "AMOUNT_INVALID");
+      const byCode: Record<string, string> = {
+        /**
+         * The hold ran out and the server released the seats, so this order can
+         * never be paid. Retrying is pointless — the message says so and the
+         * banner below offers the only route that works.
+         */
+        ORDER_CANCELLED: t("pay.errCancelled"),
+        CURRENCY_CHANGED: t("pay.errCurrency"),
+        AMOUNT_BELOW_MINIMUM: t("pay.errTooSmall"),
+        METHOD_UNAVAILABLE: t("pay.errMethod"),
+        PROVIDER_ERROR: t("pay.errProvider"),
+        PROVIDER_UNREACHABLE: t("pay.errUnreachable"),
+        PAYMENT_UNAVAILABLE: t("pay.errUnavailable"),
+        AMOUNT_INVALID: t("pay.errAmount"),
+        RAIL_INVALID: t("pay.errGeneric")
+      };
       setError(
-        status === 409
-          ? locale === "fr"
-            ? "Ce stock vient d'être vendu. Revenez en arrière pour choisir autre chose."
-            : "That stock just sold. Go back and choose something else."
-          : err instanceof Error
-            ? err.message
-            : "Checkout failed"
+        (code && byCode[code]) ||
+          (status === 409 ? t("pay.errSoldOut") : t("pay.errGeneric"))
       );
     }
   }
@@ -144,6 +211,13 @@ export default function PaymentStep() {
       note: t("checkout.mobileMoneyNote")
     },
     { id: "CARD", Icon: CreditCard, label: t("checkout.card"), note: t("checkout.cardNote") },
+    { id: "WALLET", Icon: Wallet, label: t("checkout.wallet"), note: t("checkout.walletNote") },
+    {
+      id: "BANK_TRANSFER",
+      Icon: Landmark,
+      label: t("checkout.bankTransfer"),
+      note: t("checkout.bankTransferNote")
+    },
     { id: "CASH", Icon: Banknote, label: t("checkout.cash"), note: t("checkout.cashNote") }
   ];
 
@@ -259,6 +333,64 @@ export default function PaymentStep() {
               )}
             </div>
 
+            {/*
+              The failure message. It was being set and never rendered: a
+              declined payment stopped the spinner, put the form back, and said
+              nothing at all — which reads as a dead button rather than a
+              refusal. Anything the server could not complete has to say so here.
+            */}
+            {error && (
+              <div
+                role="alert"
+                className="flex items-start gap-3 rounded-xl bg-bad-100 px-5 py-4 text-sm ring-1 ring-bad-600/20 ring-inset"
+              >
+                <AlertTriangle className="mt-0.5 size-5 shrink-0 text-bad-600" />
+                <div className="min-w-0">
+                  <p className="font-semibold text-ink-900">{error}</p>
+                  <p className="mt-1 text-ink-700">
+                    {dead
+                      ? t("pay.errCancelledBody")
+                      : code === "METHOD_UNAVAILABLE"
+                        ? t("pay.errMethodBody")
+                        : tooSmall
+                          ? t("pay.errTooSmallBody")
+                          : t("pay.errNoCharge")}
+                  </p>
+                  {dead && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {/*
+                        Keeps the basket. The seats went back to the pool when
+                        the hold lapsed, so a fresh order can legitimately take
+                        them again — making someone re-pick their flight because
+                        our provider was slow is a self-inflicted lost sale.
+                      */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          retryAttempt();
+                          setError(null);
+                          setDead(false);
+                        }}
+                        className="btn btn-sm btn-dark"
+                      >
+                        {t("pay.retry")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          clear();
+                          router.push("/");
+                        }}
+                        className="btn btn-sm btn-outline"
+                      >
+                        {t("checkout.holdRestart")}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="flex flex-wrap items-center justify-between gap-3">
               <button
                 type="button"
@@ -280,7 +412,7 @@ export default function PaymentStep() {
               <div className="flex flex-col items-end gap-2">
                 <button
                   type="submit"
-                  disabled={expired}
+                  disabled={expired || dead}
                   aria-disabled={blocked || undefined}
                   aria-describedby={blocked ? "consent-required" : undefined}
                   className={cn(

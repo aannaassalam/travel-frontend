@@ -6,15 +6,93 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
 } from "lucide-react"
-import { DayButton, DayPicker, getDefaultClassNames } from "react-day-picker"
+import {
+  DayButton,
+  DayPicker,
+  type DropdownProps,
+  getDefaultClassNames,
+} from "react-day-picker"
 
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/components/ui/button"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
+/**
+ * Month and year as this project's own select, not the browser's.
+ *
+ * react-day-picker ships a transparent native `<select>` over the caption, and
+ * a native option list is drawn by the operating system outside the page. Sat
+ * inside a popover that is exactly how "pick 1987" became impossible: the list
+ * lives outside the popover, so reaching for an old year dismissed the calendar
+ * it belonged to. Radix renders the list as ordinary DOM in a nested dismissable
+ * layer the popover knows about, so choosing a year no longer closes the thing
+ * you are choosing it for - and the list is styled, scrollable and thumb-sized
+ * instead of an OS menu that ignores the design system.
+ */
+function CalendarDropdown({
+  options = [],
+  value,
+  onChange,
+  disabled,
+  "aria-label": ariaLabel,
+}: DropdownProps) {
+  return (
+    <Select
+      value={String(value)}
+      disabled={disabled}
+      onValueChange={(v) =>
+        // day-picker listens for a change event on the select it thinks is
+        // there, and reads nothing but `target.value` off it.
+        onChange?.({
+          target: { value: v },
+        } as React.ChangeEvent<HTMLSelectElement>)
+      }
+    >
+      <SelectTrigger
+        aria-label={ariaLabel}
+        className="h-8 w-auto cursor-pointer gap-1 border-0 px-2 font-medium shadow-none data-[size=default]:h-8 focus-visible:ring-2"
+      >
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent className="max-h-64">
+        {options.map((o) => (
+          <SelectItem
+            key={o.value}
+            value={String(o.value)}
+            disabled={o.disabled}
+          >
+            {o.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+}
 
 function Calendar({
   className,
   classNames,
   showOutsideDays = true,
+  /**
+   * Always six weeks, so the grid is a complete rectangle.
+   *
+   * Without it the day array is truncated at `endMonth` — react-day-picker's
+   * `getDates` literally `break`s once a date passes the bound — so a date-of-
+   * birth picker capped at today lost the rest of the final week and the three
+   * remaining cells stretched across the row. `fixedWeeks` pads the array back
+   * out past that break, and the padded days render as outside + disabled:
+   * next month flows in, greyed, exactly as it should.
+   *
+   * It also fixes the popover jumping height between a 5-week and a 6-week
+   * month, which it did on every navigation.
+   */
+  fixedWeeks = true,
   captionLayout = "label",
   buttonVariant = "ghost",
   formatters,
@@ -28,6 +106,7 @@ function Calendar({
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
+      fixedWeeks={fixedWeeks}
       className={cn(
         "bg-background group/calendar p-3 [--cell-size:--spacing(8)] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent",
         String.raw`rtl:**:[.rdp-button\_next>svg]:rotate-180`,
@@ -36,8 +115,11 @@ function Calendar({
       )}
       captionLayout={captionLayout}
       formatters={{
-        formatMonthDropdown: (date) =>
-          date.toLocaleString("default", { month: "short" }),
+        // Localised short month: the `toLocaleString("default")` this replaces
+        // put "Aug" in a calendar whose every other label read "août".
+        formatMonthDropdown: (date, dateLib) =>
+          dateLib?.format(date, "LLL") ??
+          date.toLocaleString(undefined, { month: "short" }),
         ...formatters,
       }}
       classNames={{
@@ -48,17 +130,24 @@ function Calendar({
         ),
         month: cn("flex flex-col w-full gap-4", defaultClassNames.month),
         nav: cn(
-          "flex items-center gap-1 w-full absolute top-0 inset-x-0 justify-between",
+          /*
+            `pointer-events-none`, with the two arrows opting back in below.
+            This bar is absolutely positioned across the whole caption and is
+            invisible between its arrows - so it sat on top of the month and
+            year dropdowns and swallowed every click aimed at them. That is why
+            they would not open: the click never reached them.
+          */
+          "flex items-center gap-1 w-full absolute top-0 inset-x-0 justify-between pointer-events-none",
           defaultClassNames.nav
         ),
         button_previous: cn(
           buttonVariants({ variant: buttonVariant }),
-          "size-(--cell-size) aria-disabled:opacity-50 p-0 select-none",
+          "size-(--cell-size) aria-disabled:opacity-50 p-0 select-none pointer-events-auto",
           defaultClassNames.button_previous
         ),
         button_next: cn(
           buttonVariants({ variant: buttonVariant }),
-          "size-(--cell-size) aria-disabled:opacity-50 p-0 select-none",
+          "size-(--cell-size) aria-disabled:opacity-50 p-0 select-none pointer-events-auto",
           defaultClassNames.button_next
         ),
         month_caption: cn(
@@ -156,6 +245,8 @@ function Calendar({
           )
         },
         DayButton: CalendarDayButton,
+        MonthsDropdown: CalendarDropdown,
+        YearsDropdown: CalendarDropdown,
         WeekNumber: ({ children, ...props }) => {
           return (
             <td {...props}>

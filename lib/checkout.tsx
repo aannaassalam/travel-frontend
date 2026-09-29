@@ -91,6 +91,16 @@ type Ctx = CheckoutState & {
   total: Money;
   expired: boolean;
   confirm: (args: { currency: Currency; locale: Locale }) => Promise<Order>;
+  /**
+   * Abandons the current attempt and takes a fresh hold, keeping the basket.
+   *
+   * The idempotency key deliberately makes a retry REPLAY the original order
+   * rather than book a second one (§4.6). The cost is that once that order is
+   * cancelled — the hold ran out and the server released the seats — every
+   * retry replays a dead order forever, and the customer cannot get out of it
+   * without losing everything they picked. This mints a new attempt instead.
+   */
+  retryAttempt: () => void;
 };
 
 const KEY = "ct.checkout";
@@ -133,6 +143,20 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
 
   const start = useCallback(
     (selection: CheckoutSelection) => {
+      /**
+       * A new booking is a new attempt, so the idempotency key goes too.
+       *
+       * It only used to be dropped on the confirmation page, which a customer
+       * whose payment failed never reached. Their next booking — a different
+       * listing, a "fresh order" by any reasonable reading — then went up
+       * under the old key, the server dutifully replayed the old, cancelled
+       * order, and paying it returned 409 for no visible reason.
+       */
+      try {
+        sessionStorage.removeItem(IDEMPOTENCY_KEY);
+      } catch {
+        /* ignore */
+      }
       // §4.5(3): the hold is created when the customer enters checkout, not on
       // add-to-cart. Holding on browse would strand paid-for stock all day.
       persist({
@@ -169,10 +193,27 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
     setState(EMPTY);
     try {
       sessionStorage.removeItem(KEY);
+      sessionStorage.removeItem(IDEMPOTENCY_KEY);
     } catch {
       /* ignore */
     }
   }, []);
+
+  /**
+   * A new attempt at the same basket: drop the idempotency key so the next
+   * `confirm()` creates a fresh order, and take a fresh hold so the countdown
+   * and the disabled-on-expiry states reset with it.
+   */
+  const retryAttempt = useCallback(() => {
+    try {
+      sessionStorage.removeItem(IDEMPOTENCY_KEY);
+    } catch {
+      /* ignore */
+    }
+    update({
+      holdExpiresAt: new Date(Date.now() + HOLD_MINUTES_ONLINE * 60_000).toISOString()
+    });
+  }, [update]);
 
   const sel = state.selection;
   // Every currency scales together, so the CDF total is the CDF unit price
@@ -213,12 +254,21 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
        * §4.6: one key per checkout attempt, held in session storage so a retry
        * after a dropped response replays the original order rather than booking
        * a second one. Cleared by `clear()` when the checkout finishes.
+       *
+       * The currency is part of the attempt, not a detail of it. An order is
+       * priced once and `chargedCurrency` is frozen on it, so replaying an old
+       * key after the customer switched currency returned the original order —
+       * still in the old currency — and they were charged in a currency they
+       * had just changed away from. A different currency is a different order.
        */
+      const KEY_CURRENCY = `${IDEMPOTENCY_KEY}.currency`;
       let key = sessionStorage.getItem(IDEMPOTENCY_KEY);
+      if (key && sessionStorage.getItem(KEY_CURRENCY) !== currency) key = null;
       if (!key) {
         key = globalThis.crypto?.randomUUID?.() ?? `ck-${Date.now()}-${Math.random()}`;
         sessionStorage.setItem(IDEMPOTENCY_KEY, key);
       }
+      sessionStorage.setItem(KEY_CURRENCY, currency);
 
       const order = await createOrder(
         {
@@ -266,7 +316,18 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <CheckoutContext.Provider
-      value={{ ...state, ready, start, update, clear, subtotal, total, expired, confirm }}
+      value={{
+        ...state,
+        ready,
+        start,
+        update,
+        clear,
+        subtotal,
+        total,
+        expired,
+        confirm,
+        retryAttempt
+      }}
     >
       {children}
     </CheckoutContext.Provider>

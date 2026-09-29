@@ -6,6 +6,7 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
+import { DatePicker } from "@/components/ui/DatePicker";
 import { AlertCircle, Eye, EyeOff } from "lucide-react";
 import { useId, useState } from "react";
 
@@ -172,6 +173,64 @@ export function TextAreaField({
 }
 
 /**
+ * A date field: the same floating-label box as every other field, with the
+ * project's own calendar in a popover instead of the browser's date control.
+ */
+export function DateField({
+  label,
+  error,
+  helper,
+  className,
+  locale,
+  value,
+  onChange,
+  min,
+  max,
+  placeholder,
+  id: idProp
+}: Base & {
+  locale: string;
+  value: string;
+  onChange: (value: string) => void;
+  min?: string;
+  max?: string;
+  placeholder?: string;
+  id?: string;
+}) {
+  const auto = useId();
+  const id = idProp ?? auto;
+  return (
+    <Shell
+      id={id}
+      label={label}
+      error={error}
+      helper={helper}
+      className={className}
+      // The trigger shows a word, not a mask, so the label only floats once
+      // there is a value to caption.
+      filled={Boolean(value)}
+    >
+      <DatePicker
+        id={id}
+        value={value}
+        onChange={onChange}
+        locale={locale}
+        min={min}
+        max={max}
+        // No " " stand-in: the picker's own dd/mm/yyyy hint is the point, and
+        // the CSS above keeps it out of the label's way until the field has
+        // focus.
+        placeholder={placeholder}
+        aria-invalid={Boolean(error)}
+        // A caret, not a pointer: the date is typed here, and the calendar is
+        // the button inside.
+        triggerClassName="field-input cursor-text text-base"
+      />
+    </Shell>
+  );
+}
+
+/**
  * A select built on Radix rather than the native control.
  *
  * Same props as before, so every caller is unchanged. The reason for the swap
@@ -230,9 +289,14 @@ export function SelectField({
         <SelectTrigger
           id={id}
           aria-invalid={Boolean(error)}
-          // Overrides shadcn's own border/height so the trigger is the same
-          // object as every other field: the ring comes from `.field`.
-          className="field-input h-auto w-full cursor-pointer border-0 bg-transparent pr-10 shadow-none focus-visible:ring-0"
+          /*
+            Overrides shadcn's own box so the trigger is the same object as
+            every other field: the ring comes from `.field`. The padding and
+            height carry `!` because shadcn's `py-2` / `data-[size]:h-9` sit in
+            the same cascade layer as `.field-input` and were winning — which is
+            what put the value on top of the floating label.
+          */
+          className="field-input h-auto! w-full cursor-pointer border-0 bg-transparent px-3.5! pt-7! pr-10! pb-2! shadow-none focus-visible:ring-0"
         >
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>

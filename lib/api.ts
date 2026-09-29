@@ -225,27 +225,59 @@ export const getOrder = (reference: string, init?: RequestInit) =>
     (r) => r.order
   );
 
+/** What `startPayment` can come back with. */
+export type StartPaymentResult =
+  | { status: "REDIRECT"; paymentUrl: string; reference: string }
+  | { status: "OFFLINE"; rail: string; reference: string; bankDetails?: unknown }
+  | { status: "PAID"; reference?: string };
+
 /**
- * POST /orders/:reference/pay — the stand-in for the payment provider.
- * Idempotent: a retried tap returns the already-paid order.
+ * POST /orders/:reference/pay — opens a transaction at the provider.
+ *
+ * Note what is NOT sent: no amount, no currency. The server reads those off the
+ * order, so nothing a browser can edit changes what gets charged.
  */
-export async function payOrder(reference: string, rail: string): Promise<Order> {
+export async function startPayment(
+  reference: string,
+  rail: string,
+  locale?: string
+): Promise<StartPaymentResult> {
   const res = await fetch(
     `${API_BASE}/orders/${encodeURIComponent(reference)}/pay`,
     {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rail })
+      body: JSON.stringify({ rail, locale })
     }
   );
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new ApiError(
       res.headers.get("X-Message") ?? body?.message ?? "Payment failed",
-      res.status
+      res.status,
+      body?.code
     );
   }
-  return body.order as Order;
+  return body as StartPaymentResult;
+}
+
+/**
+ * GET /orders/:reference/payment — is it actually paid?
+ *
+ * The server re-asks MaxiCash rather than trusting that we landed on a success
+ * URL, so this is the only thing the return screen believes.
+ */
+export async function getPaymentStatus(
+  reference: string
+): Promise<{ paid: boolean; paymentStatus: string }> {
+  const res = await fetch(
+    `${API_BASE}/orders/${encodeURIComponent(reference)}/payment`,
+    { credentials: "include", headers: { Accept: "application/json" } }
+  );
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new ApiError("Could not check the payment", res.status);
+  return body as { paid: boolean; paymentStatus: string };
 }
 
 /* ---------------------------------------------------------------- locations */

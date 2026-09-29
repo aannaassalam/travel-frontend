@@ -5,6 +5,7 @@ import { useCheckout } from "@/lib/checkout";
 import { fmtDateTime } from "@/lib/format";
 import { useSiteContact } from "@/lib/contact";
 import { usePrefs } from "@/lib/prefs";
+import { useSession } from "@/lib/session";
 import { useOrder } from "@/lib/orders";
 import { Order } from "@/typescript/interface/domain.interface";
 import {
@@ -31,6 +32,7 @@ import { useEffect } from "react";
 export default function ConfirmationPage() {
   const contact = useSiteContact();
   const { t, locale } = usePrefs();
+  const { signedIn, isPending: sessionPending } = useSession();
   const router = useRouter();
   const { clear } = useCheckout();
 
@@ -205,20 +207,33 @@ export default function ConfirmationPage() {
           </div>
         </div>
 
-        {/* §2.1 step 3: the one-tap claim link, restated on screen. */}
-        <div className="mt-6 rounded-card bg-brand-50 p-6 ring-1 ring-brand-100 ring-inset">
-          <h2 className="flex items-center gap-2 text-lg font-bold text-brand-900">
-            <KeyRound className="size-5 text-brand-500" />
-            {t("confirm.claimTitle")}
-          </h2>
-          <p className="mt-1 text-[15px] text-ink-700">{t("confirm.claimBody")}</p>
-          <Link
-            href="/login"
-            className="btn btn-sm btn-outline mt-3"
-          >
-            {t("confirm.claimCta")}
-          </Link>
-        </div>
+        {/*
+          §2.1 step 3: the one-tap claim link, restated on screen — for GUESTS.
+
+          It rendered for everyone, so a signed-in customer was invited to "set a
+          password" they already had, and the button opened the sign-in tab
+          rather than sign-up, which is useless to a guest with no password.
+          Hidden while the session is still loading too: a wrong upsell flashing
+          at a signed-in customer is worse than a guest seeing it a beat later.
+          `next` brings them straight back to this booking once signed up.
+        */}
+        {!sessionPending && !signedIn && (
+          <div className="mt-6 rounded-card bg-brand-50 p-6 ring-1 ring-brand-100 ring-inset">
+            <h2 className="flex items-center gap-2 text-lg font-bold text-brand-900">
+              <KeyRound className="size-5 text-brand-500" />
+              {t("confirm.claimTitle")}
+            </h2>
+            <p className="mt-1 text-[15px] text-ink-700">{t("confirm.claimBody")}</p>
+            <Link
+              href={`/login?mode=signup&next=${encodeURIComponent(
+                `/booking/confirmation/${order.reference}`
+              )}`}
+              className="btn btn-sm btn-outline mt-3"
+            >
+              {t("confirm.claimCta")}
+            </Link>
+          </div>
+        )}
 
         {/* §2.2(4): the policy is repeated in the confirmation, in the
             customer's locale, exactly as it was accepted. */}

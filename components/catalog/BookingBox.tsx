@@ -1,5 +1,6 @@
 import { Price, SettlementNote, Scarcity } from "@/components/site/bits";
 import { CheckoutSelection, useCheckout } from "@/lib/checkout";
+import { DatePicker } from "@/components/ui/DatePicker";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { mediaUrl } from "@/lib/media";
 import { multiply, nightsBetween } from "@/lib/money";
@@ -80,7 +81,9 @@ export default function BookingBox({ listing }: { listing: Listing }) {
 
   return (
     <div className="surface p-6">
-      <div className="flex items-end justify-between gap-3">
+      {/* Wraps: the badge drops below the price rather than fighting it for a
+          line neither can have. */}
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-sm text-ink-500">{t("listing.from")}</p>
           <Price money={listing.sellPrice} className="text-3xl font-bold text-brand-900" />
@@ -99,24 +102,26 @@ export default function BookingBox({ listing }: { listing: Listing }) {
               <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">
                 {t("search.pickupDate")}
               </span>
-              <input
-                type="date"
+              <DatePicker
                 value={from}
+                onChange={setFrom}
+                locale={locale}
                 min={today()}
-                onChange={(e) => setFrom(e.target.value)}
-                className="w-full rounded-md border border-ink-100 px-3 py-2.5 text-[15px]"
+                placeholder={t("search.date")}
+                triggerClassName="rounded-md border border-ink-100 px-3 py-2.5 focus-within:border-brand-500"
               />
             </label>
             <label className="block">
               <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">
                 {t("search.returnDate")}
               </span>
-              <input
-                type="date"
+              <DatePicker
                 value={to}
+                onChange={setTo}
+                locale={locale}
                 min={plusDays(from, 1)}
-                onChange={(e) => setTo(e.target.value)}
-                className="w-full rounded-md border border-ink-100 px-3 py-2.5 text-[15px]"
+                placeholder={t("search.date")}
+                triggerClassName="rounded-md border border-ink-100 px-3 py-2.5 focus-within:border-brand-500"
               />
             </label>
           </div>

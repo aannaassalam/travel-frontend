@@ -68,13 +68,34 @@ export const PAYMENT_METHOD = {
 export type PaymentMethod =
   (typeof PAYMENT_METHOD)[keyof typeof PAYMENT_METHOD];
 
-/** §9.1 the two rails behind one abstraction, plus cash at an office. */
+/**
+ * How the money moves.
+ *
+ * MaxiCash settles all four online rails on its hosted page — card, mobile
+ * money, its own wallet, and bank transfer — from one integration, and no card
+ * data ever touches our servers. CASH is the only rail the office collects, at
+ * the counter, against the order reference.
+ */
 export const PAYMENT_RAILS = [
-  { id: "MOBILE_MONEY", operators: ["M-Pesa", "Orange Money", "Airtel Money", "Afrimoney"] },
-  { id: "CARD", operators: ["Visa", "Mastercard"] },
-  { id: "CASH", operators: [] }
+  { id: "MOBILE_MONEY", online: true, operators: ["M-Pesa", "Orange Money", "Airtel Money", "Afrimoney"] },
+  { id: "CARD", online: true, operators: ["Visa", "Mastercard"] },
+  { id: "WALLET", online: true, operators: ["MaxiCash", "PayPal"] },
+  { id: "BANK_TRANSFER", online: true, operators: [] },
+  { id: "CASH", online: false, operators: [] }
 ] as const;
+
 export type PaymentRail = (typeof PAYMENT_RAILS)[number]["id"];
+
+/**
+ * Rails that go to the provider. The rest are settled at the office.
+ *
+ * Typed as the full PaymentRail union rather than the narrowed literal set, so
+ * `ONLINE_RAILS.includes(someRail)` is a question you are allowed to ask about
+ * any rail — which is the only reason this list exists.
+ */
+export const ONLINE_RAILS: readonly PaymentRail[] = PAYMENT_RAILS.filter(
+  (r) => r.online
+).map((r) => r.id);
 
 export const MEAL_PLANS = {
   ROOM_ONLY: "ROOM_ONLY",

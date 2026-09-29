@@ -1,5 +1,5 @@
 import { HoldBanner, Stepper, Summary } from "@/components/checkout/parts";
-import { SelectField, TextField } from "@/components/ui/field";
+import { DateField, SelectField, TextField } from "@/components/ui/field";
 import Layout from "@/components/site/Layout";
 import { useCheckout } from "@/lib/checkout";
 import { usePrefs } from "@/lib/prefs";
@@ -94,12 +94,12 @@ export default function TravellersStep() {
 
                       {needsDocuments && (
                         <>
-                          <TextField
+                          <DateField
                             label={t("checkout.dob")}
-                            type="date"
+                            locale={locale}
                             value={tr.dateOfBirth ?? ""}
                             max={new Date().toISOString().slice(0, 10)}
-                            onChange={(e) => setTraveller(i, { dateOfBirth: e.target.value })}
+                            onChange={(v) => setTraveller(i, { dateOfBirth: v })}
                           />
                           <SelectField
                             label={t("checkout.docType")}

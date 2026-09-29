@@ -37,6 +37,29 @@ const MEDIA_ORIGINS = [
   "https://travel-media-prod.s3.eu-west-3.amazonaws.com"
 ].filter(Boolean);
 
+/**
+ * Map tiles, for the Leaflet maps on listing pages.
+ *
+ * Separate from MEDIA_ORIGINS because it is a different kind of permission and
+ * carries a privacy cost the catalogue images do not: every tile is a request
+ * from the visitor's browser to a third party, so OpenStreetMap learns the IP
+ * of everyone who opens a hotel page. That was the reason this site previously
+ * shipped a placeholder and a text link instead of an embedded map.
+ *
+ * The map is now loaded only when the visitor asks for it (see components/
+ * catalog/LocationMap.tsx), which keeps the default page load free of any
+ * third-party request while still giving a real map to whoever wants one.
+ *
+ * Only the tile host is allowed, and only for images — Leaflet itself is
+ * bundled from npm, so no third-party SCRIPT is ever loaded.
+ */
+const TILE_ORIGINS = [
+  "https://api.maptiler.com",
+  // Kept as the fallback when NEXT_PUBLIC_MAPTILER_KEY is unset, so a missing
+  // key degrades to plain OSM rather than a blank map.
+  "https://tile.openstreetmap.org"
+];
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   trailingSlash: false,
@@ -134,7 +157,7 @@ const nextConfig: NextConfig = {
           "style-src 'self' 'unsafe-inline'",
           // The storage origin must be listed, or every catalogue image is
           // blocked in the browser while server-rendered pages look fine.
-          `img-src 'self' data: blob: ${MEDIA_ORIGINS.join(" ")}`.trim(),
+          `img-src 'self' data: blob: ${[...MEDIA_ORIGINS, ...TILE_ORIGINS].join(" ")}`.trim(),
           "font-src 'self' data:",
           // The API origin is the only place the browser may talk to. Derived
           // from the same variable the client uses, so the two cannot drift —

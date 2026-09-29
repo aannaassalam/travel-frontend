@@ -3,6 +3,7 @@ import RecentlyViewed, { useRecordView } from "@/components/catalog/RecentlyView
 import Reviews from "@/components/catalog/Reviews";
 import LeadForm from "@/components/catalog/LeadForm";
 import SaveButton from "@/components/catalog/SaveButton";
+import { DatePicker } from "@/components/ui/DatePicker";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { HotelTile } from "@/components/catalog/cards";
 import {
@@ -14,6 +15,7 @@ import {
   SettlementNote,
   Stars
 } from "@/components/site/bits";
+import LocationMap from "@/components/catalog/LocationMap";
 import Layout from "@/components/site/Layout";
 import { getHotel, getSlugs, safely } from "@/lib/api";
 import { useCheckout } from "@/lib/checkout";
@@ -27,7 +29,8 @@ import { Hotel, RoomType } from "@/typescript/interface/domain.interface";
 import { BedDouble, Check, Clock, MapPin, Maximize, Users } from "lucide-react";
 import { GetStaticPaths, GetStaticProps } from "next";
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 const today = () => new Date().toISOString().slice(0, 10);
 const plusDays = (iso: string, n: number) =>
@@ -46,21 +49,71 @@ const MEAL_LABEL: Record<string, { fr: string; en: string }> = {
   ALL_INCLUSIVE: { fr: "Tout inclus", en: "All inclusive" }
 };
 
-export default function HotelDetail({ hotel, others }: Props) {
+export default function HotelDetail({ hotel: initialHotel, others }: Props) {
   const { t, locale, lz } = usePrefs();
   const router = useRouter();
   const { start } = useCheckout();
-  useRecordView(hotel.slug);
+  useRecordView(initialHotel.slug);
 
   // Dates come from the search bar when the customer arrived from a search,
   // otherwise a sensible two-night default they can change in place.
-  const q = router.query as Record<string, string | undefined>;
-  const [from, setFrom] = useState(q.from || today());
-  const [to, setTo] = useState(q.to || plusDays(q.from || today(), 2));
-  const [adults, setAdults] = useState(Number(q.adults) || 2);
-  const [rooms, setRooms] = useState(Number(q.rooms) || 1);
+  const [from, setFrom] = useState(today());
+  const [to, setTo] = useState(plusDays(today(), 2));
+  const [adults, setAdults] = useState(2);
+  const [rooms, setRooms] = useState(1);
+
+  /**
+   * Adopt the search's dates once the router has them.
+   *
+   * This page is statically generated, so on the first render `router.query` is
+   * an empty object — Next only fills it after hydration, which is what
+   * `isReady` signals. Reading it in `useState` therefore captured nothing but
+   * the defaults, and a customer who searched "3 nights in December" landed on
+   * a page quietly showing tonight plus two, with the URL still saying December.
+   *
+   * Runs on `isReady` rather than on every query change, so it seeds the form
+   * and then leaves it alone — otherwise editing a date would fight the URL.
+   */
+  useEffect(() => {
+    if (!router.isReady) return;
+    const q = router.query as Record<string, string | undefined>;
+    if (q.from) setFrom(q.from);
+    if (q.to) setTo(q.to);
+    else if (q.from) setTo(plusDays(q.from, 2));
+    if (Number(q.adults)) setAdults(Number(q.adults));
+    if (Number(q.rooms)) setRooms(Number(q.rooms));
+  }, [router.isReady, router.query]);
 
   const nights = nightsBetween(from, to);
+
+  /**
+   * Re-price for the nights the customer actually chose.
+   *
+   * The page is statically generated without dates, so `initialHotel` carries
+   * the cheapest rate on record and the full allotment — a fair thing to show
+   * someone who has not picked dates yet, and wrong the moment they do.
+   * `getStaticProps` always said the page "refetches for the visitor's actual
+   * nights once they pick them"; this is that refetch, which had never been
+   * written. Until now, changing the dates moved the labels and left the
+   * prices and availability untouched.
+   *
+   * `placeholderData` keeps the previous rooms on screen while the new ones
+   * load, so the list does not collapse to a spinner on every date tweak.
+   */
+  const { data: priced, isFetching } = useQuery({
+    queryKey: ["hotel", initialHotel.slug, from, to],
+    queryFn: () => getHotel(initialHotel.slug, from, to),
+    enabled: Boolean(from && to && nights > 0),
+    placeholderData: (prev) => prev,
+    staleTime: 60_000
+  });
+
+  /**
+   * The freshly priced hotel once it arrives, the build-time one until then.
+   * Never a mix: a room list from one response with a price from another is
+   * how a customer is quoted a rate that does not exist.
+   */
+  const hotel = priced?.hotel ?? initialHotel;
 
   function book(room: RoomType) {
     start({
@@ -187,24 +240,26 @@ export default function HotelDetail({ hotel, others }: Props) {
                   <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">
                     {t("search.checkin")}
                   </span>
-                  <input
-                    type="date"
+                  <DatePicker
                     value={from}
+                    onChange={setFrom}
+                    locale={locale}
                     min={today()}
-                    onChange={(e) => setFrom(e.target.value)}
-                    className="w-full rounded-xl bg-white px-4 py-3 text-base font-semibold shadow-xs ring-1 ring-ink-100 outline-none ring-inset focus:ring-2 focus:ring-brand-500"
+                    placeholder={t("search.date")}
+                    triggerClassName="rounded-xl bg-white px-4 py-3 text-base shadow-xs ring-1 ring-ink-100 ring-inset focus-within:ring-2 focus-within:ring-brand-500"
                   />
                 </label>
                 <label className="flex-1">
                   <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">
                     {t("search.checkout")}
                   </span>
-                  <input
-                    type="date"
+                  <DatePicker
                     value={to}
+                    onChange={setTo}
+                    locale={locale}
                     min={plusDays(from, 1)}
-                    onChange={(e) => setTo(e.target.value)}
-                    className="w-full rounded-xl bg-white px-4 py-3 text-base font-semibold shadow-xs ring-1 ring-ink-100 outline-none ring-inset focus:ring-2 focus:ring-brand-500"
+                    placeholder={t("search.date")}
+                    triggerClassName="rounded-xl bg-white px-4 py-3 text-base shadow-xs ring-1 ring-ink-100 ring-inset focus-within:ring-2 focus-within:ring-brand-500"
                   />
                 </label>
                 <label className="flex-1">
@@ -240,7 +295,19 @@ export default function HotelDetail({ hotel, others }: Props) {
                 </strong>
               </p>
 
-              <ul className="space-y-4">
+              {/*
+                Dim the list while re-pricing rather than replacing it with a
+                spinner. The rooms shown are still the previous nights' — true
+                until the new ones land — and a skeleton here would make an
+                ordinary date tweak feel like the page broke.
+              */}
+              <ul
+                className={cn(
+                  "space-y-4 transition-opacity",
+                  isFetching && "pointer-events-none opacity-60"
+                )}
+                aria-busy={isFetching}
+              >
                 {hotel.roomTypes.map((room) => {
                   const total = multiply(room.sellPrice, nights * rooms);
                   const soldOut = room.available <= 0;
@@ -327,13 +394,15 @@ export default function HotelDetail({ hotel, others }: Props) {
                 {t("listing.location")}
               </h2>
               <div className="overflow-hidden rounded-card ring-1 ring-ink-100 ring-inset">
-                {/* No third-party map embed: §10.8's CSP forbids arbitrary
-                    external scripts, and an iframe here would leak every
-                    visitor's IP to a mapping provider on a catalogue page. */}
-                <div className="relative h-44 bg-brand-100">
-                  <div className="absolute inset-0 opacity-40 [background-image:linear-gradient(#1e5a8e_1px,transparent_1px),linear-gradient(90deg,#1e5a8e_1px,transparent_1px)] [background-size:32px_32px]" />
-                  <MapPin className="absolute left-1/2 top-1/2 size-8 -translate-x-1/2 -translate-y-1/2 text-brand-900" />
-                </div>
+                {/* Leaflet, bundled — never a third-party script. Tiles load
+                    only when the visitor asks, so the default page still makes
+                    no request to a mapping provider. */}
+                <LocationMap
+                  geo={hotel.geo}
+                  city={hotel.city}
+                  label={`${hotel.address}, ${hotel.city}`}
+                  className="h-64"
+                />
                 <div className="flex flex-wrap items-center justify-between gap-3 p-4">
                   <p className="text-[15px] text-ink-700">
                     {hotel.address}, {hotel.city}
