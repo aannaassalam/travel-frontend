@@ -1,0 +1,117 @@
+# Mobile guest checkout with a phone that belongs to a REGISTERED account must now be refused with a sign-in prompt
+# (backend 409 ACCOUNT_EXISTS, added during the fix pass). Starts by signing out so the session cannot match the phone.
+appId: com.flexiairbnb.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      text: "Explore|Explorer"
+    timeout: 60000
+# signed-in launches show the push-permission prompt over the home screen and it swallows taps — dismiss it first
+- runFlow:
+    when:
+      visible: "Plus tard|Later|Pas maintenant"
+    commands:
+      - tapOn: "Plus tard|Later|Pas maintenant"
+- tapOn: "Account|Compte"
+# Sign out if a session exists: the button opens a destructive confirmation Alert whose
+# confirm button carries the same label, so tap the label twice (second hit = the Alert button).
+- runFlow:
+    when:
+      visible: ".*Anas.*|Modifier le profil|Edit profile"
+    commands:
+      - scrollUntilVisible:
+          element:
+            text: "Se déconnecter|Sign out"
+          direction: DOWN
+          timeout: 15000
+      - tapOn: "Se déconnecter|Sign out"
+      - extendedWaitUntil:
+          visible:
+            text: "Se déconnecter \\?|Sign out\\?"
+          timeout: 5000
+      - tapOn:
+          text: "Se déconnecter|Sign out"
+          index: 0
+      - assertNotVisible: "Annuler|Cancel"
+      - scrollUntilVisible:
+          element:
+            text: "Sign in|Se connecter"
+          direction: UP
+          timeout: 30000
+- tapOn: "Restaurants"
+- extendedWaitUntil:
+    visible:
+      text: "Kivu Lakeside Kitchen"
+    timeout: 20000
+- tapOn: "Kivu Lakeside Kitchen"
+- extendedWaitUntil:
+    visible:
+      text: "Kivu Lakeside Kitchen"
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      text: "(Ajouter|Add) .*"
+    direction: DOWN
+    timeout: 20000
+- tapOn: "(Ajouter|Add) .*"
+- tapOn: "Checkout|Commander"
+- extendedWaitUntil:
+    visible:
+      text: "Delivery address|Adresse de livraison"
+    timeout: 20000
+# Inputs have no placeholders and label taps don't focus them: tap the boxes by position
+# (PRÉNOM ≈[36,224][214,274], NOM ≈[226,224][404,274] on the 440×956 canvas).
+- tapOn:
+    point: "28%,26%"
+- inputText: "qa_test"
+- tapOn:
+    point: "72%,26%"
+- inputText: "guest"
+- hideKeyboard
+- tapOn: "81 000 00 00"
+- inputText: "7044804030"
+- hideKeyboard
+- tapOn: ".*\\+243.*"
+- repeat:
+    times: 4
+    commands:
+      - swipe:
+          start: "50%,88%"
+          end: "50%,58%"
+          duration: 500
+- extendedWaitUntil:
+    visible:
+      text: ".*\\+91.*"
+    timeout: 5000
+- tapOn: ".*\\+91.*"
+# address box by position (no placeholder), zone trigger is labelled "Zone", CTA is below the fold
+- tapOn:
+    point: "50%,45%"
+- inputText: "qa_test guest address"
+- hideKeyboard
+- assertVisible: "qa_test guest address"
+- tapOn:
+    point: "50%,62%"
+# zone rows are not in the accessibility tree (a11y finding) — tap Himbi by position
+- extendedWaitUntil:
+    visible:
+      text: "Bottom Sheet"
+    timeout: 10000
+- tapOn:
+    point: "20%,85%"
+- tapOn: "J.accepte.*|I accept.*"
+- takeScreenshot: mobile-30-guest-ready
+- scrollUntilVisible:
+    element:
+      text: "Commander — payer à la livraison|Order — pay on delivery"
+    direction: DOWN
+    timeout: 10000
+- tapOn: "Commander — payer à la livraison|Order — pay on delivery"
+# expected: the server message + a sign-in CTA, and NO order screen
+- extendedWaitUntil:
+    visible:
+      text: "belongs to an account|appartient à un compte|Sign in|Se connecter"
+    timeout: 30000
+- assertNotVisible: "Reference|Référence"
+- takeScreenshot: mobile-31-guest-refused

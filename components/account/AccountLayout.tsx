@@ -76,7 +76,7 @@ export default function AccountLayout({
       </div>
 
       <div className="container-site grid gap-8 py-8 lg:grid-cols-[240px_1fr]">
-        <nav aria-label={t("account.title")} className="lg:sticky lg:top-24 lg:h-fit">
+        <nav aria-label={t("account.title")} className="min-w-0 lg:sticky lg:top-24 lg:h-fit">
           <ul className="flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
             {NAV.map(({ href, key, Icon }) => {
               const active =
@@ -161,7 +161,7 @@ export default function AccountLayout({
                 {t("auth.subtitle")} {t("auth.noAccountNote")}
               </p>
               <Link
-                href="/login"
+                href={`/login?next=${encodeURIComponent(router.asPath)}`}
                 className="btn btn-md btn-primary mt-5"
               >
                 {t("nav.signin")}

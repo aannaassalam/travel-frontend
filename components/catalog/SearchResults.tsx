@@ -14,6 +14,7 @@ import { useMemo } from "react";
 import EmptyState from "./EmptyState";
 import Filters, { FilterSection } from "./Filters";
 import LeadForm from "./LeadForm";
+import ResultsSearch from "./ResultsSearch";
 import { HotelRow, ResultRow } from "./cards";
 
 /**
@@ -58,6 +59,7 @@ export default function SearchResults({
   const params = useMemo(
     () => ({
       vertical,
+      q: q.q,
       destination: q.destination,
       origin: q.origin,
       cabin: q.cabin,
@@ -167,6 +169,8 @@ export default function SearchResults({
           <Filters sections={filters} priceBounds={priceRange} />
 
           <div className="min-w-0 flex-1">
+            <ResultsSearch className="mb-5" />
+
             {isError ? (
               <div className="rounded-card bg-bad-100 p-8 text-center ring-1 ring-bad-600/20 ring-inset">
                 <AlertTriangle className="mx-auto mb-3 size-8 text-bad-600" />
@@ -192,18 +196,27 @@ export default function SearchResults({
                 ))}
               </div>
             ) : count === 0 ? (
-              <EmptyState
-                vertical={vertical}
-                query={searchSummary}
-                // Flagged by the search box when the place typed is not one we
-                // service, so this page can say so plainly instead of looking
-                // like everything sold out.
-                unservicedPlace={
-                  router.query.enquiry === "1"
-                    ? String(router.query.destination || router.query.origin || "")
-                    : undefined
-                }
-              />
+              <div className="space-y-6">
+                {/* Says which words found nothing, so the lead form below is
+                    not mistaken for "we have nothing at all". */}
+                {q.q && (
+                  <p className="rounded-card bg-ink-50 px-5 py-4 text-sm font-semibold text-ink-700 ring-1 ring-ink-100 ring-inset">
+                    {t("results.noMatch", { q: q.q })}
+                  </p>
+                )}
+                <EmptyState
+                  vertical={vertical}
+                  query={[q.q, searchSummary].filter(Boolean).join(" · ")}
+                  // Flagged by the search box when the place typed is not one we
+                  // service, so this page can say so plainly instead of looking
+                  // like everything sold out.
+                  unservicedPlace={
+                    router.query.enquiry === "1"
+                      ? String(router.query.destination || router.query.origin || "")
+                      : undefined
+                  }
+                />
+              </div>
             ) : (
               <div
                 /*

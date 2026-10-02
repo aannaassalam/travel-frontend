@@ -1,9 +1,11 @@
+import ResultsSearch from "@/components/catalog/ResultsSearch";
 import { Breadcrumbs } from "@/components/site/bits";
 import Layout from "@/components/site/Layout";
 import { Skeleton } from "@/components/ui/field";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { searchRestaurants } from "@/lib/api";
 import { restaurantHref } from "@/lib/catalog";
+import { mediaUrl } from "@/lib/media";
 import { price } from "@/lib/money";
 import { usePrefs } from "@/lib/prefs";
 import { Restaurant } from "@/typescript/interface/domain.interface";
@@ -43,7 +45,13 @@ export default function RestaurantsPage() {
   }, [raw]);
 
   const params = useMemo(
-    () => ({ city: q.destination || q.city, cuisine: q.cuisine, sort: q.sort, limit: 40 }),
+    () => ({
+      q: q.q,
+      city: q.destination || q.city,
+      cuisine: q.cuisine,
+      sort: q.sort,
+      limit: 40
+    }),
     [q]
   );
 
@@ -77,8 +85,8 @@ export default function RestaurantsPage() {
   const title = locale === "fr" ? "Restaurants et livraison en RDC" : "Restaurants and delivery in the DRC";
   const description =
     locale === "fr"
-      ? "Commandez des plats congolais et continentaux à Kinshasa, Lubumbashi et Goma. Livraison à domicile, paiement mobile money ou espèces à la livraison."
-      : "Order Congolese and continental food in Kinshasa, Lubumbashi and Goma. Home delivery, mobile money or cash on delivery.";
+      ? "Commandez des plats congolais et continentaux à Kinshasa, Lubumbashi et Goma. Livraison à domicile, paiement en espèces à la livraison."
+      : "Order Congolese and continental food in Kinshasa, Lubumbashi and Goma. Home delivery, cash on delivery.";
 
   return (
     <Layout title={title} description={description}>
@@ -126,6 +134,8 @@ export default function RestaurantsPage() {
           </div>
         </div>
 
+        <ResultsSearch className="mb-6 max-w-xl" />
+
         {isError ? (
           <div className="rounded-card bg-bad-100 p-8 text-center ring-1 ring-bad-600/20 ring-inset">
             <AlertTriangle className="mx-auto mb-3 size-8 text-bad-600" />
@@ -153,21 +163,29 @@ export default function RestaurantsPage() {
           <div className="rounded-card bg-brand-50 p-10 text-center ring-1 ring-brand-100 ring-inset">
             <UtensilsCrossed className="mx-auto mb-3 size-8 text-brand-500" />
             <p className="text-lg font-bold text-brand-900">
-              {locale === "fr"
-                ? "Aucun restaurant ne livre encore ici"
-                : "No restaurant delivers here yet"}
+              {q.q
+                ? t("results.noMatch", { q: q.q })
+                : locale === "fr"
+                  ? "Aucun restaurant ne livre encore ici"
+                  : "No restaurant delivers here yet"}
             </p>
-            <p className="mx-auto mt-2 max-w-md text-sm text-ink-700">
-              {locale === "fr"
-                ? "Nous ajoutons des cuisines chaque semaine. Essayez une autre ville en attendant."
-                : "We add kitchens every week. Try another city in the meantime."}
-            </p>
+            {!q.q && (
+              <p className="mx-auto mt-2 max-w-md text-sm text-ink-700">
+                {locale === "fr"
+                  ? "Nous ajoutons des cuisines chaque semaine. Essayez une autre ville en attendant."
+                  : "We add kitchens every week. Try another city in the meantime."}
+              </p>
+            )}
             <button
               type="button"
-              onClick={() => router.push("/restaurants")}
+              onClick={() => (q.q ? setParam("q", "") : router.push("/restaurants"))}
               className="btn btn-md btn-dark mt-5"
             >
-              {locale === "fr" ? "Voir toutes les villes" : "See all cities"}
+              {q.q
+                ? t("results.clearSearch")
+                : locale === "fr"
+                  ? "Voir toutes les villes"
+                  : "See all cities"}
             </button>
           </div>
         ) : (
@@ -207,7 +225,7 @@ function RestaurantCard({
     >
       <div className="relative h-44 overflow-hidden bg-ink-50">
         <Image
-          src={r.images[0] ?? "/img/banner-1.svg"}
+          src={mediaUrl(r.images[0])}
           alt=""
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"

@@ -31,8 +31,8 @@ export default function HotelsPage({ facets }: Props) {
       title={locale === "fr" ? "Hôtels en RDC" : "Hotels in the DRC"}
       description={
         locale === "fr"
-          ? "Chambres achetées à l'avance à Kinshasa, Lubumbashi, Goma, Bukavu et Matadi. Prix en USD, CDF ou EUR, paiement mobile money ou espèces en agence."
-          : "Rooms bought in advance in Kinshasa, Lubumbashi, Goma, Bukavu and Matadi. Prices in USD, CDF or EUR, mobile money or cash at our office."
+          ? "Chambres achetées à l'avance à Kinshasa, Lubumbashi, Goma, Bukavu et Matadi. Prix en USD, CDF ou EUR, paiement en espèces à notre agence."
+          : "Rooms bought in advance in Kinshasa, Lubumbashi, Goma, Bukavu and Matadi. Prices in USD, CDF or EUR, pay in cash at our office."
       }
       priceRange={bounds(facets, "HOTEL")}
       filters={[

@@ -1,0 +1,119 @@
+{
+  "config": {
+    "configFile": "/Users/aannaassalam/Documents/Github/travel-frontend/qa/playwright.config.ts",
+    "rootDir": "/Users/aannaassalam/Documents/Github/travel-frontend/qa/tests",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {},
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "./evidence/results.json"
+        }
+      ],
+      [
+        "html",
+        {
+          "outputFolder": "./evidence/report",
+          "open": "never"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/Users/aannaassalam/Documents/Github/travel-frontend/qa/evidence/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "desktop",
+        "name": "desktop",
+        "testDir": "/Users/aannaassalam/Documents/Github/travel-frontend/qa/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/Users/aannaassalam/Documents/Github/travel-frontend/qa/evidence/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "mobile",
+        "name": "mobile",
+        "testDir": "/Users/aannaassalam/Documents/Github/travel-frontend/qa/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/Users/aannaassalam/Documents/Github/travel-frontend/qa/evidence/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "tablet",
+        "name": "tablet",
+        "testDir": "/Users/aannaassalam/Documents/Github/travel-frontend/qa/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/Users/aannaassalam/Documents/Github/travel-frontend/qa/evidence/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "api",
+        "name": "api",
+        "testDir": "/Users/aannaassalam/Documents/Github/travel-frontend/qa/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "/api\\..*\\.spec\\.ts/"
+        ],
+        "timeout": 60000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.56.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [],
+  "errors": [
+    {
+      "message": "Error: No tests found.\nMake sure that arguments are regular expressions matching test files.\nYou may need to escape symbols like \"$\" or \"*\" and quote the arguments.",
+      "stack": "Error: No tests found.\nMake sure that arguments are regular expressions matching test files.\nYou may need to escape symbols like \"$\" or \"*\" and quote the arguments."
+    }
+  ],
+  "stats": {
+    "startTime": "2026-10-02T08:48:31.509Z",
+    "duration": 11.771999999999991,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

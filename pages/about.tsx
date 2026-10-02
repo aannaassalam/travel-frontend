@@ -21,8 +21,8 @@ export default function AboutPage() {
       Icon: Banknote,
       title: fr ? "Payer comme on paie ici" : "Paying the way people pay here",
       body: fr
-        ? "Le mobile money est le moyen de paiement du pays, pas une option secondaire. M-Pesa, Orange Money, Airtel Money et Afrimoney sont au même niveau que la carte bancaire, et les espèces en agence restent possibles pour toute réservation."
-        : "Mobile money is how the country pays, not a secondary option. M-Pesa, Orange Money, Airtel Money and Afrimoney sit alongside cards, and cash at the office remains possible for any booking."
+        ? "Vous réservez en ligne et vous réglez en espèces à notre agence, avec la référence reçue par SMS. La réservation est maintenue 48 heures, le temps de passer nous voir."
+        : "You book online and pay in cash at our office, with the reference sent by SMS. The booking is held for 48 hours, time enough to come and see us."
     },
     {
       Icon: Users,

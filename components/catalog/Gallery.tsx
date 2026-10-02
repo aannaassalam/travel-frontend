@@ -1,18 +1,15 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogTrigger
-} from "@/components/ui/dialog";
+import Lightbox from "@/components/catalog/Lightbox";
 import { mediaUrls } from "@/lib/media";
 import { usePrefs } from "@/lib/prefs";
 import { Images } from "lucide-react";
 import Image from "next/image";
+import { useState } from "react";
 
 /**
- * §11.2 photography-led detail page: one hero plus a grid, full set in a
- * dialog. Images are `sizes`-hinted so a phone on 3G never downloads the
- * desktop asset (§11.7).
+ * §11.2 photography-led detail page: one hero, a strip of thumbnails that
+ * swap it, and a "Photos" grid of the full set. Any of them opens the
+ * Lightbox on that photo. Images are `sizes`-hinted so a phone on 3G never
+ * downloads the desktop asset (§11.7).
  */
 export default function Gallery({
   images,
@@ -30,97 +27,126 @@ export default function Gallery({
    * optimiser answers 400. That is exactly what the dialog used to do.
    */
   const resolved = mediaUrls(images);
-  const [hero, ...rest] = resolved;
-  const grid = rest.slice(0, 4);
+  // Which photo is the hero, and which one the lightbox is open on (null:
+  // closed).
+  const [current, setCurrent] = useState(0);
+  const [open, setOpen] = useState<number | null>(null);
+  const hero = resolved[current] ?? resolved[0];
 
   if (lowData) {
     return (
       <div className="relative h-56 overflow-hidden rounded-lg sm:h-72">
-        <Image src={hero} alt={alt} fill sizes="100vw" className="object-cover" priority />
+        <Image
+          src={resolved[0]}
+          alt={alt}
+          fill
+          sizes="100vw"
+          className="object-cover"
+          priority
+        />
       </div>
     );
   }
 
-  /**
-   * The thumbnails fill a 2×2 cell block beside the hero. Rather than padding
-   * short galleries with blank panels — which read as failed image loads — the
-   * remaining photos stretch to fill the block.
-   */
-  const SPANS: Record<number, string[]> = {
-    1: ["md:col-span-2 md:row-span-2"],
-    2: ["md:col-span-2", "md:col-span-2"],
-    3: ["", "", "md:col-span-2"],
-    4: ["", "", "", ""]
-  };
-  const spans = SPANS[grid.length] ?? [];
-
   return (
-    <div className="relative">
-      <div className="grid gap-2.5 overflow-hidden rounded-xl2 md:grid-cols-4 md:grid-rows-2">
-        <div
-          className={`relative h-64 md:h-full md:min-h-95 ${
-            grid.length ? "md:col-span-2 md:row-span-2" : "md:col-span-4 md:row-span-2"
-          }`}
+    <div>
+      <div className="relative overflow-hidden rounded-xl2">
+        <button
+          type="button"
+          onClick={() => setOpen(current)}
+          className="relative block h-64 w-full sm:h-80 md:h-105"
         >
           <Image
             src={hero}
             alt={alt}
             fill
-            sizes="(max-width: 768px) 100vw, 720px"
+            sizes="(max-width: 1280px) 100vw, 1248px"
             className="object-cover"
             priority
           />
-        </div>
-        {grid.map((src, i) => (
-          <div
-            key={src + i}
-            className={`relative hidden min-h-46 md:block ${spans[i] ?? ""}`}
-          >
-            <Image
-              src={src}
-              alt={`${alt} — ${i + 2}`}
-              fill
-              sizes="360px"
-              className="object-cover"
-            />
-          </div>
-        ))}
+        </button>
+        <button
+          type="button"
+          onClick={() => setOpen(current)}
+          className="absolute bottom-3 right-3 inline-flex items-center gap-2 rounded-md bg-white px-3 py-2 text-sm font-semibold text-brand-900 shadow-md hover:bg-ink-50"
+        >
+          <Images className="size-4" />
+          {resolved.length === 1
+            ? t("listing.gallery1")
+            : t("listing.gallery", { n: resolved.length })}
+        </button>
       </div>
 
-      <Dialog>
-        <DialogTrigger asChild>
-          <button
-            type="button"
-            className="absolute bottom-3 right-3 inline-flex items-center gap-2 rounded-md bg-white px-3 py-2 text-sm font-semibold text-brand-900 shadow-md hover:bg-ink-50"
-          >
-            <Images className="size-4" />
-            {resolved.length === 1
-              ? t("listing.gallery1")
-              : t("listing.gallery", { n: resolved.length })}
-          </button>
-        </DialogTrigger>
-        <DialogContent
-          className="max-h-[90vh] max-w-4xl overflow-y-auto"
-          // The title names the dialog; there is no prose to describe it, and
-          // Radix warns on every open unless the absence is stated explicitly.
-          aria-describedby={undefined}
-        >
-          <DialogTitle className="text-lg font-bold text-brand-900">{alt}</DialogTitle>
-          <div className="grid gap-3 sm:grid-cols-2">
+      {resolved.length > 1 && (
+        <>
+          <div className="mt-2 flex gap-2 overflow-x-auto p-1">
             {resolved.map((src, i) => (
-              <div key={src + i} className="relative h-56 overflow-hidden rounded-md">
+              <button
+                key={src + i}
+                type="button"
+                onClick={() => setCurrent(i)}
+                aria-current={i === current || undefined}
+                className={`relative h-16 w-24 shrink-0 overflow-hidden rounded-lg ${
+                  i === current
+                    ? "ring-2 ring-brand-900"
+                    : "opacity-70 hover:opacity-100"
+                }`}
+              >
                 <Image
                   src={src}
                   alt={`${alt} — ${i + 1}`}
                   fill
-                  sizes="(max-width: 640px) 100vw, 480px"
+                  sizes="96px"
                   className="object-cover"
                 />
-              </div>
+              </button>
             ))}
           </div>
-        </DialogContent>
-      </Dialog>
+
+        </>
+      )}
+
+      <Lightbox images={resolved} alt={alt} index={open} onChange={setOpen} />
     </div>
+  );
+}
+
+/**
+ * The full set, as a grid in the page's details column — below the
+ * description, where the owner asked for it, not between the hero and the
+ * booking box. Its own lightbox, so a page can place it anywhere without
+ * threading state back to the hero.
+ */
+export function PhotoGrid({ images, alt }: { images: string[]; alt: string }) {
+  const { lowData } = usePrefs();
+  const [open, setOpen] = useState<number | null>(null);
+  const resolved = mediaUrls(images);
+  // One photo is the hero already; nothing to add. Low-data mode shows the
+  // hero alone, like the gallery.
+  if (lowData || resolved.length < 2) return null;
+  return (
+    <section>
+      {/* One word, the same in both languages. */}
+      <h2 className="mb-3 text-xl font-bold text-brand-900">Photos</h2>
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+        {resolved.map((src, i) => (
+          <button
+            key={src + i}
+            type="button"
+            onClick={() => setOpen(i)}
+            className="relative h-40 overflow-hidden rounded-xl"
+          >
+            <Image
+              src={src}
+              alt={`${alt} — ${i + 1}`}
+              fill
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 300px"
+              className="object-cover transition-transform hover:scale-105"
+            />
+          </button>
+        ))}
+      </div>
+      <Lightbox images={resolved} alt={alt} index={open} onChange={setOpen} />
+    </section>
   );
 }

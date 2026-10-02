@@ -2,6 +2,7 @@ import AccountLayout from "@/components/account/AccountLayout";
 import {
   OrderDocuments,
   OrderItems,
+  OrderProgress,
   OrderStatusBadges,
   StatusTimeline
 } from "@/components/account/order";
@@ -62,7 +63,9 @@ export default function BookingDetail() {
               </div>
             </div>
 
-            {order.paymentMethod === "CASH" && order.cashDeadline && (
+            {/* Not for a delivery order: food is paid to the driver, and an
+                office deadline here contradicts the confirmation page. */}
+            {order.paymentMethod === "CASH" && order.cashDeadline && !order.delivery && (
               <div className="rounded-card bg-warn-100 p-6 ring-2 ring-warn-600/30 ring-inset">
                 <h3 className="flex items-center gap-2 font-bold text-brand-900">
                   <Banknote className="size-5 text-warn-600" />
@@ -99,7 +102,11 @@ export default function BookingDetail() {
 
             <div className="grid gap-6 md:grid-cols-2">
               <div className="surface p-6">
-                <h3 className="mb-4 font-bold text-brand-900">{t("account.timeline")}</h3>
+                <h3 className="mb-4 font-bold text-brand-900">{t("steps.title")}</h3>
+                <OrderProgress order={order} />
+                <h4 className="mb-3 mt-6 text-xs font-semibold uppercase tracking-wide text-ink-500">
+                  {t("steps.history")}
+                </h4>
                 <StatusTimeline order={order} />
               </div>
               <div className="surface p-6">

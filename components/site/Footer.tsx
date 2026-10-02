@@ -2,17 +2,18 @@ import { usePrefs } from "@/lib/prefs";
 import { MapPin, MessageCircle, Phone, ShieldCheck , Mail } from "lucide-react";
 import Link from "next/link";
 import Brand from "./Brand";
-import { dial, useSiteContact, waLink } from "@/lib/contact";
+import { dial, officeLines, officeTitle, useSiteContact, waLink } from "@/lib/contact";
 import { VERTICAL_NAV } from "./Header";
+import { ONLINE_PAYMENTS_ENABLED } from "@/typescript/interface/domain.interface";
 
-/** §9.1 — the rails that actually matter in this market, named plainly. */
+/**
+ * §9.1 — the rails that actually matter in this market, named plainly.
+ * Cash-only mode names cash and nothing else.
+ */
 const PAYMENT_METHODS = [
-  "M-Pesa",
-  "Orange Money",
-  "Airtel Money",
-  "Afrimoney",
-  "Visa",
-  "Mastercard",
+  ...(ONLINE_PAYMENTS_ENABLED
+    ? ["M-Pesa", "Orange Money", "Airtel Money", "Afrimoney", "Visa", "Mastercard"]
+    : []),
   "Espèces"
 ];
 
@@ -34,38 +35,45 @@ export default function Footer() {
           <Brand variant="full" />
           <p className="display max-w-xs text-[17px] leading-snug text-white/90">{t("brand.tagline")}</p>
           {/* Read from Settings, not hardcoded: the office moves and changes
-              numbers, and neither should need a developer (§15). */}
-          <ul className="space-y-2 text-sm text-white/70">
-            <li className="flex gap-2">
-              <MapPin className="mt-0.5 size-4 shrink-0 text-accent-500" />
-              {[contact.streetAddress, contact.city].filter(Boolean).join(", ")}
-            </li>
-            <li className="flex gap-2">
-              <Phone className="mt-0.5 size-4 shrink-0 text-accent-500" />
-              <a href={`tel:${dial(contact.phone)}`} className="hover:underline">
-                {contact.phone}
-              </a>
-            </li>
-            <li className="flex gap-2">
-              <MessageCircle className="mt-0.5 size-4 shrink-0 text-accent-500" />
-              <a
-                href={waLink(contact.whatsapp)}
-                className="hover:underline"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                WhatsApp — {contact.officeHours || t("home.trustHours")}
-              </a>
-            </li>
-            {contact.email && (
+              numbers, and neither should need a developer (§15). With several
+              offices they get their own row below instead. */}
+          {contact.offices.length === 0 && (
+            <ul className="space-y-2 text-sm text-white/70">
               <li className="flex gap-2">
-                <Mail className="mt-0.5 size-4 shrink-0 text-accent-500" />
-                <a href={`mailto:${contact.email}`} className="hover:underline">
-                  {contact.email}
-                </a>
+                <MapPin className="mt-0.5 size-4 shrink-0 text-accent-500" />
+                {[contact.streetAddress, contact.city].filter(Boolean).join(", ")}
               </li>
-            )}
-          </ul>
+              {contact.phone && (
+                <li className="flex gap-2">
+                  <Phone className="mt-0.5 size-4 shrink-0 text-accent-500" />
+                  <a href={`tel:${dial(contact.phone)}`} className="hover:underline">
+                    {contact.phone}
+                  </a>
+                </li>
+              )}
+              {contact.whatsapp && (
+                <li className="flex gap-2">
+                  <MessageCircle className="mt-0.5 size-4 shrink-0 text-accent-500" />
+                  <a
+                    href={waLink(contact.whatsapp)}
+                    className="hover:underline"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    WhatsApp — {contact.officeHours || t("home.trustHours")}
+                  </a>
+                </li>
+              )}
+              {contact.email && (
+                <li className="flex gap-2">
+                  <Mail className="mt-0.5 size-4 shrink-0 text-accent-500" />
+                  <a href={`mailto:${contact.email}`} className="hover:underline">
+                    {contact.email}
+                  </a>
+                </li>
+              )}
+            </ul>
+          )}
         </div>
 
         <nav aria-labelledby="f-services">
@@ -149,6 +157,43 @@ export default function Footer() {
         </nav>
       </div>
 
+      {contact.offices.length > 0 && (
+        <section aria-labelledby="f-offices" className="border-t border-white/15">
+          <div className="container-site py-10">
+            <h2 id="f-offices" className="eyebrow mb-6 text-white/60">
+              {t("footer.offices")}
+            </h2>
+            <ul className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+              {contact.offices.map((office) => (
+                <li key={office.id}>
+                  <p className="mb-2 font-semibold text-white">{officeTitle(office)}</p>
+                  <ul className="space-y-2 text-sm text-white/70">
+                    {officeLines(office).map(({ Icon, text, href, external }) => (
+                      <li key={text} className="flex gap-2">
+                        <Icon className="mt-0.5 size-4 shrink-0 text-accent-500" />
+                        {href ? (
+                          <a
+                            href={href}
+                            className="hover:underline"
+                            {...(external
+                              ? { target: "_blank", rel: "noopener noreferrer" }
+                              : {})}
+                          >
+                            {text}
+                          </a>
+                        ) : (
+                          text
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      )}
+
       <div className="border-t border-white/15">
         <div className="container-site flex flex-col gap-4 py-6">
           <div className="flex flex-wrap items-center gap-2">
@@ -174,7 +219,7 @@ export default function Footer() {
           </p>
 
           <p className="text-xs text-white/50">
-            © {new Date().getFullYear()} CongoTravel SARL. {t("footer.rights")}
+            © {new Date().getFullYear()} Flexi Agency. {t("footer.rights")}
           </p>
         </div>
       </div>

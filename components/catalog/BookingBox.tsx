@@ -32,6 +32,13 @@ export default function BookingBox({ listing }: { listing: Listing }) {
   const [from, setFrom] = useState(today());
   const [to, setTo] = useState(plusDays(today(), 3));
 
+  // Moving pickup past the return would make `units` zero or negative. Keep
+  // return at least a day after pickup.
+  function setFromDate(v: string) {
+    setFrom(v);
+    if (to <= v) setTo(plusDays(v, 1));
+  }
+
   const units = isCar ? nightsBetween(from, to) : 1;
   const soldOut = listing.available <= 0;
   // Scale every currency together rather than converting a USD total.
@@ -104,7 +111,7 @@ export default function BookingBox({ listing }: { listing: Listing }) {
               </span>
               <DatePicker
                 value={from}
-                onChange={setFrom}
+                onChange={setFromDate}
                 locale={locale}
                 min={today()}
                 placeholder={t("search.date")}
@@ -186,8 +193,8 @@ export default function BookingBox({ listing }: { listing: Listing }) {
 
       <p className="mt-3 text-xs text-ink-500">
         {locale === "fr"
-          ? "Paiement par mobile money, carte ou espèces en agence. Aucun frais caché."
-          : "Pay by mobile money, card or cash at our office. No hidden fees."}
+          ? "Paiement en espèces à notre agence. Aucun frais caché."
+          : "Pay in cash at our office. No hidden fees."}
       </p>
     </div>
   );

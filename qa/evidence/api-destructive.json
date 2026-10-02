@@ -1,0 +1,49 @@
+{
+  "log": [
+    {
+      "name": "setup-bookable-listing",
+      "data": {
+        "create": 201,
+        "publish": 200,
+        "id": "6abf86616255ad82d28aa910",
+        "state": "PUBLISHED",
+        "total": 50
+      }
+    },
+    {
+      "name": "guest-overwrite",
+      "data": {
+        "status": 409,
+        "code": "ACCOUNT_EXISTS",
+        "before": {
+          "firstName": "Anas",
+          "email": ""
+        },
+        "after": {
+          "firstName": "Anas",
+          "email": ""
+        },
+        "attached": false
+      }
+    },
+    {
+      "name": "idempotency-cross-caller",
+      "data": {
+        "firstRef": "FA-4NDKS-DWM09",
+        "replayStatus": 409,
+        "sameOrder": false
+      }
+    },
+    {
+      "name": "settings-negative",
+      "data": {
+        "status": 400,
+        "orig": 48
+      }
+    }
+  ],
+  "qaListingId": "6abf86616255ad82d28aa910",
+  "createdRefs": [
+    "FA-4NDKS-DWM09"
+  ]
+}

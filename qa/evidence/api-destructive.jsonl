@@ -1,0 +1,9 @@
+{"name":"setup-bookable-listing","data":{"create":201,"publish":200,"id":"6abfb51c50e4229b9b6250d7","state":"PUBLISHED","total":50}}
+{"name":"mass-assign-create","data":{"status":201,"stored":{"sold":0,"total":50,"status":"DRAFT","vertical":"CAR"}}}
+{"name":"mass-assign-update-vertical","data":{"vertical":"CAR"}}
+{"name":"cash-twice","data":{"ref":"FA-VJCE0-ZTAZS","c1":200,"c2":409,"sold":[0,1,1],"held":[null,null,null]}}
+{"name":"cash-on-cancelled","data":{"ref":"FA-ZS22N-4CZMY","cashStatus":409,"status":"CANCELLED","paymentStatus":"UNPAID"}}
+{"name":"guest-overwrite","data":{"status":409,"code":"ACCOUNT_EXISTS","before":{"firstName":"Anas","email":""},"after":{"firstName":"Anas","email":""},"attached":false}}
+{"name":"idempotency-cross-caller","data":{"firstRef":"FA-KZ8KX-M8M1V","replayStatus":409,"sameOrder":false}}
+{"name":"settings-negative","data":{"status":400,"orig":48}}
+{"name":"afterAll","data":{"qaListingId":"6abfb51c50e4229b9b6250d7","createdRefs":["FA-VJCE0-ZTAZS","FA-ZS22N-4CZMY","FA-KZ8KX-M8M1V"],"archived":["6abfb51c50e4229b9b6250d7","6abfb51e50e4229b9b625396"]}}

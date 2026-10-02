@@ -68,7 +68,7 @@ const fr: Dict = {
 
   "home.heroTitle": "Réservez votre prochain voyage en RDC",
   "home.heroSubtitle":
-    "Vols, hôtels, bus, voitures et activités — stock vérifié, prix en USD, CDF ou EUR, paiement mobile money ou espèces.",
+    "Vols, hôtels, bus, voitures et activités — stock vérifié, prix en USD, CDF ou EUR, paiement en espèces à notre agence.",
   "home.deals": "Offres du moment",
   "home.dealsSub": "Stock acheté à l'avance, quantités réelles, aucun prix fantôme.",
   "home.destinations": "Destinations populaires",
@@ -79,9 +79,9 @@ const fr: Dict = {
   "home.why1Title": "Stock réel, vérifié",
   "home.why1Body":
     "Nous achetons les places et les chambres à l'avance. Ce que vous voyez est disponible ; nous n'affichons jamais une offre que nous ne pouvons pas honorer.",
-  "home.why2Title": "Payez comme vous voulez",
+  "home.why2Title": "Payez en espèces à l'agence",
   "home.why2Body":
-    "M-Pesa, Orange Money, Airtel Money, Afrimoney, carte bancaire — ou en espèces dans nos bureaux à Kinshasa.",
+    "Réservez en ligne, puis réglez en espèces à notre bureau de Kinshasa. La réservation est maintenue 48 heures.",
   "home.why3Title": "Prix clairs, sans surprise",
   "home.why3Body":
     "Le prix affiché est le prix payé. Aucun frais révélé à la dernière étape, aucun compteur d'urgence inventé.",
@@ -118,6 +118,9 @@ const fr: Dict = {
   "results.duration": "Durée",
   "results.bedrooms": "Chambres",
   "results.showing": "Affichage de {n} sur {total}",
+  "results.search": "Rechercher dans les résultats",
+  "results.clearSearch": "Effacer la recherche",
+  "results.noMatch": "Aucun résultat pour « {q} »",
 
   "empty.title": "Aucune offre ne correspond à cette recherche",
   "empty.body":
@@ -128,7 +131,7 @@ const fr: Dict = {
 
   "rtb.title": "Demande de réservation",
   "rtb.body":
-    "Nous n'avons pas ce trajet en stock aujourd'hui. Laissez vos coordonnées : nous cherchons et vous envoyons un lien de paiement, sans engagement.",
+    "Nous n'avons pas ce trajet en stock aujourd'hui. Laissez vos coordonnées : nous cherchons et revenons vers vous avec un prix ferme, sans engagement.",
   "rtb.name": "Nom complet",
   "rtb.phone": "Numéro de téléphone",
   "rtb.email": "E-mail (facultatif)",
@@ -245,22 +248,28 @@ const fr: Dict = {
   "pay.errCancelledBody":
     "Le stock n'est tenu que quelques minutes. Rien n'a été débité — relancez la recherche pour réserver à nouveau.",
   "pay.errNoCharge": "Rien n'a été débité. Réessayez, ou choisissez le paiement en espèces au bureau.",
+  "pay.errNoChargeCash": "Rien n'a été débité. Réessayez, ou contactez notre agence.",
+  "pay.errAccountExists": "Ce numéro appartient à un compte. Connectez-vous pour réserver.",
+  "pay.errAccountExistsBody":
+    "Votre sélection est conservée : connectez-vous, puis reprenez ici.",
   "checkout.wallet": "Portefeuille électronique",
   "checkout.walletNote": "MaxiCash, PayPal et autres portefeuilles.",
   "checkout.bankTransfer": "Virement bancaire",
   "checkout.bankTransferNote":
     "Payez depuis votre banque via notre prestataire. Confirmation immédiate.",
   "checkout.cash": "Espèces en agence",
+  "checkout.cashOnly": "Le paiement se fait en espèces, à notre agence.",
   "checkout.mobileMoneyNote":
     "Vous recevrez une demande de confirmation sur votre téléphone. Gardez-le à portée de main.",
   "checkout.cardNote":
     "Paiement sur la page sécurisée de notre prestataire. Nous ne voyons jamais votre numéro de carte.",
   "checkout.cashNote":
-    "Réservation maintenue 48 heures. Payez en agence avec la référence envoyée par SMS.",
+    "Réservation maintenue 48 heures. Payez en agence avec votre référence de réservation.",
   "checkout.operator": "Opérateur",
   "checkout.payNow": "Payer {amount}",
   "checkout.reserveCash": "Réserver et payer en agence",
   "checkout.waitingTitle": "Vérifiez votre téléphone",
+  "checkout.waitingCash": "Enregistrement de votre réservation…",
   "checkout.waitingBody":
     "Une demande de paiement de {amount} a été envoyée au {phone}. Validez-la sur votre téléphone. Cette page se met à jour automatiquement.",
   "checkout.waitingCancel": "Annuler et changer de mode de paiement",
@@ -270,7 +279,7 @@ const fr: Dict = {
   "confirm.titleCash": "Réservation enregistrée",
   "confirm.reference": "Référence",
   "confirm.body":
-    "Une confirmation a été envoyée par SMS au {phone}. Conservez cette référence.",
+    "Une confirmation a été envoyée au {phone}. Conservez cette référence.",
   "confirm.cashBody":
     "Présentez la référence {ref} à notre agence avant le {deadline}. Passé ce délai, la réservation est annulée et les places remises en vente.",
   "confirm.next": "Prochaines étapes",
@@ -322,6 +331,31 @@ const fr: Dict = {
   "ful.DOCUMENTS_PENDING": "Documents en préparation",
   "ful.DOCUMENTS_ISSUED": "Documents émis",
   "ful.DELIVERED": "Livrée",
+  "steps.title": "Où en est votre réservation",
+  "steps.created": "Réservation créée",
+  "steps.paidCash": "Payée en agence",
+  "steps.payCash": "Paiement en espèces à l'agence",
+  "steps.payBy": "Avant le {date}",
+  "steps.paidOnline": "Paiement reçu",
+  "steps.payOnline": "Paiement en attente",
+  "steps.confirmed": "Confirmée par l'agence",
+  "steps.documents": "Documents envoyés",
+  "steps.documentsTodo": "Billets et vouchers à recevoir",
+  "steps.completed": "Voyage effectué",
+  "steps.delivered": "Livrée",
+  "steps.cancelled": "Annulée",
+  "steps.history": "Historique",
+  "ev.ORDER_CREATED": "Réservation créée",
+  "ev.PAYMENT_STARTED": "Paiement lancé",
+  "ev.PAYMENT_RECEIVED": "Paiement reçu",
+  "ev.PAYMENT_FAILED": "Paiement échoué",
+  "ev.PAYMENT_METHOD_CHANGED": "Mode de paiement modifié",
+  "ev.CASH_RECEIVED": "Paiement reçu en agence",
+  "ev.STATUS_CONFIRMED": "Réservation confirmée",
+  "ev.STATUS_COMPLETED": "Voyage effectué",
+  "ev.STATUS_CANCELLED": "Réservation annulée",
+  "ev.AUTO_CANCELLED": "Annulée — délai de paiement dépassé",
+  "ev.DOCUMENTS_ISSUED": "Documents envoyés",
   "enq.NEW": "Reçue",
   "enq.CONTACTED": "Contact établi",
   "enq.QUALIFIED": "En cours",
@@ -397,6 +431,7 @@ const fr: Dict = {
   "footer.payments": "Moyens de paiement acceptés",
   "footer.rights": "Tous droits réservés.",
   "footer.lowData": "Mode économie de données",
+  "footer.offices": "Nos bureaux",
 
   "common.currency": "Devise",
   "common.language": "Langue",
@@ -483,7 +518,7 @@ const en: Dict = {
 
   "home.heroTitle": "Book your next trip in the DRC",
   "home.heroSubtitle":
-    "Flights, hotels, buses, cars and activities — verified stock, prices in USD, CDF or EUR, pay by mobile money or cash.",
+    "Flights, hotels, buses, cars and activities — verified stock, prices in USD, CDF or EUR, pay in cash at our office.",
   "home.deals": "Current offers",
   "home.dealsSub": "Stock bought in advance, real quantities, no phantom prices.",
   "home.destinations": "Popular destinations",
@@ -494,9 +529,9 @@ const en: Dict = {
   "home.why1Title": "Real, verified stock",
   "home.why1Body":
     "We buy seats and rooms in advance. What you see is available; we never show an offer we cannot honour.",
-  "home.why2Title": "Pay the way you want",
+  "home.why2Title": "Pay in cash at our office",
   "home.why2Body":
-    "M-Pesa, Orange Money, Airtel Money, Afrimoney, bank card — or cash at our Kinshasa office.",
+    "Book online, then pay in cash at our Kinshasa office. Your booking is held for 48 hours.",
   "home.why3Title": "Clear prices, no surprises",
   "home.why3Body":
     "The price shown is the price paid. No fee revealed at the last step, no invented urgency counters.",
@@ -533,6 +568,9 @@ const en: Dict = {
   "results.duration": "Duration",
   "results.bedrooms": "Bedrooms",
   "results.showing": "Showing {n} of {total}",
+  "results.search": "Search these results",
+  "results.clearSearch": "Clear search",
+  "results.noMatch": "No results for “{q}”",
 
   "empty.title": "Nothing matches this search",
   "empty.body":
@@ -543,7 +581,7 @@ const en: Dict = {
 
   "rtb.title": "Request to book",
   "rtb.body":
-    "We do not hold this trip today. Leave your details: we will source it and send you a payment link, with no commitment.",
+    "We do not hold this trip today. Leave your details: we will source it and come back to you with a firm price, with no commitment.",
   "rtb.name": "Full name",
   "rtb.phone": "Phone number",
   "rtb.email": "Email (optional)",
@@ -655,22 +693,27 @@ const en: Dict = {
   "pay.errCancelledBody":
     "Stock is only held for a few minutes. You have not been charged — start a new search to book again.",
   "pay.errNoCharge": "You have not been charged. Try again, or choose to pay cash at the office.",
+  "pay.errNoChargeCash": "You have not been charged. Try again, or contact our office.",
+  "pay.errAccountExists": "This number belongs to an account. Please sign in to book.",
+  "pay.errAccountExistsBody": "Your selection is kept: sign in, then pick up here.",
   "checkout.wallet": "Digital wallet",
   "checkout.walletNote": "MaxiCash, PayPal and other wallets.",
   "checkout.bankTransfer": "Bank transfer",
   "checkout.bankTransferNote":
     "Pay from your bank through our provider. Confirmed immediately.",
   "checkout.cash": "Cash at our office",
+  "checkout.cashOnly": "Payment is made in cash at our office.",
   "checkout.mobileMoneyNote":
     "You will receive a confirmation request on your phone. Keep it to hand.",
   "checkout.cardNote":
     "Payment on our provider's secure page. We never see your card number.",
   "checkout.cashNote":
-    "Booking held for 48 hours. Pay at our office using the reference sent by SMS.",
+    "Booking held for 48 hours. Pay at our office using your booking reference.",
   "checkout.operator": "Operator",
   "checkout.payNow": "Pay {amount}",
   "checkout.reserveCash": "Reserve and pay at the office",
   "checkout.waitingTitle": "Check your phone",
+  "checkout.waitingCash": "Registering your booking…",
   "checkout.waitingBody":
     "A payment request for {amount} was sent to {phone}. Approve it on your phone. This page updates automatically.",
   "checkout.waitingCancel": "Cancel and change payment method",
@@ -680,7 +723,7 @@ const en: Dict = {
   "confirm.titleCash": "Booking registered",
   "confirm.reference": "Reference",
   "confirm.body":
-    "A confirmation was sent by SMS to {phone}. Keep this reference.",
+    "A confirmation was sent to {phone}. Keep this reference.",
   "confirm.cashBody":
     "Bring reference {ref} to our office before {deadline}. After that the booking is cancelled and the stock returned to sale.",
   "confirm.next": "Next steps",
@@ -732,6 +775,31 @@ const en: Dict = {
   "ful.DOCUMENTS_PENDING": "Documents being prepared",
   "ful.DOCUMENTS_ISSUED": "Documents issued",
   "ful.DELIVERED": "Delivered",
+  "steps.title": "Where your booking stands",
+  "steps.created": "Booking created",
+  "steps.paidCash": "Paid at the office",
+  "steps.payCash": "Pay in cash at the office",
+  "steps.payBy": "By {date}",
+  "steps.paidOnline": "Payment received",
+  "steps.payOnline": "Payment pending",
+  "steps.confirmed": "Confirmed by the agency",
+  "steps.documents": "Documents sent",
+  "steps.documentsTodo": "Tickets and vouchers to come",
+  "steps.completed": "Trip completed",
+  "steps.delivered": "Delivered",
+  "steps.cancelled": "Cancelled",
+  "steps.history": "History",
+  "ev.ORDER_CREATED": "Booking created",
+  "ev.PAYMENT_STARTED": "Payment started",
+  "ev.PAYMENT_RECEIVED": "Payment received",
+  "ev.PAYMENT_FAILED": "Payment failed",
+  "ev.PAYMENT_METHOD_CHANGED": "Payment method changed",
+  "ev.CASH_RECEIVED": "Cash received at the office",
+  "ev.STATUS_CONFIRMED": "Booking confirmed",
+  "ev.STATUS_COMPLETED": "Trip completed",
+  "ev.STATUS_CANCELLED": "Booking cancelled",
+  "ev.AUTO_CANCELLED": "Cancelled — payment deadline passed",
+  "ev.DOCUMENTS_ISSUED": "Documents sent",
   "enq.NEW": "Received",
   "enq.CONTACTED": "Contacted",
   "enq.QUALIFIED": "In progress",
@@ -805,6 +873,7 @@ const en: Dict = {
   "footer.payments": "Accepted payment methods",
   "footer.rights": "All rights reserved.",
   "footer.lowData": "Low-data mode",
+  "footer.offices": "Our offices",
 
   "common.currency": "Currency",
   "common.language": "Language",

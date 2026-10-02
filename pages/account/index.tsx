@@ -13,7 +13,7 @@ import { useEffect, useState } from "react";
 /** §11.2 account dashboard. */
 export default function AccountDashboard() {
   const { t, locale } = usePrefs();
-  const { data: orders = [] } = useMyOrders();
+  const { data: orders = [], isPending, isError } = useMyOrders();
   const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
   const [saved, setSaved] = useState<string[]>([]);
 
@@ -80,7 +80,11 @@ export default function AccountDashboard() {
               </Link>
             </div>
 
-            {upcoming.length === 0 ? (
+            {isPending ? (
+              <p className="py-8 text-center text-sm text-ink-500">{t("common.loading")}</p>
+            ) : isError ? (
+              <p className="py-8 text-center text-sm text-bad-600">{t("common.error")}</p>
+            ) : upcoming.length === 0 ? (
               <div className="py-8 text-center">
                 <p className="font-semibold text-brand-900">{t("account.noBookings")}</p>
                 <p className="mt-1 text-sm text-ink-500">{t("account.noBookingsBody")}</p>

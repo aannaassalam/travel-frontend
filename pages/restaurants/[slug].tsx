@@ -1,9 +1,11 @@
 import CartBar from "@/components/restaurant/CartBar";
+import Gallery, { PhotoGrid } from "@/components/catalog/Gallery";
 import LocationMap from "@/components/catalog/LocationMap";
 import { Breadcrumbs } from "@/components/site/bits";
 import Layout from "@/components/site/Layout";
 import { getRestaurant } from "@/lib/api";
 import { useCart } from "@/lib/cart";
+import { mediaUrl } from "@/lib/media";
 import { price } from "@/lib/money";
 import { usePrefs } from "@/lib/prefs";
 import {
@@ -69,20 +71,8 @@ export default function RestaurantPage() {
     <Layout
       title={`${name} — ${r.city}`}
       description={r.description.fr || r.description.en || ""}
-      image={r.images[0]}
+      image={mediaUrl(r.images[0])}
     >
-      <div className="relative h-64 w-full overflow-hidden bg-ink-100 sm:h-80">
-        <Image
-          src={r.images[0] ?? "/img/banner-1.svg"}
-          alt=""
-          fill
-          sizes="100vw"
-          className="object-cover"
-          priority
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-brand-900/70 to-transparent" />
-      </div>
-
       <div className="container-site py-8">
         <Breadcrumbs
           items={[
@@ -157,8 +147,11 @@ export default function RestaurantPage() {
           )}
         </div>
 
+        <Gallery images={r.images} alt={name} />
+
         {/* Bottom padding clears the sticky cart bar on mobile. */}
-        <div className="space-y-10 pb-28">
+        <div className="mt-8 space-y-10 pb-28">
+          <PhotoGrid images={r.images} alt={name} />
           {sections.map(({ section, items }) => (
             <section key={section}>
               <h2 className="mb-4 text-xl font-bold text-brand-900">
@@ -218,7 +211,7 @@ function MenuRow({ item, restaurant }: { item: MenuItem; restaurant: Restaurant 
     >
       {item.images?.[0] && (
         <div className="relative size-20 shrink-0 overflow-hidden rounded-xl bg-ink-50">
-          <Image src={item.images[0]} alt="" fill sizes="80px" className="object-cover" />
+          <Image src={mediaUrl(item.images[0])} alt="" fill sizes="80px" className="object-cover" />
         </div>
       )}
       <div className="min-w-0 flex-1">

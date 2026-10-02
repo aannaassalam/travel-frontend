@@ -1,4 +1,9 @@
-import { OrderDocuments, OrderItems, OrderStatusBadges } from "@/components/account/order";
+import {
+  OrderDocuments,
+  OrderItems,
+  OrderProgress,
+  OrderStatusBadges
+} from "@/components/account/order";
 import { SettlementNote } from "@/components/site/bits";
 import Layout from "@/components/site/Layout";
 import { useCheckout } from "@/lib/checkout";
@@ -168,13 +173,18 @@ export default function ConfirmationPage() {
         </div>
 
         <div className="mt-6 surface p-6">
+          <h2 className="mb-4 text-lg font-bold text-brand-900">{t("steps.title")}</h2>
+          <OrderProgress order={order} />
+        </div>
+
+        <div className="mt-6 surface p-6">
           <h2 className="mb-3 text-lg font-bold text-brand-900">{t("confirm.next")}</h2>
           <ul className="space-y-3 text-[15px] text-ink-700">
             <li className="flex gap-3">
               <MessageSquare className="mt-0.5 size-5 shrink-0 text-brand-500" />
               {locale === "fr"
-                ? "Un SMS de confirmation vous a été envoyé avec la référence et les conditions."
-                : "A confirmation SMS with the reference and conditions has been sent."}
+                ? "Une confirmation vous a été envoyée avec la référence et les conditions."
+                : "A confirmation with the reference and conditions has been sent."}
             </li>
             <li className="flex gap-3">
               <CalendarPlus className="mt-0.5 size-5 shrink-0 text-brand-500" />

@@ -678,7 +678,7 @@ export function DestinationTile({
       className="group relative block aspect-4/5 overflow-hidden rounded-xl2 shadow-md ring-1 ring-brand-900/5 transition-shadow hover:shadow-lg"
     >
       <Image
-        src={city.image}
+        src={mediaUrl(city.image)}
         alt={city.name}
         fill
         sizes="(max-width: 768px) 50vw, 320px"

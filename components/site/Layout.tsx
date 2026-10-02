@@ -51,7 +51,17 @@ export default function Layout({
           url: canonical,
           title,
           description,
-          images: [{ url: `${SITE}${image}` }],
+          // Callers pass absolute mediaUrl() URLs for catalogue images; only a
+          // relative path (our own /public assets) needs the origin prefixed,
+          // or an absolute URL becomes `https://domainhttps://...`.
+          images: [
+            {
+              url:
+                image.startsWith("/") && !image.startsWith("//")
+                  ? `${SITE}${image}`
+                  : image
+            }
+          ],
           siteName: "CongoTravel",
           locale
         }}

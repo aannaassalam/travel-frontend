@@ -9,7 +9,6 @@ import RecentlyViewed from "@/components/catalog/RecentlyViewed";
 import SearchWidget from "@/components/search/SearchWidget";
 import { SectionHeading } from "@/components/site/bits";
 import Layout, { SITE } from "@/components/site/Layout";
-import { CardSkeleton } from "@/components/ui/field";
 import { getHomeFeed, getLocations, safely, type ServiceLocation } from "@/lib/api";
 import { cityImage } from "@/lib/catalog";
 import { mediaUrl } from "@/lib/media";
@@ -18,12 +17,12 @@ import { usePrefs } from "@/lib/prefs";
 import { Hotel, Listing } from "@/typescript/interface/domain.interface";
 import {
   BadgeCheck,
+  Banknote,
   Headphones,
   MapPin,
   MessageCircle,
   Phone,
-  Receipt,
-  Smartphone
+  Receipt
 } from "lucide-react";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
@@ -106,7 +105,7 @@ export default function Home({ deals, hotels, properties, heroImage, destination
 
   const why = [
     { Icon: BadgeCheck, title: "home.why1Title", body: "home.why1Body" },
-    { Icon: Smartphone, title: "home.why2Title", body: "home.why2Body" },
+    { Icon: Banknote, title: "home.why2Title", body: "home.why2Body" },
     { Icon: Receipt, title: "home.why3Title", body: "home.why3Body" },
     { Icon: Headphones, title: "home.why4Title", body: "home.why4Body" }
   ];
@@ -131,7 +130,7 @@ export default function Home({ deals, hotels, properties, heroImage, destination
         },
         areaServed: "CD",
         currenciesAccepted: "USD, CDF, EUR",
-        paymentAccepted: "Mobile money, Cash, Credit card"
+        paymentAccepted: "Cash"
       }}
     >
       {/* ------------------------------------------------------------- hero */}
@@ -194,9 +193,9 @@ export default function Home({ deals, hotels, properties, heroImage, destination
             { Icon: Phone, title: t("home.trustPhone"), body: contact.phone },
             { Icon: MessageCircle, title: "WhatsApp", body: contact.officeHours || t("home.trustHours") },
             {
-              Icon: Smartphone,
+              Icon: Banknote,
               title: locale === "fr" ? "Paiement" : "Payment",
-              body: "Mobile money · Carte · Espèces"
+              body: locale === "fr" ? "Espèces à notre agence" : "Cash at our office"
             }
           ].map(({ Icon, title, body }) => (
             <li key={title} className="flex items-center gap-3.5 py-5 lg:px-6">
@@ -222,11 +221,11 @@ export default function Home({ deals, hotels, properties, heroImage, destination
               href="/flights"
               cta={t("home.viewAll")}
             />
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {Array.from({ length: 4 }, (_, i) => (
-                <CardSkeleton key={i} />
-              ))}
-            </div>
+            {/* Statically generated: an empty rail means the feed had none, not
+                that it is still loading, so say so rather than spin forever. */}
+            <p className="surface p-10 text-center text-sm text-ink-500">
+              {t("results.titleZero")}
+            </p>
           </>
         ) : (
           <Carousel
@@ -319,11 +318,17 @@ export default function Home({ deals, hotels, properties, heroImage, destination
             href="/hotels"
             cta={t("home.viewAll")}
           />
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {hotels.length === 0
-              ? Array.from({ length: 4 }, (_, i) => <CardSkeleton key={i} />)
-              : hotels.map((h) => <HotelTile key={h.id} hotel={h} />)}
-          </div>
+          {hotels.length === 0 ? (
+            <p className="surface p-10 text-center text-sm text-ink-500">
+              {t("results.titleZero")}
+            </p>
+          ) : (
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {hotels.map((h) => (
+                <HotelTile key={h.id} hotel={h} />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -335,11 +340,17 @@ export default function Home({ deals, hotels, properties, heroImage, destination
           href="/property"
           cta={t("home.viewAll")}
         />
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {properties.length === 0
-            ? Array.from({ length: 4 }, (_, i) => <CardSkeleton key={i} />)
-            : properties.map((p) => <PropertyTile key={p.id} listing={p} />)}
-        </div>
+        {properties.length === 0 ? (
+          <p className="surface p-10 text-center text-sm text-ink-500">
+            {t("results.titleZero")}
+          </p>
+        ) : (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {properties.map((p) => (
+              <PropertyTile key={p.id} listing={p} />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* ---------------------------------------------------- recently seen */}
@@ -385,8 +396,8 @@ export default function Home({ deals, hotels, properties, heroImage, destination
             </h2>
             <p className="mt-3 max-w-md text-white/75">
               {locale === "fr"
-                ? `Passez à notre bureau${contact.city ? ` de ${contact.city}` : ""}, appelez-nous, ou écrivez sur WhatsApp. Nous réservons pour vous et vous payez en espèces sur place si vous le souhaitez.`
-                : `Come to our ${contact.city || ""} office, call us, or message on WhatsApp. We book for you and you can pay cash on the spot if you prefer.`}
+                ? `Passez à notre bureau${contact.city ? ` de ${contact.city}` : ""}, appelez-nous, ou écrivez sur WhatsApp. Nous réservons pour vous et vous payez en espèces sur place.`
+                : `Come to our ${contact.city || ""} office, call us, or message on WhatsApp. We book for you and you pay cash on the spot.`}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <a href={`tel:${dial(contact.phone)}`} className="btn btn-lg btn-primary">

@@ -12,7 +12,7 @@ import { useState } from "react";
 export default function BookingsPage() {
   const { t, locale } = usePrefs();
   const [tab, setTab] = useState<"upcoming" | "past">("upcoming");
-  const { data: orders = [] } = useMyOrders();
+  const { data: orders = [], isPending, isError } = useMyOrders();
 
   const isPast = (o: Order) => o.status === "COMPLETED" || o.status === "CANCELLED";
   const shown = orders.filter((o) => (tab === "past" ? isPast(o) : !isPast(o)));
@@ -40,7 +40,15 @@ export default function BookingsPage() {
             ))}
           </div>
 
-          {shown.length === 0 ? (
+          {isPending ? (
+            <p className="surface p-10 text-center text-sm text-ink-500">
+              {t("common.loading")}
+            </p>
+          ) : isError ? (
+            <p className="surface p-10 text-center text-sm text-bad-600">
+              {t("common.error")}
+            </p>
+          ) : shown.length === 0 ? (
             <div className="surface p-10 text-center">
               <NoBookingsSpot className="mx-auto mb-4 w-full max-w-[180px] text-brand-900" />
               <p className="font-semibold text-brand-900">{t("account.noBookings")}</p>

@@ -87,6 +87,15 @@ export const PAYMENT_RAILS = [
 export type PaymentRail = (typeof PAYMENT_RAILS)[number]["id"];
 
 /**
+ * Cash-only. Online payments are permanently off: the site offers CASH and
+ * nothing else, and the server answers 400 CASH_ONLY to any other method.
+ * Hard-coded, never env-derived — there is no server switch to pair it with.
+ *
+ * Typed `boolean`, not the literal, so the remaining guards keep type-checking.
+ */
+export const ONLINE_PAYMENTS_ENABLED: boolean = false;
+
+/**
  * Rails that go to the provider. The rest are settled at the office.
  *
  * Typed as the full PaymentRail union rather than the narrowed literal set, so
@@ -230,6 +239,7 @@ export interface Listing {
   status: ListingStatus;
   city: string;
   country: string;
+  geo?: { lat: number; lng: number };
   images: string[];
   /** Per-currency minor units. USD always set; others when priced. */
   sellPrice: Money;
@@ -350,7 +360,13 @@ export interface Order {
   cashDeadline?: string;
   cashReference?: string;
   consent?: OrderConsent;
-  documents: { kind: "ETICKET" | "VOUCHER" | "INVOICE"; fileName: string }[];
+  /** The current version of each kind. No URL: a link is minted per download. */
+  documents: {
+    id: string;
+    kind: "ETICKET" | "VOUCHER" | "INVOICE";
+    fileName: string;
+    issuedAt?: string;
+  }[];
   timeline: OrderTimelineEntry[];
   travelDate?: string;
   createdAt: string;

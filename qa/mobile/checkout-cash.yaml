@@ -1,0 +1,86 @@
+# Mobile restaurant checkout, SIGNED IN (run login.yaml first; the session persists in Keychain).
+# Verifies: menu → add → basket → checkout form → cash-only CTA → order screen. Tags the order "qa_test" in the address.
+# Selectors are visible text (regex, fr|en). Steps marked REFINE may need `maestro hierarchy` on first run.
+appId: com.flexiairbnb.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      text: "Explore|Explorer"
+    timeout: 60000
+# signed-in launches may show the push-permission prompt over the home screen — dismiss it first
+- runFlow:
+    when:
+      visible: "Plus tard|Later|Pas maintenant"
+    commands:
+      - tapOn: "Plus tard|Later|Pas maintenant"
+- tapOn: "Restaurants"
+- extendedWaitUntil:
+    visible:
+      text: "Kivu Lakeside Kitchen"
+    timeout: 20000
+- takeScreenshot: mobile-20-restaurants
+- tapOn: "Kivu Lakeside Kitchen"
+- extendedWaitUntil:
+    visible:
+      text: "Kivu Lakeside Kitchen"
+    timeout: 20000
+- takeScreenshot: mobile-21-restaurant
+# the menu starts below the fold; each add control is labelled "Ajouter <dish>" / "Add <dish>"
+- scrollUntilVisible:
+    element:
+      text: "(Ajouter|Add) .*"
+    direction: DOWN
+    timeout: 20000
+- tapOn: "(Ajouter|Add) .*"
+- extendedWaitUntil:
+    visible:
+      text: "Checkout|Commander"
+    timeout: 10000
+- takeScreenshot: mobile-22-cart-bar
+- tapOn: "Checkout|Commander"
+- extendedWaitUntil:
+    visible:
+      text: "Delivery address|Adresse de livraison"
+    timeout: 20000
+- takeScreenshot: mobile-23-checkout-form
+# cash-only must be the only payment option shown
+- assertVisible: "Cash|Espèces"
+- assertNotVisible: "Card|Carte|Mobile Money|Bank transfer|Virement"
+# REFINE: tapping the label may not focus the input; swap for the field's placeholder if hierarchy shows one
+# Inputs have no placeholders and a label tap does not focus them: tap the address box by position
+# (it sits directly under the "ADRESSE DE LIVRAISON" label, ≈[36,404][404,454] on the 440×956 canvas).
+- tapOn:
+    point: "50%,45%"
+- inputText: "qa_test 12 avenue du Lac"
+- hideKeyboard
+- assertVisible: "qa_test 12 avenue du Lac"
+# the zone trigger is labelled "Zone", but the regex is case-insensitive and hits the uppercase
+# "ZONE" label above it first — tap the control by position (≈[36,566][404,616])
+- tapOn:
+    point: "50%,62%"
+# The zone sheet opens, but its rows are NOT in the accessibility tree (the bottom-sheet container
+# swallows its children — logged as an a11y finding), so Maestro cannot see "Himbi". Tap the first
+# row by position: Himbi (no minimum) sits at ≈85% of screen height; Katindo (US$10 minimum) below it.
+- extendedWaitUntil:
+    visible:
+      text: "Bottom Sheet"
+    timeout: 10000
+- takeScreenshot: mobile-24-zones
+- tapOn:
+    point: "20%,85%"
+- takeScreenshot: mobile-25-zone-picked
+- tapOn: "J.accepte.*|I accept.*"
+- takeScreenshot: mobile-26-ready
+# the submit CTA is below the terms checkbox, off-screen
+- scrollUntilVisible:
+    element:
+      text: "Commander — payer à la livraison|Order — pay on delivery"
+    direction: DOWN
+    timeout: 10000
+- tapOn: "Commander — payer à la livraison|Order — pay on delivery"
+- extendedWaitUntil:
+    visible:
+      text: "Reference|Référence|Cash|Espèces"
+    timeout: 30000
+- takeScreenshot: mobile-27-order-created

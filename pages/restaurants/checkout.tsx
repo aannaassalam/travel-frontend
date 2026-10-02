@@ -5,14 +5,15 @@ import { PhoneField } from "@/components/ui/PhoneField";
 import { ApiError, createOrder, getRestaurant } from "@/lib/api";
 import { useCart } from "@/lib/cart";
 import { Country, DEFAULT_COUNTRY, toE164 } from "@/lib/countries";
-import { formatMoney, price } from "@/lib/money";
+import { price } from "@/lib/money";
 import { usePrefs } from "@/lib/prefs";
 import { cn } from "@/lib/utils";
 import { Money } from "@/typescript/interface/domain.interface";
 import { useQuery } from "@tanstack/react-query";
-import { Bike, Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
+import { Banknote, Bike, Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 /**
  * Restaurant checkout.
@@ -50,10 +51,11 @@ export default function RestaurantCheckoutPage() {
     zoneId: "",
     notes: ""
   });
-  const [isCash, setIsCash] = useState(true);
   const [terms, setTerms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** The server's reason code, for the one failure that needs a button. */
+  const [code, setCode] = useState<string | undefined>();
 
   // The menu is not needed here, but the zones and the prep time are — and they
   // must come from the server rather than the cart, so a fee the office edited
@@ -99,46 +101,78 @@ export default function RestaurantCheckoutPage() {
     Boolean(belowMinimum) ||
     !terms;
 
+  /**
+   * §4.6: one key per basket, kept across presses. It used to be minted inside
+   * submit() with the clock in it, so every press was a new key — and a press
+   * after a dropped response cooked the food twice. It changes only when what
+   * the server would price changes.
+   */
+  const idem = useRef<{ sig: string; key: string } | null>(null);
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (blocked || submitting) return;
     setSubmitting(true);
     setError(null);
+    setCode(undefined);
+    const sig = JSON.stringify([
+      restaurantSlug,
+      lines.map((l) => [l.menuItemId, l.quantity]),
+      zone?.id,
+      currency
+    ]);
+    const mint = () =>
+      (idem.current = {
+        sig,
+        key: globalThis.crypto?.randomUUID?.() ?? `rest-${Date.now()}-${Math.random()}`
+      }).key;
+    if (idem.current?.sig !== sig) mint();
+    const draft = {
+      items: lines.map((l) => ({
+        vertical: "RESTAURANT" as const,
+        listingId: l.menuItemId,
+        quantity: l.quantity
+      })),
+      delivery: {
+        address: form.address.trim(),
+        zoneId: zone!.id,
+        notes: form.notes.trim() || undefined
+      },
+      contact: {
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
+        phone: phone!
+      },
+      // Cash only: the server answers 400 CASH_ONLY to anything else.
+      paymentMethod: "CASH" as const,
+      currency,
+      locale
+    };
     try {
-      const order = await createOrder(
-        {
-          items: lines.map((l) => ({
-            vertical: "RESTAURANT" as const,
-            listingId: l.menuItemId,
-            quantity: l.quantity
-          })),
-          delivery: {
-            address: form.address.trim(),
-            zoneId: zone!.id,
-            notes: form.notes.trim() || undefined
-          },
-          contact: {
-            firstName: form.firstName.trim(),
-            lastName: form.lastName.trim(),
-            phone: phone!
-          },
-          paymentMethod: isCash ? "CASH" : "ONLINE",
-          currency,
-          locale
-        },
-        // §4.6: one key per attempt at this basket, so a dropped response
-        // replays the original order rather than cooking the food twice.
-        `rest-${restaurantSlug}-${count}-${Date.now()}`
-      );
+      let order;
+      try {
+        order = await createOrder(draft, idem.current!.key);
+      } catch (err) {
+        // The key was spent by a different caller: a fresh one, exactly once.
+        if (!(err instanceof ApiError && err.code === "IDEMPOTENCY_KEY_USED")) throw err;
+        order = await createOrder(draft, mint());
+      }
       clear();
       router.push(`/booking/confirmation/${order.reference}`);
     } catch (err) {
+      // A key the server has finished with (cancelled order, other currency)
+      // must not dead-end the next press.
+      if (err instanceof ApiError && err.status === 409) idem.current = null;
+      const code = err instanceof ApiError ? err.code : undefined;
+      setCode(code);
       setError(
-        err instanceof ApiError
-          ? err.message
-          : locale === "fr"
-            ? "La commande n’a pas pu être envoyée. Réessayez."
-            : "The order could not be sent. Try again."
+        code === "ACCOUNT_EXISTS"
+          ? t("pay.errAccountExists")
+          : err instanceof ApiError
+            ? err.message
+            : locale === "fr"
+              ? "La commande n’a pas pu être envoyée. Réessayez."
+              : "The order could not be sent. Try again."
       );
       setSubmitting(false);
     }
@@ -340,31 +374,11 @@ export default function RestaurantCheckoutPage() {
                 <legend className="eyebrow mb-2 text-brand-600">
                   {locale === "fr" ? "Paiement" : "Payment"}
                 </legend>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    [true, locale === "fr" ? "Espèces" : "Cash"],
-                    [false, locale === "fr" ? "En ligne" : "Online"]
-                  ].map(([value, label]) => (
-                    <label
-                      key={String(value)}
-                      className={cn(
-                        "cursor-pointer rounded-xl px-3 py-2.5 text-center text-sm font-semibold ring-1 ring-inset transition-colors",
-                        isCash === value
-                          ? "bg-brand-900 text-white ring-brand-900"
-                          : "bg-white text-ink-700 ring-ink-100 hover:bg-brand-50"
-                      )}
-                    >
-                      <input
-                        type="radio"
-                        name="payment"
-                        className="sr-only"
-                        checked={isCash === value}
-                        onChange={() => setIsCash(value as boolean)}
-                      />
-                      {label as string}
-                    </label>
-                  ))}
-                </div>
+                {/* Cash only: stated, not chosen. */}
+                <p className="flex items-center gap-2 rounded-xl bg-brand-900 px-3 py-2.5 text-sm font-semibold text-white">
+                  <Banknote className="size-4 shrink-0" />
+                  {locale === "fr" ? "Espèces à la livraison" : "Cash on delivery"}
+                </p>
               </fieldset>
 
               <label className="flex cursor-pointer items-start gap-2.5 pt-2 text-sm text-ink-700">
@@ -382,9 +396,18 @@ export default function RestaurantCheckoutPage() {
               </label>
 
               {error && (
-                <p role="alert" className="rounded-xl bg-bad-100 p-3 text-sm text-bad-600">
-                  {error}
-                </p>
+                <div role="alert" className="rounded-xl bg-bad-100 p-3 text-sm text-bad-600">
+                  <p>{error}</p>
+                  {/* The basket lives in storage, so it is still here after sign-in. */}
+                  {code === "ACCOUNT_EXISTS" && (
+                    <Link
+                      href={`/login?next=${encodeURIComponent(router.asPath)}`}
+                      className="btn btn-sm btn-dark mt-3"
+                    >
+                      {t("nav.signin")}
+                    </Link>
+                  )}
+                </div>
               )}
 
               <button
@@ -399,13 +422,9 @@ export default function RestaurantCheckoutPage() {
               >
                 {submitting
                   ? t("common.loading")
-                  : isCash
-                    ? locale === "fr"
-                      ? "Commander — payer à la livraison"
-                      : "Order — pay on delivery"
-                    : locale === "fr"
-                      ? `Payer ${formatMoney(total[currency] ?? total.USD ?? 0, currency, locale)}`
-                      : `Pay ${formatMoney(total[currency] ?? total.USD ?? 0, currency, locale)}`}
+                  : locale === "fr"
+                    ? "Commander — payer à la livraison"
+                    : "Order — pay on delivery"}
               </button>
 
               {blocked && !belowMinimum && (

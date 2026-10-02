@@ -31,6 +31,9 @@ export const getStaticPaths: GetStaticPaths = async () => {
 export const getStaticProps: GetStaticProps<Props> = async ({ params }) => {
   try {
     const { listing, related } = await getListing(String(params?.slug));
+    // A slug resolves whatever route asks for it, so a listing of another
+    // vertical would otherwise render under this one. Serve only its own.
+    if (listing.vertical !== "CAR") return { notFound: true, revalidate: 60 };
     return { props: { listing, related }, revalidate: 300 };
   } catch {
     // Unknown slug, or the API is down mid-build. Either way ISR retries.

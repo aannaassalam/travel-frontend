@@ -142,7 +142,26 @@ export default function SignInPage() {
     }
   }
 
-  const done = () => router.push(String(router.query.next || "/account"));
+  /**
+   * Only ever a path on this origin. A prefix test alone is not enough:
+   * "/\t/evil.com" starts with a slash and the URL parser then drops the tab,
+   * leaving "//evil.com" — another site reached straight after a genuine
+   * sign-in. Mirrors the admin app's check.
+   */
+  const done = () => {
+    const next = router.query.next;
+    let dest = "/account";
+    if (typeof next === "string" && next.startsWith("/")) {
+      try {
+        const u = new URL(next, window.location.origin);
+        const path = u.pathname + u.search + u.hash;
+        if (u.origin === window.location.origin && !path.startsWith("//")) dest = path;
+      } catch {
+        /* malformed: keep the default */
+      }
+    }
+    router.push(dest);
+  };
 
   /**
    * Real endpoint. The server answers identically whether or not the number is

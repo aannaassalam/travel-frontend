@@ -1,0 +1,279 @@
+{
+  "log": [
+    {
+      "name": "bookable-listing",
+      "data": {
+        "id": "6a7cd2fbe9b884df121f794c",
+        "vertical": "CAR",
+        "slug": "mitsubishi-pajero-libre-kisangani-3",
+        "available": 2
+      }
+    },
+    {
+      "name": "garbage-jwt",
+      "data": {
+        "status": 401,
+        "body": {
+          "status": "fail",
+          "code": "SESSION_INVALID",
+          "message": "Please sign in",
+          "stack": "Error: Please sign in\n    at /Users/aannaassalam/Documents/Github/travel-backend/src/middleware/customerAuth.ts:188:22"
+        }
+      }
+    },
+    {
+      "name": "tampered-jwt",
+      "data": {
+        "status": 401,
+        "body": {
+          "status": "fail",
+          "code": "SESSION_INVALID",
+          "message": "Please sign in",
+          "stack": "Error: Please sign in\n    at /Users/aannaassalam/Documents/Github/travel-backend/src/middleware/customerAuth.ts:188:22"
+        }
+      }
+    },
+    {
+      "name": "malformed-json",
+      "data": {
+        "status": 400,
+        "body": "{\"status\":400,\"message\":\"Unexpected token '\\\"', \\\"\\\"{not json\\\"\\\" is not valid JSON\",\"stack\":\"SyntaxError: Unexpected token '\\\"', \\\"\\\"{not json\\\"\\\" is not valid JSON\\n    at JSON.parse (<anonymous>)\\n"
+      }
+    },
+    {
+      "name": "empty-body",
+      "data": {
+        "status": 400
+      }
+    },
+    {
+      "name": "wrong-types",
+      "data": {
+        "status": 400,
+        "body": "{\"status\":\"fail\",\"message\":\"At least one item is required\",\"stack\":\"Error: At least one item is required\\n    at /Users/aannaassalam/Documents/Github/travel-backend/src/controllers/public/orderControl"
+      }
+    },
+    {
+      "name": "cast-error",
+      "data": {
+        "status": 400,
+        "body": "{\"status\":\"fail\",\"message\":\"Invalid _id: not-an-objectid.\",\"stack\":\"Error: Invalid _id: not-an-objectid.\\n    at handleCastErrorDb (/Users/aannaassalam/Documents/Github/travel-backend/src/controllers/errorController/errorController.ts:6:10)\\n    at errorHandler (/Users/aannaassalam/Documents/Github/travel-backend/src/controllers/errorController/errorController.ts:80:41)\\n    at Layer.handle_error "
+      }
+    },
+    {
+      "name": "huge-city",
+      "data": {
+        "status": 200,
+        "ms": 84
+      }
+    },
+    {
+      "name": "huge-limit",
+      "data": {
+        "status": 200,
+        "limit": 60,
+        "count": 25
+      }
+    },
+    {
+      "name": "admin-customers-regex",
+      "data": {
+        "status": 200,
+        "body": "{\"items\":[],\"nextCursor\":null}"
+      }
+    },
+    {
+      "name": "admin-locations-regex",
+      "data": {
+        "status": 200,
+        "body": "{\"items\":[]}"
+      }
+    },
+    {
+      "name": "qty-0",
+      "data": {
+        "status": 400,
+        "accepted": false,
+        "summary": {
+          "status": "fail",
+          "message": "Invalid quantity",
+          "stack": "Error: Invalid quantity\n    at /Users/aannaassalam/Documents/Github/travel-backend/src/controllers/public/orderController.ts:269:55\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)"
+        }
+      }
+    },
+    {
+      "name": "qty--1",
+      "data": {
+        "status": 400,
+        "accepted": false,
+        "summary": {
+          "status": "fail",
+          "message": "Invalid quantity",
+          "stack": "Error: Invalid quantity\n    at /Users/aannaassalam/Documents/Github/travel-backend/src/controllers/public/orderController.ts:269:55\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)"
+        }
+      }
+    },
+    {
+      "name": "qty-1.5",
+      "data": {
+        "status": 400,
+        "accepted": false,
+        "summary": {
+          "status": "fail",
+          "message": "Invalid quantity",
+          "stack": "Error: Invalid quantity\n    at /Users/aannaassalam/Documents/Github/travel-backend/src/controllers/public/orderController.ts:269:55\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)"
+        }
+      }
+    },
+    {
+      "name": "qty-abc",
+      "data": {
+        "status": 400,
+        "accepted": false,
+        "summary": {
+          "status": "fail",
+          "message": "Invalid quantity",
+          "stack": "Error: Invalid quantity\n    at /Users/aannaassalam/Documents/Github/travel-backend/src/controllers/public/orderController.ts:269:55\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)"
+        }
+      }
+    },
+    {
+      "name": "qty-21",
+      "data": {
+        "status": 400,
+        "accepted": false,
+        "summary": {
+          "status": "fail",
+          "message": "Invalid quantity",
+          "stack": "Error: Invalid quantity\n    at /Users/aannaassalam/Documents/Github/travel-backend/src/controllers/public/orderController.ts:269:55\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)"
+        }
+      }
+    },
+    {
+      "name": "qty-null",
+      "data": {
+        "status": 400,
+        "accepted": false,
+        "summary": {
+          "status": "fail",
+          "message": "Invalid quantity",
+          "stack": "Error: Invalid quantity\n    at /Users/aannaassalam/Documents/Github/travel-backend/src/controllers/public/orderController.ts:269:55\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)"
+        }
+      }
+    },
+    {
+      "name": "car-reversed-dates",
+      "data": {
+        "status": 400,
+        "accepted": false,
+        "summary": {
+          "status": "fail",
+          "message": "Those dates are not valid",
+          "stack": "Error: Those dates are not valid\n    at /Users/aannaassalam/Documents/Github/travel-backend/src/controllers/public/orderController.ts:272:25\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)"
+        }
+      }
+    },
+    {
+      "name": "car-past-dates",
+      "data": {
+        "status": 400,
+        "accepted": false,
+        "summary": {
+          "status": "fail",
+          "message": "Those dates are not valid",
+          "stack": "Error: Those dates are not valid\n    at /Users/aannaassalam/Documents/Github/travel-backend/src/controllers/public/orderController.ts:272:25\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)"
+        }
+      }
+    },
+    {
+      "name": "car-garbage-dates",
+      "data": {
+        "status": 400,
+        "accepted": false,
+        "summary": {
+          "status": "fail",
+          "message": "Those dates are not valid",
+          "stack": "Error: Those dates are not valid\n    at /Users/aannaassalam/Documents/Github/travel-backend/src/controllers/public/orderController.ts:272:25\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)"
+        }
+      }
+    },
+    {
+      "name": "property-order",
+      "data": {
+        "status": 400,
+        "accepted": false,
+        "summary": {
+          "status": "fail",
+          "message": "This listing is enquiry-only",
+          "stack": "Error: This listing is enquiry-only\n    at /Users/aannaassalam/Documents/Github/travel-backend/src/controllers/public/orderController.ts:267:25\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)"
+        }
+      }
+    },
+    {
+      "name": "contact-traveller-abuse",
+      "data": {
+        "status": 400,
+        "accepted": false,
+        "summary": {
+          "status": "fail",
+          "message": "That email address is not valid",
+          "stack": "Error: That email address is not valid\n    at /Users/aannaassalam/Documents/Github/travel-backend/src/controllers/public/orderController.ts:205:22\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)"
+        }
+      }
+    },
+    {
+      "name": "enquiry-abuse",
+      "data": {
+        "status": 400,
+        "body": {
+          "status": "fail",
+          "message": "That name is too long",
+          "stack": "Error: That name is too long\n    at /Users/aannaassalam/Documents/Github/travel-backend/src/controllers/public/enquiryController.ts:45:33\n    at /Users/aannaassalam/Documents/Github/travel-backend/src/utils/catchAsync.ts:6:5\n    at Layer.handle [as handle_request] (/Users/aannaassalam/Documents/Github/travel-backend/node_modules/express/lib/router/layer.js:95:5)\n    at next (/Users/aannaassalam/Documents/Github/travel-backend/node_modules/express/lib/router/route.js:149:13)\n    at /Users/aannaassalam/Documents/Github/travel-backend/node_modules/express-rate-limit/dist/index.cjs:710:7\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at /Users/aannaassalam/Documents/Github/travel-backend/node_modules/express-rate-limit/dist/index.cjs:625:5"
+        }
+      }
+    },
+    {
+      "name": "order-by-reference-noauth",
+      "data": {
+        "status": 200,
+        "fields": [
+          "reference",
+          "contactPhoneMasked",
+          "status",
+          "paymentStatus",
+          "fulfilmentStatus",
+          "items",
+          "travellers",
+          "total",
+          "chargedCurrency",
+          "chargedTotal",
+          "fxRate",
+          "paymentMethod",
+          "cashDeadline",
+          "cashReference",
+          "consent",
+          "documents",
+          "timeline",
+          "travelDate",
+          "createdAt"
+        ],
+        "travellers": [
+          {
+            "firstName": "qa_test",
+            "lastName": "traveller"
+          }
+        ],
+        "phone": "••••••••0001"
+      }
+    },
+    {
+      "name": "idem-first",
+      "data": {
+        "status": 429
+      }
+    }
+  ],
+  "cleanedUp": [
+    "FA-DMBZB-Z010A"
+  ]
+}

@@ -18,7 +18,7 @@ const FAQ = {
     },
     {
       q: "Comment puis-je payer ?",
-      a: "Par mobile money (M-Pesa, Orange Money, Airtel Money, Afrimoney), par carte bancaire, ou en espèces à notre bureau de Gombe. Le paiement en espèces maintient votre réservation 48 heures ; passé ce délai elle est annulée automatiquement et les places sont remises en vente."
+      a: "En espèces, à notre bureau de Gombe, avec la référence reçue par SMS. Votre réservation est maintenue 48 heures ; passé ce délai elle est annulée automatiquement et les places sont remises en vente."
     },
     {
       q: "Ma recherche ne donne aucun résultat. Pourquoi ?",
@@ -52,7 +52,7 @@ const FAQ = {
     },
     {
       q: "How can I pay?",
-      a: "By mobile money (M-Pesa, Orange Money, Airtel Money, Afrimoney), by bank card, or in cash at our Gombe office. Cash holds your booking for 48 hours; after that it is cancelled automatically and the stock returns to sale."
+      a: "In cash, at our Gombe office, with the reference sent by SMS. Your booking is held for 48 hours; after that it is cancelled automatically and the stock returns to sale."
     },
     {
       q: "My search returns nothing. Why?",

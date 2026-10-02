@@ -2,6 +2,7 @@ import {
   Currency,
   Money,
   Locale,
+  ONLINE_PAYMENTS_ENABLED,
   Order,
   PaymentMethod,
   PaymentRail,
@@ -11,7 +12,7 @@ import {
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { multiply } from "./money";
 import { rememberOrderRef } from "./store";
-import { createOrder } from "./api";
+import { ApiError, createOrder } from "./api";
 
 /**
  * Checkout state.
@@ -73,10 +74,19 @@ const EMPTY: CheckoutState = {
   travellers: [],
   contact: null,
   consentAccepted: false,
-  paymentMethod: "ONLINE",
-  paymentRail: "MOBILE_MONEY",
+  paymentMethod: ONLINE_PAYMENTS_ENABLED ? "ONLINE" : "CASH",
+  paymentRail: ONLINE_PAYMENTS_ENABLED ? "MOBILE_MONEY" : "CASH",
   mobileOperator: "M-Pesa"
 };
+
+/**
+ * Cash-only mode: the state can hold CASH and nothing else. Applied to what
+ * comes back from sessionStorage too — a visitor who picked mobile money before
+ * the switch went off would otherwise return with no option selected and an
+ * online rail ready to submit.
+ */
+const cashOnly = (s: CheckoutState): CheckoutState =>
+  ONLINE_PAYMENTS_ENABLED ? s : { ...s, paymentMethod: "CASH", paymentRail: "CASH" };
 
 /** §4.5(4). Minutes. */
 export const HOLD_MINUTES_ONLINE = 15;
@@ -116,7 +126,7 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem(KEY);
-      if (raw) setState({ ...EMPTY, ...JSON.parse(raw) });
+      if (raw) setState(cashOnly({ ...EMPTY, ...JSON.parse(raw) }));
     } catch {
       /* ignore */
     }
@@ -177,7 +187,7 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
   const update = useCallback(
     (patch: Partial<CheckoutState>) => {
       setState((prev) => {
-        const next = { ...prev, ...patch };
+        const next = cashOnly({ ...prev, ...patch });
         try {
           sessionStorage.setItem(KEY, JSON.stringify(next));
         } catch {
@@ -262,39 +272,63 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
        * had just changed away from. A different currency is a different order.
        */
       const KEY_CURRENCY = `${IDEMPOTENCY_KEY}.currency`;
+      const mint = () => {
+        const k = globalThis.crypto?.randomUUID?.() ?? `ck-${Date.now()}-${Math.random()}`;
+        sessionStorage.setItem(IDEMPOTENCY_KEY, k);
+        return k;
+      };
       let key = sessionStorage.getItem(IDEMPOTENCY_KEY);
       if (key && sessionStorage.getItem(KEY_CURRENCY) !== currency) key = null;
-      if (!key) {
-        key = globalThis.crypto?.randomUUID?.() ?? `ck-${Date.now()}-${Math.random()}`;
-        sessionStorage.setItem(IDEMPOTENCY_KEY, key);
-      }
+      if (!key) key = mint();
       sessionStorage.setItem(KEY_CURRENCY, currency);
 
-      const order = await createOrder(
-        {
-          items: [
-            {
-              vertical: sel.vertical,
-              listingId: sel.listingId,
-              roomTypeId: sel.roomTypeId,
-              startDate: sel.startDate,
-              endDate: sel.endDate,
-              quantity: sel.quantity
-            }
-          ],
-          contact: {
-            firstName: state.contact.firstName,
-            lastName: state.contact.lastName,
-            phone: state.contact.phone,
-            email: state.contact.email
-          },
-          travellers: state.travellers.filter((t) => t.firstName || t.lastName),
-          paymentMethod: state.paymentMethod === "CASH" ? "CASH" : "ONLINE",
-          currency,
-          locale
+      const draft = {
+        items: [
+          {
+            vertical: sel.vertical,
+            listingId: sel.listingId,
+            roomTypeId: sel.roomTypeId,
+            startDate: sel.startDate,
+            endDate: sel.endDate,
+            quantity: sel.quantity
+          }
+        ],
+        contact: {
+          firstName: state.contact.firstName,
+          lastName: state.contact.lastName,
+          phone: state.contact.phone,
+          email: state.contact.email
         },
-        key
-      );
+        // §10.5: `documentNumberMasked` holds the RAW number as entered (it
+        // is only masked on READ, by the API). Send it as `documentNumber` —
+        // the field the order model actually stores — or it is dropped.
+        travellers: state.travellers
+          .filter((t) => t.firstName || t.lastName)
+          .map((t) => ({
+            firstName: t.firstName,
+            lastName: t.lastName,
+            dateOfBirth: t.dateOfBirth,
+            nationality: t.nationality,
+            documentNumber: t.documentNumberMasked,
+            documentType: t.documentNumberMasked
+              ? t.documentType ?? "PASSPORT"
+              : t.documentType
+          })),
+        // Cash only: the server answers 400 CASH_ONLY to anything else.
+        paymentMethod: "CASH" as const,
+        currency,
+        locale
+      };
+
+      let order: Order;
+      try {
+        order = await createOrder(draft, key);
+      } catch (err) {
+        // The key was spent by a different caller, so this attempt can never
+        // replay anything of ours: mint a fresh one and try exactly once more.
+        if (!(err instanceof ApiError && err.code === "IDEMPOTENCY_KEY_USED")) throw err;
+        order = await createOrder(draft, mint());
+      }
 
       /**
        * Only the reference is kept locally; the order itself is re-read from

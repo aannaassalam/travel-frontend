@@ -4,6 +4,7 @@ import { DEFAULT_COUNTRY, toE164 } from "@/lib/countries";
 import { PhoneField } from "@/components/ui/PhoneField";
 import { usePrefs } from "@/lib/prefs";
 import { createEnquiry } from "@/lib/api";
+import { dial, useSiteContact, waLink } from "@/lib/contact";
 import { saveEnquiry } from "@/lib/store";
 import { toast } from "sonner";
 import { EnquiryKind, Vertical } from "@/typescript/interface/domain.interface";
@@ -31,6 +32,7 @@ export default function LeadForm({
   compact?: boolean;
 }) {
   const { t, locale } = usePrefs();
+  const contact = useSiteContact();
   const isRtb = kind === "REQUEST_TO_BOOK";
   const [values, setValues] = useState({
     name: "",
@@ -59,6 +61,23 @@ export default function LeadForm({
     return Object.keys(next).length === 0;
   }
 
+  /** Validate only the blurred field, leaving the others' errors untouched. */
+  function checkField(k: "name" | "email" | "message") {
+    const msg =
+      k === "name"
+        ? values.name.trim().length < 3
+          ? t("err.name")
+          : ""
+        : k === "email"
+          ? values.email && !isEmail(values.email)
+            ? t("err.email")
+            : ""
+          : !values.message.trim()
+            ? t("err.required")
+            : "";
+    setErrors((e) => ({ ...e, [k]: msg }));
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!validate()) return;
@@ -84,10 +103,13 @@ export default function LeadForm({
     } catch {
       // §8: a generic message to the customer; the detail stays in the log.
       toast.error(t("common.error"), {
-        description:
-          locale === "fr"
-            ? "Votre demande n'a pas pu être envoyée. Appelez-nous au +243 81 000 00 00."
-            : "Your request could not be sent. Call us on +243 81 000 00 00."
+        description: contact.phone
+          ? locale === "fr"
+            ? `Votre demande n'a pas pu être envoyée. Appelez-nous au ${contact.phone}.`
+            : `Your request could not be sent. Call us on ${contact.phone}.`
+          : locale === "fr"
+            ? "Votre demande n'a pas pu être envoyée. Veuillez réessayer."
+            : "Your request could not be sent. Please try again."
       });
     } finally {
       setBusy(false);
@@ -104,16 +126,22 @@ export default function LeadForm({
         <p className="mt-2 text-sm leading-relaxed text-ink-700">
           {t(isRtb ? "rtb.sentBody" : "enquiry.sentBody", { ref: reference })}
         </p>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <a href="tel:+243810000000" className="btn btn-sm btn-outline">
-            <Phone className="size-4" />
-            {t("enquiry.callNow")}
-          </a>
-          <a href="https://wa.me/243810000000" className="btn btn-sm btn-outline">
-            <MessageCircle className="size-4" />
-            {t("enquiry.whatsapp")}
-          </a>
-        </div>
+        {(contact.phone || contact.whatsapp) && (
+          <div className="mt-6 flex flex-wrap gap-3">
+            {contact.phone && (
+              <a href={`tel:${dial(contact.phone)}`} className="btn btn-sm btn-outline">
+                <Phone className="size-4" />
+                {t("enquiry.callNow")}
+              </a>
+            )}
+            {contact.whatsapp && (
+              <a href={waLink(contact.whatsapp)} className="btn btn-sm btn-outline">
+                <MessageCircle className="size-4" />
+                {t("enquiry.whatsapp")}
+              </a>
+            )}
+          </div>
+        )}
       </div>
     );
   }
@@ -125,7 +153,7 @@ export default function LeadForm({
           label={t("rtb.name")}
           value={values.name}
           onChange={(e) => set("name", e.target.value)}
-          onBlur={validate}
+          onBlur={() => checkField("name")}
           error={errors.name}
           autoComplete="name"
         />
@@ -146,7 +174,7 @@ export default function LeadForm({
         type="email"
         value={values.email}
         onChange={(e) => set("email", e.target.value)}
-        onBlur={validate}
+        onBlur={() => checkField("email")}
         error={errors.email}
         autoComplete="email"
       />
@@ -155,7 +183,7 @@ export default function LeadForm({
         label={t(isRtb ? "rtb.details" : "enquiry.message")}
         value={values.message}
         onChange={(e) => set("message", e.target.value)}
-        onBlur={validate}
+        onBlur={() => checkField("message")}
         error={errors.message}
         helper={
           errors.message

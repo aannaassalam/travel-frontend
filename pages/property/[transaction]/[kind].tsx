@@ -1,12 +1,17 @@
 import { PropertyRow } from "@/components/catalog/cards";
 import EmptyState from "@/components/catalog/EmptyState";
 import LeadForm from "@/components/catalog/LeadForm";
+import ResultsSearch from "@/components/catalog/ResultsSearch";
 import { Breadcrumbs } from "@/components/site/bits";
 import Layout from "@/components/site/Layout";
+import { Skeleton } from "@/components/ui/field";
+import { AlertTriangle, RotateCw } from "lucide-react";
 import { safely, searchListings } from "@/lib/api";
 import { usePrefs } from "@/lib/prefs";
 import { Listing } from "@/typescript/interface/domain.interface";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { GetStaticPaths, GetStaticProps } from "next";
+import { useRouter } from "next/router";
 
 /**
  * §11.1 property sub-routes:
@@ -61,11 +66,33 @@ interface Props {
   copy: { fr: { h1: string; lead: string }; en: { h1: string; lead: string } };
   transaction: string;
   kind: string;
+  propertyType: string;
 }
 
-export default function PropertyCategory({ listings, copy, transaction, kind }: Props) {
+export default function PropertyCategory({
+  listings,
+  copy,
+  transaction,
+  kind,
+  propertyType
+}: Props) {
   const { t, locale } = usePrefs();
   const c = locale === "en" ? copy.en : copy.fr;
+  const router = useRouter();
+  const q = typeof router.query.q === "string" ? router.query.q : "";
+
+  // The static list is the page as crawled. A search is a live request, the
+  // same one /property makes, narrowed to this page's kind.
+  const { data, isFetching, isError, refetch } = useQuery({
+    queryKey: ["listings", "PROPERTY", propertyType, q],
+    queryFn: ({ signal }) =>
+      searchListings({ vertical: "PROPERTY", propertyType, q, limit: 40 }, { signal }),
+    enabled: Boolean(q),
+    placeholderData: keepPreviousData,
+    staleTime: 60_000
+  });
+  const items = q ? (data?.items ?? []) : listings;
+  const pending = Boolean(q) && !data && !isError;
 
   return (
     <Layout title={c.h1} description={c.lead}>
@@ -86,15 +113,49 @@ export default function PropertyCategory({ listings, copy, transaction, kind }: 
       </div>
 
       <div className="container-site py-8">
-        <p className="mb-4 text-sm text-ink-500">
-          {listings.length} {locale === "fr" ? "biens" : "listings"}
-        </p>
+        <ResultsSearch className="mb-5 max-w-xl" />
 
-        {listings.length === 0 ? (
-          <EmptyState vertical="PROPERTY" query={`${transaction} ${kind}`} />
-        ) : (
+        {/* A div, not a p: the skeleton is a div and a div inside a p is
+            invalid HTML — see the same note in SearchResults. */}
+        <div className="mb-4 text-sm text-ink-500">
+          {pending ? (
+            <Skeleton className="h-4 w-16" />
+          ) : (
+            `${items.length} ${locale === "fr" ? "biens" : "listings"}`
+          )}
+        </div>
+
+        {q && isError ? (
+          <div className="rounded-card bg-bad-100 p-8 text-center ring-1 ring-bad-600/20 ring-inset">
+            <AlertTriangle className="mx-auto mb-3 size-8 text-bad-600" />
+            <p className="font-bold text-brand-900">{t("common.error")}</p>
+            <button type="button" onClick={() => refetch()} className="btn btn-md btn-dark mt-5">
+              <RotateCw className="size-4" />
+              {t("common.retry")}
+            </button>
+          </div>
+        ) : pending ? (
           <div className="space-y-4">
-            {listings.map((l) => (
+            {Array.from({ length: 3 }, (_, i) => (
+              <Skeleton key={i} className="h-44 w-full" />
+            ))}
+          </div>
+        ) : items.length === 0 ? (
+          <div className="space-y-6">
+            {q && (
+              <p className="rounded-card bg-ink-50 px-5 py-4 text-sm font-semibold text-ink-700 ring-1 ring-ink-100 ring-inset">
+                {t("results.noMatch", { q })}
+              </p>
+            )}
+            <EmptyState vertical="PROPERTY" query={q || `${transaction} ${kind}`} />
+          </div>
+        ) : (
+          <div
+            className={`space-y-4 transition-opacity duration-200 ${
+              isFetching ? "opacity-55" : "opacity-100"
+            }`}
+          >
+            {items.map((l) => (
               <PropertyRow key={l.id} listing={l} />
             ))}
           </div>
@@ -144,7 +205,8 @@ export const getStaticProps: GetStaticProps<Props> = async ({ params }) => {
       listings: items,
       copy: { fr: route.fr, en: route.en },
       transaction: route.transaction,
-      kind: route.kind
+      kind: route.kind,
+      propertyType: route.propertyType
     },
     revalidate: 300
   };

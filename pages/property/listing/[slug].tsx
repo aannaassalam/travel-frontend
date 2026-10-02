@@ -1,10 +1,12 @@
-import Gallery from "@/components/catalog/Gallery";
+import Gallery, { PhotoGrid } from "@/components/catalog/Gallery";
+import LocationMap, { osmLink } from "@/components/catalog/LocationMap";
 import RecentlyViewed, { useRecordView } from "@/components/catalog/RecentlyViewed";
 import LeadForm from "@/components/catalog/LeadForm";
 import { PROPERTY_LABEL, PropertyTile } from "@/components/catalog/cards";
 import { Breadcrumbs, Price } from "@/components/site/bits";
 import Layout, { SITE } from "@/components/site/Layout";
 import { getListing, getSlugs, safely } from "@/lib/api";
+import { dial, useSiteContact, waLink } from "@/lib/contact";
 import { mediaUrl, mediaUrls } from "@/lib/media";
 import { usePrefs } from "@/lib/prefs";
 import { Listing } from "@/typescript/interface/domain.interface";
@@ -35,6 +37,7 @@ interface Props {
  */
 export default function PropertyDetail({ listing, related }: Props) {
   const { t, locale, lz } = usePrefs();
+  const contact = useSiteContact();
   useRecordView(listing.slug);
   const a = listing.attributes;
   const isRent = a.priceBasis === "PER_MONTH";
@@ -130,6 +133,8 @@ export default function PropertyDetail({ listing, related }: Props) {
               </p>
             </section>
 
+            <PhotoGrid images={listing.images} alt={lz(listing.title)} />
+
             {a.features && (
               <section>
                 <h2 className="mb-3 text-xl font-bold text-brand-900">
@@ -165,15 +170,33 @@ export default function PropertyDetail({ listing, related }: Props) {
               <h2 className="mb-3 text-xl font-bold text-brand-900">
                 {t("listing.location")}
               </h2>
-              <div className="relative h-44 overflow-hidden rounded-card ring-1 ring-ink-100 ring-inset bg-brand-100">
-                <div className="absolute inset-0 opacity-40 [background-image:linear-gradient(#1e5a8e_1px,transparent_1px),linear-gradient(90deg,#1e5a8e_1px,transparent_1px)] [background-size:32px_32px]" />
-                <MapPin className="absolute left-1/2 top-1/2 size-8 -translate-x-1/2 -translate-y-1/2 text-brand-900" />
+              <div className="overflow-hidden rounded-card ring-1 ring-ink-100 ring-inset">
+                {/* A pin only when the office placed one; otherwise the city,
+                    wide enough that it gives no address away. */}
+                <LocationMap
+                  geo={listing.geo}
+                  city={listing.city}
+                  label={`${lz(listing.title)}, ${listing.city}`}
+                  className="h-44"
+                />
+                <div className="flex flex-wrap items-center justify-between gap-3 p-4">
+                  <p className="text-sm text-ink-500">
+                    {locale === "fr"
+                      ? "L'adresse exacte est communiquée à la prise de rendez-vous."
+                      : "The exact address is given when a viewing is arranged."}
+                  </p>
+                  {listing.geo && (
+                    <a
+                      href={osmLink(listing.geo)}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="text-sm font-semibold text-brand-500 underline"
+                    >
+                      {locale === "fr" ? "Ouvrir la carte" : "Open the map"}
+                    </a>
+                  )}
+                </div>
               </div>
-              <p className="mt-2 text-sm text-ink-500">
-                {locale === "fr"
-                  ? "L'adresse exacte est communiquée à la prise de rendez-vous."
-                  : "The exact address is given when a viewing is arranged."}
-              </p>
             </section>
           </div>
 
@@ -183,34 +206,30 @@ export default function PropertyDetail({ listing, related }: Props) {
               <h2 className="text-lg font-bold text-brand-900">{t("enquiry.title")}</h2>
               <p className="mb-4 mt-1 text-sm text-ink-500">{t("enquiry.body")}</p>
 
-              <div className="mb-4 flex items-center gap-3 rounded-lg bg-brand-50 p-3">
-                <span className="flex size-11 items-center justify-center rounded-full bg-brand-900 text-sm font-bold text-white">
-                  JM
-                </span>
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
-                    {t("listing.agent")}
-                  </p>
-                  <p className="font-bold text-brand-900">Joseph Mukendi</p>
+              {/* Contact comes from Settings (§15). No real number on file
+                  means the block is hidden rather than showing a fake one. */}
+              {(contact.phone || contact.whatsapp) && (
+                <div className="mb-4 flex gap-2">
+                  {contact.phone && (
+                    <a
+                      href={`tel:${dial(contact.phone)}`}
+                      className="btn btn-sm btn-outline flex-1"
+                    >
+                      <Phone className="size-4" />
+                      {t("enquiry.callNow")}
+                    </a>
+                  )}
+                  {contact.whatsapp && (
+                    <a
+                      href={`${waLink(contact.whatsapp)}?text=${encodeURIComponent(lz(listing.title))}`}
+                      className="flex flex-1 items-center justify-center gap-2 rounded-md border border-brand-500 px-3 py-2.5 text-sm font-semibold text-brand-500 hover:bg-brand-50"
+                    >
+                      <MessageCircle className="size-4" />
+                      WhatsApp
+                    </a>
+                  )}
                 </div>
-              </div>
-
-              <div className="mb-4 flex gap-2">
-                <a
-                  href="tel:+243810000000"
-                  className="btn btn-sm btn-outline flex-1"
-                >
-                  <Phone className="size-4" />
-                  {t("enquiry.callNow")}
-                </a>
-                <a
-                  href={`https://wa.me/243810000000?text=${encodeURIComponent(lz(listing.title))}`}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-md border border-brand-500 px-3 py-2.5 text-sm font-semibold text-brand-500 hover:bg-brand-50"
-                >
-                  <MessageCircle className="size-4" />
-                  WhatsApp
-                </a>
-              </div>
+              )}
 
               <LeadForm
                 kind="PROPERTY"
@@ -283,6 +302,9 @@ export const getStaticPaths: GetStaticPaths = async () => {
 export const getStaticProps: GetStaticProps<Props> = async ({ params }) => {
   try {
     const { listing, related } = await getListing(String(params?.slug));
+    // A slug resolves whatever route asks for it, so a listing of another
+    // vertical would otherwise render under this one. Serve only its own.
+    if (listing.vertical !== "PROPERTY") return { notFound: true, revalidate: 60 };
     return { props: { listing, related }, revalidate: 300 };
   } catch {
     return { notFound: true, revalidate: 60 };

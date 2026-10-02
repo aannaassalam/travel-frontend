@@ -2,6 +2,7 @@ import {
   Hotel,
   Listing,
   Locale,
+  ONLINE_PAYMENTS_ENABLED,
   Order,
   Restaurant,
   Vertical
@@ -68,6 +69,8 @@ const qs = (params: Record<string, string | number | undefined | null>) => {
 /** §8: the allow-list the client is permitted to build. No filter DSL. */
 export interface SearchQuery {
   vertical?: Vertical;
+  /** Free text, matched server-side against title, city and the main attributes. */
+  q?: string;
   city?: string;
   origin?: string;
   destination?: string;
@@ -201,6 +204,9 @@ export async function createOrder(
 ): Promise<Order> {
   const res = await fetch(`${API_BASE}/orders`, {
     method: "POST",
+    // The session cookie decides whether a phone that belongs to an account is
+    // the caller's own (ACCOUNT_EXISTS otherwise), so it has to travel.
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       // §4.6: the same key must be reused across retries of one checkout, so a
@@ -213,7 +219,8 @@ export async function createOrder(
   if (!res.ok) {
     throw new ApiError(
       res.headers.get("X-Message") ?? body?.message ?? "Checkout failed",
-      res.status
+      res.status,
+      body?.code
     );
   }
   return body.order as Order;
@@ -223,6 +230,15 @@ export async function createOrder(
 export const getOrder = (reference: string, init?: RequestInit) =>
   get<{ order: Order }>(`/orders/${encodeURIComponent(reference)}`, init).then(
     (r) => r.order
+  );
+
+/**
+ * GET /orders/:reference/documents/:id — a link to one issued document that
+ * expires in minutes. Asked for at the moment of download, never stored.
+ */
+export const getOrderDocumentLink = (reference: string, documentId: string) =>
+  get<{ url: string; fileName: string; expiresInSeconds: number }>(
+    `/orders/${encodeURIComponent(reference)}/documents/${encodeURIComponent(documentId)}`
   );
 
 /** What `startPayment` can come back with. */
@@ -242,6 +258,11 @@ export async function startPayment(
   rail: string,
   locale?: string
 ): Promise<StartPaymentResult> {
+  // Cash-only mode: an online rail is refused here, before any request, with
+  // the same code the server would answer. Every caller goes through this.
+  if (!ONLINE_PAYMENTS_ENABLED && rail !== "CASH") {
+    throw new ApiError("Online payment is unavailable", 503, "PAYMENT_UNAVAILABLE");
+  }
   const res = await fetch(
     `${API_BASE}/orders/${encodeURIComponent(reference)}/pay`,
     {
@@ -480,13 +501,27 @@ export async function safely<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
 
 /** GET /restaurants */
 export const searchRestaurants = (
-  q: { city?: string; cuisine?: string; sort?: string; limit?: number },
+  q: { q?: string; city?: string; cuisine?: string; sort?: string; limit?: number },
   init?: RequestInit
 ) => get<Paged<Restaurant>>(`/restaurants${qs(q as never)}`, init);
 
 /** GET /restaurants/:slug — carries the full published menu. */
 export const getRestaurant = (slug: string, init?: RequestInit) =>
   get<{ restaurant: Restaurant }>(`/restaurants/${encodeURIComponent(slug)}`, init);
+
+/** One office. Every string but name and city may be empty. */
+export interface Office {
+  id: string;
+  name: string;
+  city: string;
+  streetAddress: string;
+  phone: string;
+  whatsapp: string;
+  email: string;
+  hours: string;
+  geo?: { lat: number; lng: number };
+  isPrimary: boolean;
+}
 
 export interface SiteContact {
   companyName: string;
@@ -497,6 +532,8 @@ export interface SiteContact {
   city: string;
   country: string;
   officeHours: string;
+  /** Every office. The single fields above are the primary one's when this is set. */
+  offices: Office[];
 }
 
 /** GET /site/contact — the office's own details, admin-owned (§15). */

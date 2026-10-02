@@ -1,4 +1,4 @@
-import Gallery from "@/components/catalog/Gallery";
+import Gallery, { PhotoGrid } from "@/components/catalog/Gallery";
 import RecentlyViewed, { useRecordView } from "@/components/catalog/RecentlyViewed";
 import Reviews from "@/components/catalog/Reviews";
 import LeadForm from "@/components/catalog/LeadForm";
@@ -83,6 +83,13 @@ export default function HotelDetail({ hotel: initialHotel, others }: Props) {
     if (Number(q.adults)) setAdults(Number(q.adults));
     if (Number(q.rooms)) setRooms(Number(q.rooms));
   }, [router.isReady, router.query]);
+
+  // Moving check-in past check-out would make `nights` zero or negative. Keep
+  // check-out at least a night after check-in.
+  const setCheckIn = (v: string) => {
+    setFrom(v);
+    if (to <= v) setTo(plusDays(v, 1));
+  };
 
   const nights = nightsBetween(from, to);
 
@@ -229,6 +236,8 @@ export default function HotelDetail({ hotel: initialHotel, others }: Props) {
               </ul>
             </section>
 
+            <PhotoGrid images={hotel.images} alt={lz(hotel.name)} />
+
             {/* ------------------------------------------------- rooms */}
             <section id="rooms" className="scroll-mt-24">
               <h2 className="mb-4 text-xl font-bold text-brand-900">
@@ -242,7 +251,7 @@ export default function HotelDetail({ hotel: initialHotel, others }: Props) {
                   </span>
                   <DatePicker
                     value={from}
-                    onChange={setFrom}
+                    onChange={setCheckIn}
                     locale={locale}
                     min={today()}
                     placeholder={t("search.date")}

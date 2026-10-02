@@ -1,0 +1,112 @@
+# Mobile login + trips: sign in with the test customer (+91 7044804030) and open Bookings.
+# No testIDs in the app, so selectors are visible text (regex, fr|en). Refine with `maestro hierarchy` if a step misses.
+appId: com.flexiairbnb.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      text: "Explore|Explorer"
+    timeout: 60000
+# Signed-in launches show the push-permission prompt over the home screen and it swallows taps — dismiss it first.
+- runFlow:
+    when:
+      visible: "Plus tard|Later|Pas maintenant"
+    commands:
+      - tapOn: "Plus tard|Later|Pas maintenant"
+- tapOn: "Account|Compte"
+# Idempotent: if a previous run left a session, sign out first. The button is below the fold
+# and opens a confirmation Alert whose confirm button carries the same label (index 1).
+- runFlow:
+    when:
+      visible: ".*Anas.*|Modifier le profil|Edit profile"
+    commands:
+      - scrollUntilVisible:
+          element:
+            text: "Se déconnecter|Sign out"
+          direction: DOWN
+          timeout: 15000
+      - tapOn: "Se déconnecter|Sign out"
+      - extendedWaitUntil:
+          visible:
+            text: "Se déconnecter \\?|Sign out\\?"
+          timeout: 5000
+      # Maestro orders `index` by on-screen position: the Alert's destructive button (mid-screen)
+      # is index 0, the page button behind it (bottom) is index 1.
+      - tapOn:
+          text: "Se déconnecter|Sign out"
+          index: 0
+      - assertNotVisible: "Annuler|Cancel"
+      # sign-out can take several seconds (push unregister) and the screen is scrolled to the
+      # bottom, while the signed-out "Sign in" button renders at the top
+      - scrollUntilVisible:
+          element:
+            text: "Sign in|Se connecter"
+          direction: UP
+          timeout: 30000
+- extendedWaitUntil:
+    visible:
+      text: "Sign in|Se connecter"
+    timeout: 20000
+- tapOn: "Sign in|Se connecter"
+- extendedWaitUntil:
+    visible:
+      text: "Your number|Votre numéro"
+    timeout: 20000
+- takeScreenshot: mobile-10-login
+# type the national number into the phone input (default country CD shows this placeholder)
+- tapOn: "81 000 00 00"
+- inputText: "7044804030"
+# switch the dial code to India for the test account
+# Maestro text regex is anchored to the whole string; the trigger reads "🇨🇩 +243"
+- tapOn: ".*\\+243.*"
+# The picker is a bottom-half modal (ScrollView maxHeight 420): the default centre-screen scroll
+# misses it, so swipe inside the sheet. 4 swipes clamp at the list end, where +91 is visible.
+- repeat:
+    times: 4
+    commands:
+      - swipe:
+          start: "50%,88%"
+          end: "50%,58%"
+          duration: 500
+- extendedWaitUntil:
+    visible:
+      text: ".*\\+91.*"
+    timeout: 5000
+- tapOn: ".*\\+91.*"
+- takeScreenshot: mobile-11-phone-filled
+# the password input is the only element carrying this text (its placeholder)
+- tapOn: "Password|Mot de passe"
+- inputText: "12345678"
+- hideKeyboard
+- tapOn: "Sign in|Se connecter"
+# After sign-in two overlays can appear: iOS's own "Save Password?" sheet, then the app's
+# push-permission prompt. Dismiss whichever shows. (Maestro regex is whole-string anchored.)
+- extendedWaitUntil:
+    visible:
+      text: "Not Now|Plus tard|Later|Pas maintenant|.*Anas.*"
+    timeout: 30000
+- runFlow:
+    when:
+      visible: "Not Now"
+    commands:
+      - tapOn: "Not Now"
+- extendedWaitUntil:
+    visible:
+      text: "Plus tard|Later|Pas maintenant|.*Anas.*"
+    timeout: 15000
+- runFlow:
+    when:
+      visible: "Plus tard|Later|Pas maintenant"
+    commands:
+      - tapOn: "Plus tard|Later|Pas maintenant"
+- extendedWaitUntil:
+    visible:
+      text: ".*Anas.*"
+    timeout: 15000
+- takeScreenshot: mobile-12-signed-in
+- tapOn: "Bookings|Réservations"
+- extendedWaitUntil:
+    visible:
+      text: "No bookings|Aucune réservation|FA-|TRV-|Bookings|Réservations"
+    timeout: 20000
+- takeScreenshot: mobile-13-trips

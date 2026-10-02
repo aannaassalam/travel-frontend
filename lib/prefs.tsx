@@ -39,7 +39,12 @@ export function PrefsProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(KEY) || "{}");
-      if (saved.locale) setLocaleState(saved.locale);
+      if (saved.locale) {
+        setLocaleState(saved.locale);
+        // _document renders lang="fr"; reflect a saved choice on load so an
+        // English user's page is not announced as French (§BUG-027).
+        document.documentElement.lang = saved.locale;
+      }
       if (saved.currency) setCurrencyState(saved.currency);
       if (saved.lowData) setLowDataState(saved.lowData);
     } catch {

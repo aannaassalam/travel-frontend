@@ -21,7 +21,7 @@ import {
 import BookingBox from "./BookingBox";
 import RecentlyViewed, { useRecordView } from "./RecentlyViewed";
 import { DealTile } from "./cards";
-import Gallery from "./Gallery";
+import Gallery, { PhotoGrid } from "./Gallery";
 import LeadForm from "./LeadForm";
 import SaveButton from "./SaveButton";
 
@@ -52,6 +52,11 @@ export default function ListingDetail({
     HOTEL: t("nav.hotels"),
     PROPERTY: t("nav.property")
   }[listing.vertical];
+  // The nearest thing a listing has to an address: an activity's meeting
+  // point, a car's first pick-up point, otherwise the city alone.
+  const place = [a.meetingPoint ?? a.pickupLocations?.[0], listing.city]
+    .filter(Boolean)
+    .join(", ");
 
   return (
     <Layout
@@ -121,6 +126,8 @@ export default function ListingDetail({
                 {lz(listing.description)}
               </p>
             </section>
+
+            <PhotoGrid images={listing.images} alt={lz(listing.title)} />
 
             {/* ------------------------------------------------- flights */}
             {listing.vertical === "FLIGHT" && a.segments && (
@@ -357,6 +364,12 @@ export default function ListingDetail({
                 )}
               </>
             )}
+
+            {/* No map here: a flight, bus, car or activity has no address
+                to pin. The meeting point and city are stated in the facts. */}
+            <section>
+              <p className="text-[15px] text-ink-700">{place}</p>
+            </section>
 
             <section className="rounded-card bg-ink-50 p-6 ring-1 ring-ink-100 ring-inset">
               <h2 className="mb-2 text-lg font-bold text-brand-900">

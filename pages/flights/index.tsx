@@ -30,8 +30,8 @@ export default function FlightsPage({ facets }: Props) {
       title={locale === "fr" ? "Vols intérieurs en RDC" : "Domestic flights in the DRC"}
       description={
         locale === "fr"
-          ? "Offres de vols achetées à l'avance entre Kinshasa, Lubumbashi, Goma, Bukavu et Kisangani. Places réelles, prix fermes, paiement mobile money ou espèces."
-          : "Flight offers bought in advance between Kinshasa, Lubumbashi, Goma, Bukavu and Kisangani. Real seats, firm prices, mobile money or cash."
+          ? "Offres de vols achetées à l'avance entre Kinshasa, Lubumbashi, Goma, Bukavu et Kisangani. Places réelles, prix fermes, paiement en espèces à notre agence."
+          : "Flight offers bought in advance between Kinshasa, Lubumbashi, Goma, Bukavu and Kisangani. Real seats, firm prices, pay in cash at our office."
       }
       priceRange={bounds(facets, "FLIGHT")}
       filters={[

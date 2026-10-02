@@ -1,0 +1,29 @@
+# Mobile smoke: app launches, all four tabs render. Text matching is regex, so fr|en both pass.
+appId: com.flexiairbnb.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      text: "Explore|Explorer|Restaurants"
+    timeout: 60000
+- takeScreenshot: mobile-01-home
+- tapOn: "Restaurants"
+- extendedWaitUntil:
+    visible:
+      text: "Restaurants"
+    timeout: 20000
+- takeScreenshot: mobile-02-restaurants
+- tapOn: "Bookings|Réservations"
+- extendedWaitUntil:
+    visible:
+      text: "Bookings|Réservations|Sign in|Se connecter|No bookings|Aucune réservation"
+    timeout: 20000
+- takeScreenshot: mobile-03-trips
+- tapOn: "Account|Compte"
+- extendedWaitUntil:
+    visible:
+      text: "Account|Compte|Sign in|Se connecter"
+    timeout: 20000
+- takeScreenshot: mobile-04-account
+- tapOn: "Explore|Explorer"
+- takeScreenshot: mobile-05-back-home
