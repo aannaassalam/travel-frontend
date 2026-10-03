@@ -177,3 +177,21 @@ Scheduled jobs: verified there is **no** payment-reconciliation job (only cash r
 Two environment findings worth knowing before anyone repeats this:
 - **`react-native run-ios` is broken under Xcode 27**: the RN CLI hardcodes `Xcode.app/Contents/Developer/Applications/Simulator.app`, which no longer exists, so it throws *before building* yet exits 0. Use `xcodebuild … -configuration Debug -sdk iphonesimulator` + `xcrun simctl install/launch` (what the QA run does).
 - Because of that, the simulator still carried a **Sep 1 Release build with an embedded `main.jsbundle`** — the first smoke pass unknowingly ran month-old JavaScript. Always check the installed app's binary date / absence of `main.jsbundle` before trusting a simulator run.
+
+### Device QA results — iPhone 17 Pro Max simulator (iOS 26.5), Maestro 2.11, fresh Debug build on your Metro
+
+| Flow (`qa/mobile/*.yaml`) | Result | Evidence (`qa/evidence/mobile/`) |
+|---|---|---|
+| `smoke` — launch, all four tabs render with live data | **PASS** | `mobile-01…05` |
+| `login` — idempotent sign-out → sign in as +91 7044804030 → iOS "Save Password?" + push prompt dismissed → signed-in Account → Trips | **PASS** | `mobile-10…13` |
+| `checkout-cash` — signed in: menu → add → basket → form → zone → terms → "Commander — payer à la livraison" → Order screen | **PASS** — **cash is the only payment option on-device**; a real US$45 cash order was created and then cancelled | `mobile-20…27` |
+| `guest-account-exists` — sign out → guest order using a *registered* phone | **PASS after a fix** — now refused with the sign-in prompt; before the fix the order was accepted and attached to the account (see BUG-031) | `mobile-30…31` |
+
+**Found and fixed on device**
+- **BUG-031 (High) — sign-out did not end the session.** `signOut()` cleared the Keychain token but never called `POST /auth/logout`, and the backend also sets an httpOnly `ct_session` cookie at login that iOS's native cookie jar re-sent on every `fetch`. The backend authenticates from Bearer *or* cookie, so every "signed-out" request was still authenticated: a guest order with the account's phone was accepted and attached (`FA-D1SPN-654H3`, cancelled), and the next launch's `me()` would have signed the previous user back in. **Fix:** `credentials: "omit"` on the app's fetch (`lib/api.ts` — the Bearer token is the only credential, so sign-out holds even offline) and `logout()` called before the token is dropped (`lib/session.tsx`), which also revokes the token server-side via the BUG-016 `tokensValidFrom` stamp. Re-verified on device: the same flow is now refused.
+
+**Found, filed, not fixed**
+- **BUG-032 (Medium, accessibility)** — the delivery-zone bottom sheet's rows ("Himbi", "Katindo") are not in the accessibility tree; the container exposes only "Bottom Sheet" / "Bottom sheet handle" / "backdrop". VoiceOver users cannot choose a zone (and automation must tap by position). `components/ui/Sheet.tsx` (`@gorhom/bottom-sheet`) as used by the CheckoutScreen zone picker — likely an `accessible`/`accessibilityLabel` on the container collapsing its children.
+- **BUG-033 (Low, i18n)** — server error text is shown raw and unlocalised in the checkout: "Too many checkout attempts, please try again later" inside the French UI (`CheckoutScreen` renders `err.message`; map known codes to i18n strings).
+
+**Re-running the mobile suite:** build with `cd travel-application/ios && xcodebuild -workspace FlexiAgency.xcworkspace -scheme FlexiAgency -configuration Debug -sdk iphonesimulator -destination "id=<udid>" build`, then `xcrun simctl install booted <DerivedData>/…/Debug-iphonesimulator/FlexiAgency.app`, keep Metro running, and from `qa/evidence/mobile` run `~/.maestro/bin/maestro test ../../mobile/<flow>.yaml` in the order smoke → login → checkout-cash → guest-account-exists. `POST /orders` is limited to 20/hour per IP, so restart the backend between full runs; cancel the created test orders afterwards (`qa_test` address).

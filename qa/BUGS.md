@@ -359,3 +359,40 @@ Legend: 🟥 Critical · 🟧 High · 🟨 Medium · 🟦 Low
 - **Evidence:** reproduced (handler path returns 404 by code; live auth path returns 401).
 - **Reproducible:** Code-confirmed
 - **Suggested fix:** Map `JsonWebTokenError` to 401.
+
+---
+
+## Found during the on-device mobile QA (2026-10-03)
+
+### BUG-031 — Mobile sign-out does not end the session (cookie keeps every request authenticated)
+- **Severity:** High
+- **Area:** Mobile sign-out / all API calls
+- **Platform:** Mobile
+- **Where in code:** `travel-application/lib/session.tsx` `signOut()` (never called `/auth/logout`); `travel-application/lib/api.ts` `request()` (fetch default credentials → native cookie jar re-sends the server's `ct_session` cookie); backend `middleware/customerAuth.ts` accepts Bearer *or* cookie
+- **Steps to reproduce:** Sign in → Account → Se déconnecter (confirm) → as a guest, order from a restaurant using the same phone number.
+- **Expected:** 409 `ACCOUNT_EXISTS` ("sign in to book"); no request authenticated after sign-out; next launch starts signed out.
+- **Actual:** Order accepted and attached to the signed-out account (`FA-D1SPN-654H3`); `me()` on relaunch would re-sign-in the previous user. On a shared device the next person's orders land in the previous user's history.
+- **Evidence:** `qa/evidence/mobile/debug-guest-after-submit.png` (Order screen reached after sign-out); after the fix `mobile-31-guest-refused.png`.
+- **Reproducible:** Always (before fix) — **FIXED**: `credentials:"omit"` + `logout()` before dropping the token; re-verified on device.
+- **Suggested fix:** (applied) token-only auth on mobile; call logout so the server revokes.
+
+### BUG-032 — Delivery-zone bottom sheet is not accessible
+- **Severity:** Medium
+- **Area:** Checkout → Zone picker
+- **Platform:** Mobile
+- **Where in code:** `travel-application/components/ui/Sheet.tsx` (`@gorhom/bottom-sheet` container) as used in `screens/CheckoutScreen.tsx`
+- **Steps to reproduce:** Open checkout → tap the Zone field → inspect the accessibility tree (VoiceOver or `maestro hierarchy`).
+- **Expected:** Each zone row is an accessible button ("Himbi · 60 min · 3 $US").
+- **Actual:** Only "Bottom Sheet", "Bottom sheet handle" and "Bottom sheet backdrop" are exposed; rows are invisible to assistive tech.
+- **Evidence:** hierarchy dump in the Maestro debug output; `mobile-24-zones.png` shows the rows rendered.
+- **Reproducible:** Always
+- **Suggested fix:** Don't mark the sheet container as a single accessibility element; give rows `accessibilityRole="button"` and labels.
+
+### BUG-033 — Raw, unlocalised server error text in the mobile checkout
+- **Severity:** Low
+- **Area:** Checkout error banner
+- **Platform:** Mobile
+- **Where in code:** `travel-application/screens/CheckoutScreen.tsx` (renders `err.message`)
+- **Actual:** "Too many checkout attempts, please try again later" shown verbatim inside the French UI (`debug`/`mobile-27` capture before the limiter was reset).
+- **Reproducible:** Always when the server returns an unmapped error
+- **Suggested fix:** Map known codes (rate limit, CASH_ONLY, …) to i18n strings; generic fallback otherwise.

@@ -1,0 +1,25 @@
+# *
+User-agent: *
+Allow: /
+Disallow: /account
+Disallow: /booking
+Disallow: /login
+Disallow: /api
+
+# SemrushBot
+User-agent: SemrushBot
+Disallow: /
+
+# AhrefsBot
+User-agent: AhrefsBot
+Disallow: /
+
+# DotBot
+User-agent: DotBot
+Disallow: /
+
+# Host
+Host: https://flexiairbnb.com
+
+# Sitemaps
+Sitemap: https://flexiairbnb.com/sitemap.xml

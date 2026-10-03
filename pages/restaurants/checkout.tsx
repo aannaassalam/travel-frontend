@@ -36,7 +36,6 @@ export default function RestaurantCheckoutPage() {
     restaurantSlug,
     restaurantName,
     subtotal,
-    count,
     setQuantity,
     remove,
     clear

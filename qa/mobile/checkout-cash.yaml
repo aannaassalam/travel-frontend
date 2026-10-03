@@ -79,8 +79,11 @@ appId: com.flexiairbnb.app
     direction: DOWN
     timeout: 10000
 - tapOn: "Commander — payer à la livraison|Order — pay on delivery"
+# strict: only the Order screen's reference label counts (the form itself also shows "Espèces")
 - extendedWaitUntil:
     visible:
-      text: "Reference|Référence|Cash|Espèces"
+      text: "Référence|Reference|Too many checkout attempts.*|Trop de tentatives.*"
     timeout: 30000
+- assertNotVisible: "Too many checkout attempts.*|Trop de tentatives.*"
+- assertVisible: "Référence|Reference"
 - takeScreenshot: mobile-27-order-created

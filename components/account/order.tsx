@@ -253,7 +253,7 @@ const DOCUMENT_KINDS = {
 } as const;
 
 export function OrderDocuments({ order }: { order: Order }) {
-  const { t, locale } = usePrefs();
+  const { locale } = usePrefs();
   const [busy, setBusy] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
 
