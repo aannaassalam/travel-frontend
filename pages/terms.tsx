@@ -85,12 +85,6 @@ export default function TermsPage({ terms, noRefund }: Props) {
             </section>
           ))}
         </div>
-
-        <p className="mt-10 rounded-card bg-ink-50 p-5 ring-1 ring-ink-100 ring-inset text-sm text-ink-500">
-          {locale === "fr"
-            ? "CongoTravel SARL, 12 avenue Colonel Lukusa, Gombe, Kinshasa, République démocratique du Congo. Pour toute question sur ces conditions, écrivez-nous ou passez au bureau."
-            : "CongoTravel SARL, 12 avenue Colonel Lukusa, Gombe, Kinshasa, Democratic Republic of the Congo. For any question about these terms, write to us or come to the office."}
-        </p>
       </div>
     </Layout>
   );
