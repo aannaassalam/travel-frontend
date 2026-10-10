@@ -18,10 +18,11 @@ export const VERTICALS = {
 } as const;
 export type Vertical = (typeof VERTICALS)[keyof typeof VERTICALS];
 
+// Mirrors the API. The public endpoints only ever return PUBLISHED and
+// SOLD_OUT; the rest are listed so the type matches the server's.
 export const LISTING_STATUS = {
-  DRAFT: "DRAFT",
+  INACTIVE: "INACTIVE",
   PUBLISHED: "PUBLISHED",
-  PAUSED: "PAUSED",
   EXPIRED: "EXPIRED",
   SOLD_OUT: "SOLD_OUT",
   ARCHIVED: "ARCHIVED"
