@@ -77,8 +77,12 @@ export default function Layout({
             <script
               key={i}
               type="application/ld+json"
-              // Server-rendered constants from our own catalogue, never user input.
-              dangerouslySetInnerHTML={{ __html: JSON.stringify(block) }}
+              // Catalogue text is typed by staff and imported from spreadsheets,
+              // so it is not trusted to stay inside this tag: with < escaped,
+              // no title can close the script and start its own.
+              dangerouslySetInnerHTML={{
+                __html: JSON.stringify(block).replace(/</g, "\\u003c")
+              }}
             />
           ))}
         </Head>

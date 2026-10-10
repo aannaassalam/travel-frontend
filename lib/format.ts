@@ -10,36 +10,47 @@ import { Locale } from "@/typescript/interface/domain.interface";
 
 const tag = (locale: Locale) => (locale === "en" ? "en-GB" : "fr-FR");
 
+/**
+ * A missing or unreadable time renders as nothing. Intl throws on an invalid
+ * date, and one flight saved without an arrival time took the whole results
+ * page down with it.
+ */
+const fmt = (
+  iso: string | null | undefined,
+  locale: Locale,
+  options: Intl.DateTimeFormatOptions
+) => {
+  const date = iso ? new Date(iso) : null;
+  return date && !Number.isNaN(date.getTime())
+    ? new Intl.DateTimeFormat(tag(locale), options).format(date)
+    : "";
+};
+
 export const fmtDate = (iso: string, locale: Locale = "fr") =>
-  new Intl.DateTimeFormat(tag(locale), {
-    day: "2-digit",
-    month: "short",
-    year: "numeric"
-  }).format(new Date(iso));
+  fmt(iso, locale, { day: "2-digit", month: "short", year: "numeric" });
 
 export const fmtDateLong = (iso: string, locale: Locale = "fr") =>
-  new Intl.DateTimeFormat(tag(locale), {
+  fmt(iso, locale, {
     weekday: "long",
     day: "numeric",
     month: "long",
     year: "numeric"
-  }).format(new Date(iso));
+  });
 
 export const fmtTime = (iso: string, locale: Locale = "fr") =>
-  new Intl.DateTimeFormat(tag(locale), {
-    hour: "2-digit",
-    minute: "2-digit"
-  }).format(new Date(iso));
+  fmt(iso, locale, { hour: "2-digit", minute: "2-digit" });
 
-export const fmtDateTime = (iso: string, locale: Locale = "fr") =>
-  `${fmtDate(iso, locale)} · ${fmtTime(iso, locale)}`;
+export const fmtDateTime = (iso: string, locale: Locale = "fr") => {
+  const date = fmtDate(iso, locale);
+  return date ? `${date} · ${fmtTime(iso, locale)}` : "";
+};
 
-/** "2 h 35" / "2h 35m" from two ISO instants. */
+/** "2 h 35" / "2h 35m" from two ISO instants; nothing if either is missing. */
 export function durationBetween(from: string, to: string, locale: Locale = "fr") {
-  return formatMinutes(
-    Math.round((new Date(to).getTime() - new Date(from).getTime()) / 60000),
-    locale
+  const minutes = Math.round(
+    (new Date(to).getTime() - new Date(from).getTime()) / 60000
   );
+  return from && to && Number.isFinite(minutes) ? formatMinutes(minutes, locale) : "";
 }
 
 export function formatMinutes(total: number, locale: Locale = "fr") {
