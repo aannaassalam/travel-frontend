@@ -1,10 +1,13 @@
 import { Price, SettlementNote } from "@/components/site/bits";
+import { getPolicy, type Policy } from "@/lib/api";
 import { useCheckout, useCountdown } from "@/lib/checkout";
 import { fmtDate } from "@/lib/format";
 import { mediaUrl } from "@/lib/media";
 import { usePrefs } from "@/lib/prefs";
+import { usePolicyNotice } from "@/lib/siteContent";
 import { policyText } from "@/lib/policy";
 import { cn } from "@/lib/utils";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Check, Clock, ShieldCheck } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -93,6 +96,7 @@ export function HoldBanner() {
  */
 export function Summary({ children }: { children?: React.ReactNode }) {
   const { t, locale } = usePrefs();
+  const notice = usePolicyNotice();
   const { selection, subtotal, total } = useCheckout();
   if (!selection) return null;
 
@@ -158,7 +162,7 @@ export function Summary({ children }: { children?: React.ReactNode }) {
             <ShieldCheck className="mt-0.5 size-4 shrink-0 text-brand-500" />
             <span>
               <strong className="font-semibold">{t("policy.title")}</strong> —{" "}
-              {t("policy.body")}
+              {notice}
             </span>
           </p>
         </div>
@@ -170,40 +174,119 @@ export function Summary({ children }: { children?: React.ReactNode }) {
 }
 
 /**
+ * The no-refund sentence the office has published — the one the server stores
+ * with the order as "the text the customer was shown" — and which version it
+ * is. It used to be a copy built into this site, so editing the policy in the
+ * admin changed what was recorded but not what was read. Same choice of
+ * language as the server makes: the visitor's, else French.
+ */
+const NO_REFUND_KEY = ["policy", "NO_REFUND"];
+
+export function useNoRefundPolicy() {
+  const { locale } = usePrefs();
+  const queryClient = useQueryClient();
+  const { data, isPending, isFetching, refetch } = useQuery({
+    queryKey: NO_REFUND_KEY,
+    // Past the browser's own copy: this is the text about to be agreed to.
+    queryFn: ({ signal }) => getPolicy("NO_REFUND", { signal, cache: "no-store" }),
+    staleTime: 5 * 60_000,
+    retry: 1
+  });
+  const from = data?.bodies[locale] ? locale : "fr";
+  const sentence = data?.bodies[from];
+  const versionId = data?.versions?.[from];
+  return {
+    sentence,
+    versionId,
+    /** What a tick is agreement to. The text itself stands in for the version
+     *  when the server is too old to name one. */
+    shown: versionId ?? sentence,
+    isPending,
+    isFetching,
+    reload: () => void refetch(),
+    /**
+     * The sentence the server says is current, from its refusal of an order
+     * made under an older one. Shown straight from that answer: asking the
+     * policy address again can return the old text for minutes, from a cache
+     * on the way.
+     */
+    replace: (current: unknown) => {
+      const p = current as { versionId?: string; locale?: string; body?: string } | undefined;
+      if (!p?.versionId || !p.locale || !p.body) return void refetch();
+      queryClient.setQueryData<Policy>(NO_REFUND_KEY, (old) =>
+        old && {
+          ...old,
+          bodies: { ...old.bodies, [p.locale!]: p.body },
+          versions: { ...old.versions, [p.locale!]: p.versionId }
+        }
+      );
+    }
+  };
+}
+export type NoRefundPolicy = ReturnType<typeof useNoRefundPolicy>;
+
+/**
  * §2.2(1) and §11.3: separate, unticked, blocking. Never bundled into the
  * general T&Cs and never pre-ticked — a pre-ticked box has no evidentiary
  * value at all, which is the entire reason this component exists.
  */
 export function ConsentBox({
+  policy,
   error,
   onChange,
   checked
 }: {
+  policy: NoRefundPolicy;
   error?: boolean;
   checked: boolean;
   onChange: (v: boolean) => void;
 }) {
   const { t, locale } = usePrefs();
+  // Without the published sentence there is nothing to agree to: the server
+  // records that one, so no stand-in may be ticked in its place.
+  const failed = !policy.sentence && !policy.isPending;
   return (
     <div
       className={cn(
         "rounded-lg border-2 p-4",
-        error ? "border-bad-600 bg-bad-100" : "border-brand-900 bg-white"
+        error || failed ? "border-bad-600 bg-bad-100" : "border-brand-900 bg-white"
       )}
     >
-      <label className="flex cursor-pointer gap-3">
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={(e) => onChange(e.target.checked)}
-          aria-describedby="consent-help"
-          aria-invalid={error}
-          className="mt-0.5 size-5 shrink-0 accent-brand-900"
-        />
-        <span className="text-[15px] font-medium text-ink-900">
-          {policyText(locale)}
-        </span>
-      </label>
+      {failed ? (
+        <div role="alert" className="text-[15px] font-medium text-ink-900">
+          <p>{t("policy.loadFailed")}</p>
+          <button
+            type="button"
+            onClick={() => policy.reload()}
+            disabled={policy.isFetching}
+            className="btn btn-sm btn-dark mt-3"
+          >
+            {t("policy.reload")}
+          </button>
+        </div>
+      ) : (
+        <label className="flex cursor-pointer gap-3">
+          <input
+            type="checkbox"
+            checked={checked}
+            // Not tickable until the sentence is the published one: agreeing to
+            // a line that is replaced a moment later would be agreeing to nothing.
+            disabled={!policy.sentence}
+            onChange={(e) => onChange(e.target.checked)}
+            aria-describedby="consent-help"
+            aria-invalid={error}
+            className="mt-0.5 size-5 shrink-0 accent-brand-900"
+          />
+          <span
+            className={cn(
+              "whitespace-pre-line text-[15px] font-medium text-ink-900",
+              !policy.sentence && "opacity-50"
+            )}
+          >
+            {policy.sentence ?? policyText(locale)}
+          </span>
+        </label>
+      )}
       <p id="consent-help" className="mt-2 pl-8 text-xs text-ink-500">
         <Link href="/terms#no-refund" className="text-brand-500 underline">
           {t("policy.readFull")}

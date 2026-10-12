@@ -1,4 +1,10 @@
-import { ConsentBox, HoldBanner, Stepper, Summary } from "@/components/checkout/parts";
+import {
+  ConsentBox,
+  HoldBanner,
+  Stepper,
+  Summary,
+  useNoRefundPolicy
+} from "@/components/checkout/parts";
 import Layout from "@/components/site/Layout";
 import { ApiError, startPayment } from "@/lib/api";
 import { useCheckout } from "@/lib/checkout";
@@ -18,6 +24,7 @@ export default function PaymentStep() {
     selection,
     contact,
     consentAccepted,
+    consentFor,
     update,
     confirm,
     expired,
@@ -27,8 +34,13 @@ export default function PaymentStep() {
 
   const [terms, setTerms] = useState(false);
   const [errors, setErrors] = useState<{ consent?: boolean; terms?: boolean }>({});
+  const policy = useNoRefundPolicy();
+  // A tick counts for the sentence it was made under and no other: not while
+  // the text is still loading, not after the language (so the version) changed,
+  // and not when it comes back from an earlier visit to this page.
+  const agreed = Boolean(consentAccepted && policy.shown && consentFor === policy.shown);
   /** §2.2: both acknowledgements are blocking, and neither is pre-ticked. */
-  const blocked = !consentAccepted || !terms;
+  const blocked = !agreed || !terms;
   // §11.6: never leave someone staring at a spinner that has given up — this
   // state says what is happening while the booking is filed.
   const [waiting, setWaiting] = useState(false);
@@ -55,7 +67,7 @@ export default function PaymentStep() {
   async function finish() {
     setError(null);
     try {
-      const order = await confirm({ currency, locale });
+      const order = await confirm({ currency, locale, policyVersionId: policy.versionId });
       await startPayment(order.reference, "CASH", locale);
       router.push(`/booking/confirmation/${order.reference}`);
     } catch (err) {
@@ -71,6 +83,12 @@ export default function PaymentStep() {
       const code = err instanceof ApiError ? err.code : undefined;
       setCode(code);
       setDead(code === "ORDER_CANCELLED" || code === "CURRENCY_CHANGED");
+      // The office published a new no-refund text while this page was open:
+      // show it, and the tick made under the old one no longer counts.
+      if (code === "POLICY_CHANGED") {
+        update({ consentAccepted: false, consentFor: undefined });
+        policy.replace((err as ApiError).body?.policy);
+      }
       const byCode: Record<string, string> = {
         /**
          * The hold ran out and the server released the seats, so this order can
@@ -81,6 +99,7 @@ export default function PaymentStep() {
         CURRENCY_CHANGED: t("pay.errCurrency"),
         /** A guest typed a number that belongs to an account: sign in first. */
         ACCOUNT_EXISTS: t("pay.errAccountExists"),
+        POLICY_CHANGED: t("pay.errPolicyChanged"),
         PAYMENT_UNAVAILABLE: t("pay.errUnavailable"),
         RAIL_INVALID: t("pay.errGeneric")
       };
@@ -93,7 +112,7 @@ export default function PaymentStep() {
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    const next = { consent: !consentAccepted, terms: !terms };
+    const next = { consent: !agreed, terms: !terms };
     setErrors(next);
     if (next.consent || next.terms) return;
     setWaiting(true);
@@ -140,10 +159,11 @@ export default function PaymentStep() {
 
             {/* §2.2(1): separate, unticked, blocking. Never bundled with T&Cs. */}
             <ConsentBox
-              checked={consentAccepted}
+              policy={policy}
+              checked={agreed}
               error={errors.consent}
               onChange={(v) => {
-                update({ consentAccepted: v });
+                update({ consentAccepted: v, consentFor: v ? policy.shown : undefined });
                 setErrors((e) => ({ ...e, consent: false }));
               }}
             />

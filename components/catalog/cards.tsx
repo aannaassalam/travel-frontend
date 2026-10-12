@@ -201,7 +201,7 @@ export function FlightRow({ listing }: { listing: Listing }) {
               </span>
               <span className="font-semibold text-ink-700">{s.destination}</span>
               <span className="text-xs text-ink-500">
-                {fmtDate(s.departsAt, locale)} · {s.flightNumber}
+                {[fmtDate(s.departsAt, locale), s.flightNumber].filter(Boolean).join(" · ")}
               </span>
             </li>
           ))}

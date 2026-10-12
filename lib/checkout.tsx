@@ -63,6 +63,9 @@ interface CheckoutState {
   travellers: Traveller[];
   contact: ContactDetails | null;
   consentAccepted: boolean;
+  /** What that tick was agreement to: the policy version on screen. A tick
+   *  restored from storage counts only while that version is still the one shown. */
+  consentFor?: string;
   paymentMethod: PaymentMethod;
   paymentRail: PaymentRail;
   mobileOperator: string;
@@ -100,7 +103,11 @@ type Ctx = CheckoutState & {
   subtotal: Money;
   total: Money;
   expired: boolean;
-  confirm: (args: { currency: Currency; locale: Locale }) => Promise<Order>;
+  confirm: (args: {
+    currency: Currency;
+    locale: Locale;
+    policyVersionId?: string;
+  }) => Promise<Order>;
   /**
    * Abandons the current attempt and takes a fresh hold, keeping the basket.
    *
@@ -255,7 +262,15 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
    * customer chose and hand it over.
    */
   const confirm = useCallback(
-    async ({ currency, locale }: { currency: Currency; locale: Locale }): Promise<Order> => {
+    async ({
+      currency,
+      locale,
+      policyVersionId
+    }: {
+      currency: Currency;
+      locale: Locale;
+      policyVersionId?: string;
+    }): Promise<Order> => {
       if (!sel || !state.contact) {
         throw new Error("confirm() called before a selection and contact exist");
       }
@@ -317,7 +332,8 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
         // Cash only: the server answers 400 CASH_ONLY to anything else.
         paymentMethod: "CASH" as const,
         currency,
-        locale
+        locale,
+        policyVersionId
       };
 
       let order: Order;

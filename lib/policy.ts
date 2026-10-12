@@ -60,16 +60,31 @@ export interface PolicySection {
  */
 export function parsePolicyBody(body: string): PolicySection[] {
   const sections: PolicySection[] = [];
-  for (const line of body.split("\n")) {
+  // Paragraphs are kept apart by the blank line the editor typed between them;
+  // the pages print the body with its line breaks.
+  let gap = false;
+  // Every kind of line end a pasted document can carry, old Mac and Word's included.
+  for (const raw of body.split(/\r\n?|[\n\u2028\u2029]/)) {
+    const line = raw.trim();
     const heading = line.match(/^##\s+(.*)$/);
     if (heading) {
       sections.push({ heading: heading[1].trim(), body: "" });
-    } else if (line.trim() && sections.length) {
+      gap = false;
+    } else if (!line) {
+      gap = true;
+    } else {
+      // Text before the first heading, or a document with no headings at all,
+      // is still the office's text: it gets a section without a title rather
+      // than being dropped in favour of the wording built into the site.
+      if (!sections.length) sections.push({ heading: "", body: "" });
       const current = sections[sections.length - 1];
-      current.body = current.body ? `${current.body}\n${line.trim()}` : line.trim();
+      current.body = current.body
+        ? `${current.body}${gap ? "\n\n" : "\n"}${line}`
+        : line;
+      gap = false;
     }
   }
-  return sections.filter((s) => s.heading);
+  return sections.filter((s) => s.heading || s.body);
 }
 
 export const POLICY_SECTIONS: Record<

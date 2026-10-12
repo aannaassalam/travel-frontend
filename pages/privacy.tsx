@@ -85,8 +85,8 @@ export default function PrivacyPage({ privacy }: { privacy: Policy | null }) {
   const l = locale === "en" ? "en" : "fr";
   const published = privacy?.bodies[l] ?? privacy?.bodies.fr;
   const parsed = published ? parsePolicyBody(published) : [];
-  // An admin can save a body with no `## ` heading in it. That is a badly
-  // formatted document, not a reason to render a blank privacy policy.
+  // Nothing published (or the API unreachable) is the only case that shows the
+  // wording built into the site; a text without headings is still the office's.
   const sections = parsed.length ? parsed : SECTIONS[l];
 
   return (
@@ -111,10 +111,15 @@ export default function PrivacyPage({ privacy }: { privacy: Policy | null }) {
         </p>
 
         <div className="mt-8 space-y-8">
-          {sections.map((s) => (
-            <section key={s.heading}>
-              <h2 className="mb-2 text-xl font-bold text-brand-900">{s.heading}</h2>
-              <p className="text-[15px] leading-relaxed text-ink-700">{s.body}</p>
+          {sections.map((s, i) => (
+            <section key={i}>
+              {s.heading && (
+                <h2 className="mb-2 text-xl font-bold text-brand-900">{s.heading}</h2>
+              )}
+              {/* pre-line: the paragraphs the office typed stay paragraphs. */}
+              <p className="whitespace-pre-line text-[15px] leading-relaxed text-ink-700">
+                {s.body}
+              </p>
             </section>
           ))}
         </div>

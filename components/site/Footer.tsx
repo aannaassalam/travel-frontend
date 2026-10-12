@@ -1,4 +1,5 @@
 import { usePrefs } from "@/lib/prefs";
+import { siteText, usePolicyNotice, useSiteFooter } from "@/lib/siteContent";
 import { MapPin, MessageCircle, Phone, ShieldCheck , Mail } from "lucide-react";
 import Link from "next/link";
 import Brand from "./Brand";
@@ -19,7 +20,11 @@ const PAYMENT_METHODS = [
 
 export default function Footer() {
   const contact = useSiteContact();
-  const { t, lowData, setLowData } = usePrefs();
+  // The line under the logo, the reminder and the copyright line are the
+  // office's to edit; the dictionary wording stands in until they arrive.
+  const footer = useSiteFooter();
+  const notice = usePolicyNotice();
+  const { t, locale, lowData, setLowData } = usePrefs();
 
   /*
    * `wash-dark` rather than flat brand-900: it is the treatment the hero and
@@ -33,7 +38,9 @@ export default function Footer() {
         <div className="space-y-4">
           {/* Room here for the full lockup, tagline and all. */}
           <Brand variant="full" />
-          <p className="display max-w-xs text-[17px] leading-snug text-white/90">{t("brand.tagline")}</p>
+          <p className="display max-w-xs text-[17px] leading-snug text-white/90">
+            {siteText(footer?.tagline, locale, t("brand.tagline"))}
+          </p>
           {/* Read from Settings, not hardcoded: the office moves and changes
               numbers, and neither should need a developer (§15). With several
               offices they get their own row below instead. */}
@@ -215,11 +222,12 @@ export default function Footer() {
           {/* §2.2(3): stated plainly, never in fine print. */}
           <p className="flex items-start gap-2 text-sm text-white/70">
             <ShieldCheck className="mt-0.5 size-4 shrink-0 text-accent-500" />
-            {t("policy.body")}
+            {notice}
           </p>
 
           <p className="text-xs text-white/50">
-            © {new Date().getFullYear()} Flexi Agency. {t("footer.rights")}
+            © {new Date().getFullYear()}{" "}
+            {siteText(footer?.copyright, locale, `Flexi Agency. ${t("footer.rights")}`)}
           </p>
         </div>
       </div>

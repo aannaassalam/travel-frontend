@@ -2,12 +2,20 @@ import LeadForm from "@/components/catalog/LeadForm";
 import LocationMap from "@/components/catalog/LocationMap";
 import Layout from "@/components/site/Layout";
 import { Breadcrumbs } from "@/components/site/bits";
+import { getSiteContent, safely, type SiteContent } from "@/lib/api";
 import { dial, officeLines, officeTitle, useSiteContact } from "@/lib/contact";
 import { usePrefs } from "@/lib/prefs";
+import { siteText } from "@/lib/siteContent";
 import { Clock, MapPin, MessageCircle, Phone , Mail } from "lucide-react";
+import { GetStaticProps } from "next";
 import Image from "next/image";
 
-export default function ContactPage() {
+interface Props {
+  /** The page's wording as the office last saved it; null if the API did not answer. */
+  copy: SiteContent["contact"] | null;
+}
+
+export default function ContactPage({ copy }: Props) {
   const contact = useSiteContact();
   const { t, locale } = usePrefs();
   const offices = contact.offices;
@@ -74,10 +82,14 @@ export default function ContactPage() {
         <h1 className="display text-3xl text-brand-900">
           {t("footer.contact")}
         </h1>
-        <p className="mt-2 max-w-2xl text-[15px] text-ink-500">
-          {locale === "fr"
-            ? "Une vraie personne répond, au bureau comme au téléphone. Vous pouvez aussi venir régler votre réservation en espèces."
-            : "A real person answers, in the office and on the phone. You can also come and settle a booking in cash."}
+        <p className="mt-2 max-w-2xl whitespace-pre-line text-[15px] text-ink-500">
+          {siteText(
+            copy?.intro,
+            locale,
+            locale === "fr"
+              ? "Une vraie personne répond, au bureau comme au téléphone. Vous pouvez aussi venir régler votre réservation en espèces."
+              : "A real person answers, in the office and on the phone. You can also come and settle a booking in cash."
+          )}
         </p>
 
         <div className="mt-8 grid gap-8 lg:grid-cols-2">
@@ -195,12 +207,20 @@ export default function ContactPage() {
               otherwise inflate the shared track past the viewport. */}
           <div className="min-w-0 surface p-6">
             <h2 className="text-xl font-bold text-brand-900">
-              {locale === "fr" ? "Écrivez-nous" : "Write to us"}
+              {siteText(
+                copy?.formTitle,
+                locale,
+                locale === "fr" ? "Écrivez-nous" : "Write to us"
+              )}
             </h2>
             <p className="mb-5 mt-1 text-sm text-ink-500">
-              {locale === "fr"
-                ? "Nous rappelons sous 24 heures ouvrées au numéro que vous laissez."
-                : "We call back within 24 working hours on the number you leave."}
+              {siteText(
+                copy?.formIntro,
+                locale,
+                locale === "fr"
+                  ? "Nous rappelons sous 24 heures ouvrées au numéro que vous laissez."
+                  : "We call back within 24 working hours on the number you leave."
+              )}
             </p>
             <LeadForm kind="REQUEST_TO_BOOK" vertical="FLIGHT" compact />
           </div>
@@ -209,3 +229,13 @@ export default function ContactPage() {
     </Layout>
   );
 }
+
+/**
+ * ISR, like the legal pages: `revalidate` is what carries an edit made in the
+ * admin onto the public site without a deploy. The office details themselves
+ * still arrive in the browser, from Settings.
+ */
+export const getStaticProps: GetStaticProps<Props> = async () => {
+  const site = await safely(() => getSiteContent(), null);
+  return { props: { copy: site?.contact ?? null }, revalidate: 300 };
+};

@@ -1,14 +1,22 @@
 import Layout from "@/components/site/Layout";
 import { Breadcrumbs } from "@/components/site/bits";
+import { getSiteContent, safely, type SiteContent } from "@/lib/api";
 import { dial, useSiteContact, waLink } from "@/lib/contact";
+import { localized } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
+import { siteText } from "@/lib/siteContent";
 import { MessageCircle, Phone } from "lucide-react";
+import { GetStaticProps } from "next";
 import Link from "next/link";
 
 /**
  * §11.4 JSON-LD FAQPage: these are questions people actually type, and the
  * answers repeat the no-refund policy rather than hiding it — a customer who
  * discovers it at the payment step is a customer who abandons.
+ *
+ * This is the list the page shipped with. The office edits its own in the
+ * admin's "Website content" screen; this one shows until it has, and whenever
+ * the API cannot be reached while the page is being built.
  */
 const FAQ = {
   fr: [
@@ -81,25 +89,50 @@ const FAQ = {
   ]
 };
 
-export default function HelpPage() {
+interface Props {
+  /** As the office last saved it; null if the API did not answer at build time. */
+  help: SiteContent["help"] | null;
+}
+
+export default function HelpPage({ help }: Props) {
   const contact = useSiteContact();
   const { t, locale } = usePrefs();
-  const faq = FAQ[locale === "en" ? "en" : "fr"];
+  const fr = locale !== "en";
+  const faq = help
+    ? help.faq
+        .map((item) => ({
+          q: localized(item.question, locale),
+          a: localized(item.answer, locale)
+        }))
+        .filter((item) => item.q && item.a)
+    : FAQ[fr ? "fr" : "en"];
+  const intro = siteText(
+    help?.intro,
+    locale,
+    fr
+      ? "Les questions qu'on nous pose le plus souvent, avec des réponses directes."
+      : "The questions we get asked most, answered directly."
+  );
 
   return (
     <Layout
       title={t("nav.help")}
-      description={faq[0].a.slice(0, 200)}
+      description={(faq[0]?.a ?? intro).slice(0, 200)}
       image="/img/banner-1.svg"
-      jsonLd={{
-        "@context": "https://schema.org",
-        "@type": "FAQPage",
-        mainEntity: faq.map((item) => ({
-          "@type": "Question",
-          name: item.q,
-          acceptedAnswer: { "@type": "Answer", text: item.a }
-        }))
-      }}
+      // A FAQPage with no questions is invalid markup; say nothing instead.
+      jsonLd={
+        faq.length
+          ? {
+              "@context": "https://schema.org",
+              "@type": "FAQPage",
+              mainEntity: faq.map((item) => ({
+                "@type": "Question",
+                name: item.q,
+                acceptedAnswer: { "@type": "Answer", text: item.a }
+              }))
+            }
+          : undefined
+      }
     >
       <div className="container-site max-w-3xl py-10">
         <Breadcrumbs
@@ -108,25 +141,21 @@ export default function HelpPage() {
         <h1 className="display text-3xl text-brand-900">
           {t("nav.help")}
         </h1>
-        <p className="mt-2 text-[15px] text-ink-500">
-          {locale === "fr"
-            ? "Les questions qu'on nous pose le plus souvent, avec des réponses directes."
-            : "The questions we get asked most, answered directly."}
-        </p>
+        <p className="mt-2 text-[15px] text-ink-500">{intro}</p>
 
         <div className="mt-8 space-y-3">
           {faq.map((item, i) => (
             // Native disclosure: keyboard-operable, screen-reader-correct and
             // zero JavaScript — which matters on a metered 3G connection.
             <details
-              key={item.q}
+              key={i}
               open={i === 0}
               className="group surface"
             >
               <summary className="cursor-pointer list-none px-5 py-4 text-[15px] font-bold text-brand-900 marker:hidden">
                 {item.q}
               </summary>
-              <p className="border-t border-ink-100/70 px-5 py-4 text-[15px] leading-relaxed text-ink-700">
+              <p className="whitespace-pre-line border-t border-ink-100/70 px-5 py-4 text-[15px] leading-relaxed text-ink-700">
                 {item.a}
               </p>
             </details>
@@ -135,12 +164,20 @@ export default function HelpPage() {
 
         <div className="mt-10 rounded-lg bg-brand-900 p-6 text-white">
           <h2 className="text-xl font-bold">
-            {locale === "fr" ? "Vous n'avez pas trouvé ?" : "Still stuck?"}
+            {siteText(
+              help?.contactTitle,
+              locale,
+              fr ? "Vous n'avez pas trouvé ?" : "Still stuck?"
+            )}
           </h2>
           <p className="mt-2 text-white/75">
-            {locale === "fr"
-              ? "Appelez-nous ou écrivez sur WhatsApp du lundi au samedi, 08 h 00 – 18 h 00."
-              : "Call us or message on WhatsApp, Monday to Saturday, 08:00 – 18:00."}
+            {siteText(
+              help?.contactText,
+              locale,
+              fr
+                ? "Appelez-nous ou écrivez sur WhatsApp du lundi au samedi, 08 h 00 – 18 h 00."
+                : "Call us or message on WhatsApp, Monday to Saturday, 08:00 – 18:00."
+            )}
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
             <a
@@ -169,3 +206,12 @@ export default function HelpPage() {
     </Layout>
   );
 }
+
+/**
+ * ISR, like the legal pages: `revalidate` is what carries an edit made in the
+ * admin onto the public site without a deploy.
+ */
+export const getStaticProps: GetStaticProps<Props> = async () => {
+  const site = await safely(() => getSiteContent(), null);
+  return { props: { help: site?.help ?? null }, revalidate: 300 };
+};

@@ -9,11 +9,19 @@ import RecentlyViewed from "@/components/catalog/RecentlyViewed";
 import SearchWidget from "@/components/search/SearchWidget";
 import { SectionHeading } from "@/components/site/bits";
 import Layout, { SITE } from "@/components/site/Layout";
-import { getHomeFeed, getLocations, safely, type ServiceLocation } from "@/lib/api";
+import {
+  getHomeFeed,
+  getLocations,
+  getSiteContent,
+  safely,
+  type ServiceLocation,
+  type SiteContent
+} from "@/lib/api";
 import { cityImage } from "@/lib/catalog";
 import { mediaUrl } from "@/lib/media";
 import { dial, useSiteContact } from "@/lib/contact";
 import { usePrefs } from "@/lib/prefs";
+import { siteText } from "@/lib/siteContent";
 import { Hotel, Listing } from "@/typescript/interface/domain.interface";
 import {
   BadgeCheck,
@@ -35,6 +43,8 @@ interface Props {
   hotels: Hotel[];
   properties: Listing[];
   heroImage: string;
+  /** The banner's wording as the office last saved it; null if the API did not answer. */
+  hero: SiteContent["home"] | null;
   /** Serviced places, owned by the admin — not a constant in this bundle. */
   destinations: ServiceLocation[];
 }
@@ -42,11 +52,12 @@ interface Props {
 /**
  * Hero backdrop, resolved at build time in this order:
  *
- *   1. NEXT_PUBLIC_HERO_IMAGE — wins if set. Takes any form mediaUrl handles,
- *      so "/uploads/hero/<uuid>.png" from the admin uploader works too.
- *   2. public/img/hero.{jpg,jpeg,png,webp,avif} — just drop the file in and
+ *   1. the picture uploaded in the admin's "Website content" screen — the
+ *      office's own choice, and the only one that needs no developer.
+ *   2. NEXT_PUBLIC_HERO_IMAGE, if set. Takes any form mediaUrl handles.
+ *   3. public/img/hero.{jpg,jpeg,png,webp,avif} — just drop the file in and
  *      rebuild; no config, no code change.
- *   3. the generated artwork, so a missing file never breaks the page.
+ *   4. the generated artwork, so a missing file never breaks the page.
  *
  * The filesystem probe runs only inside getStaticProps, so `node:fs` never
  * reaches the client bundle.
@@ -98,9 +109,11 @@ const INSPIRATION = [
   }
 ];
 
-export default function Home({ deals, hotels, properties, heroImage, destinations }: Props) {
+export default function Home({ deals, hotels, properties, heroImage, hero, destinations }: Props) {
   const contact = useSiteContact();
   const { t, locale } = usePrefs();
+  const heroTitle = siteText(hero?.heroTitle, locale, t("home.heroTitle"));
+  const heroSubtitle = siteText(hero?.heroSubtitle, locale, t("home.heroSubtitle"));
   const l = locale === "en" ? "en" : "fr";
 
   const why = [
@@ -113,7 +126,7 @@ export default function Home({ deals, hotels, properties, heroImage, destination
   return (
     <Layout
       title={t("brand.tagline")}
-      description={t("home.heroSubtitle")}
+      description={heroSubtitle}
       image={mediaUrl(heroImage)}
       transparentHeader
       jsonLd={{
@@ -135,7 +148,9 @@ export default function Home({ deals, hotels, properties, heroImage, destination
     >
       {/* ------------------------------------------------------------- hero */}
       <section className="relative isolate">
-        <div className="absolute inset-0 -z-10">
+        {/* Navy underneath: if the office's picture fails to load, the banner
+            is a plain dark panel with readable text, not white on white. */}
+        <div className="absolute inset-0 -z-10 bg-brand-900">
           <Image
             src={mediaUrl(heroImage)}
             alt=""
@@ -173,10 +188,10 @@ export default function Home({ deals, hotels, properties, heroImage, destination
             nowhere, so it reads as being revealed rather than delivered.
           */}
           <h1 className="display motion-hero-line max-w-3xl text-[38px] leading-[1.06] text-white sm:text-[58px]">
-            {t("home.heroTitle")}
+            {heroTitle}
           </h1>
           <p className="motion-hero-sub mt-5 max-w-xl text-[17px] leading-relaxed text-white/80">
-            {t("home.heroSubtitle")}
+            {heroSubtitle}
           </p>
 
           <div className="motion-hero-search mt-10">
@@ -472,12 +487,19 @@ export const getStaticProps: GetStaticProps<Props> = async () => {
   // ISR (revalidate below) keeps this in step with the admin without a deploy.
   const destinations = await safely(() => getLocations(), []);
 
+  // The banner's picture and wording, as edited in the admin.
+  const site = await safely(() => getSiteContent(), null);
+
   const dropped = HERO_CANDIDATES.find((name) =>
     existsSync(join(process.cwd(), "public", "img", name))
   );
   const heroImage =
+    site?.home.heroImage ||
     process.env.NEXT_PUBLIC_HERO_IMAGE ||
     (dropped ? `/img/${dropped}` : HERO_FALLBACK);
 
-  return { props: { ...feed, heroImage, destinations }, revalidate: 120 };
+  return {
+    props: { ...feed, heroImage, hero: site?.home ?? null, destinations },
+    revalidate: 120
+  };
 };

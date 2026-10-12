@@ -2,6 +2,7 @@ import {
   Hotel,
   Listing,
   Locale,
+  Localized,
   ONLINE_PAYMENTS_ENABLED,
   Order,
   Restaurant,
@@ -33,7 +34,9 @@ export class ApiError extends Error {
      * the human-readable message (§8) — the message is translated and rewritten,
      * the code is a contract.
      */
-    readonly code?: string
+    readonly code?: string,
+    /** Whatever else the API put in the answer, for the codes that carry something. */
+    readonly body?: Record<string, unknown>
   ) {
     super(message);
   }
@@ -159,6 +162,8 @@ export type Policy = {
   label: string;
   effectiveFrom: string;
   bodies: Partial<Record<Locale, string>>;
+  /** Which published version each body is — sent back with an order. */
+  versions?: Partial<Record<Locale, string>>;
 };
 
 export type PolicyKind = "NO_REFUND" | "CANCELLATION" | "TERMS" | "PRIVACY";
@@ -195,6 +200,9 @@ export interface OrderDraft {
   paymentMethod: "CASH" | "ONLINE";
   currency: string;
   locale: string;
+  /** The no-refund version that was on screen when its box was ticked. The
+   *  server answers 409 POLICY_CHANGED if another has been published since. */
+  policyVersionId?: string;
 }
 
 /** POST /orders — idempotent, holds stock, returns the created order. */
@@ -220,7 +228,8 @@ export async function createOrder(
     throw new ApiError(
       res.headers.get("X-Message") ?? body?.message ?? "Checkout failed",
       res.status,
-      body?.code
+      body?.code,
+      body
     );
   }
   return body.order as Order;
@@ -539,3 +548,41 @@ export interface SiteContact {
 /** GET /site/contact — the office's own details, admin-owned (§15). */
 export const getSiteContact = (init?: RequestInit) =>
   get<{ contact: SiteContact }>("/site/contact", init);
+
+/**
+ * The site's own wording, as the admin's "Website content" screen saves it.
+ * Every language in one payload; an empty image means the built-in picture.
+ */
+export interface SiteContent {
+  home: { heroImage: string; heroTitle: Localized; heroSubtitle: Localized };
+  about: {
+    image: string;
+    title: Localized;
+    intro: Localized;
+    sections: { title: Localized; body: Localized }[];
+    listTitle: Localized;
+    listItems: Localized[];
+  };
+  contact: { intro: Localized; formTitle: Localized; formIntro: Localized };
+  help: {
+    intro: Localized;
+    faq: { question: Localized; answer: Localized }[];
+    contactTitle: Localized;
+    contactText: Localized;
+  };
+  footer: { tagline: Localized; notice: Localized; copyright: Localized };
+}
+
+/** GET /site/content — home banner, About, Contact, Help and footer text (§15). */
+export const getSiteContent = (init?: RequestInit) =>
+  get<{ content: SiteContent }>("/site/content", init).then((r) => r.content);
+
+/**
+ * Only the footer's lines. It is on every page, and the rest of the content
+ * is several kilobytes a visitor on a metered connection has no use for.
+ */
+export const getSiteFooter = (init?: RequestInit) =>
+  get<{ content: Pick<SiteContent, "footer"> }>(
+    "/site/content?section=footer",
+    init
+  ).then((r) => r.content.footer);

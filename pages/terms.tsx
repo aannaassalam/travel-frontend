@@ -1,6 +1,7 @@
 import Layout from "@/components/site/Layout";
 import { Breadcrumbs } from "@/components/site/bits";
 import { usePrefs } from "@/lib/prefs";
+import { usePolicyNotice } from "@/lib/siteContent";
 import {
   CURRENT_POLICY,
   POLICY_SECTIONS,
@@ -22,6 +23,7 @@ type Props = { terms: Policy | null; noRefund: Policy | null };
  */
 export default function TermsPage({ terms, noRefund }: Props) {
   const { t, locale } = usePrefs();
+  const notice = usePolicyNotice();
 
   const published = terms?.bodies[locale] ?? terms?.bodies.fr;
   const parsed = published ? parsePolicyBody(published) : [];
@@ -39,7 +41,7 @@ export default function TermsPage({ terms, noRefund }: Props) {
   return (
     <Layout
       title={t("footer.terms")}
-      description={t("policy.body")}
+      description={notice}
       image="/img/banner-1.svg"
     >
       <div className="container-site max-w-3xl py-10">
@@ -65,7 +67,7 @@ export default function TermsPage({ terms, noRefund }: Props) {
             {t("policy.title")}
           </h2>
           <p className="mt-3 text-[15px] leading-relaxed text-ink-900">
-            {t("policy.body")}
+            {notice}
           </p>
           <p className="mt-4 rounded-md bg-white p-4 text-[15px] font-medium text-ink-900">
             « {consent} »
@@ -78,10 +80,15 @@ export default function TermsPage({ terms, noRefund }: Props) {
         </section>
 
         <div className="mt-10 space-y-8">
-          {sections.map((s) => (
-            <section key={s.heading}>
-              <h2 className="mb-2 text-xl font-bold text-brand-900">{s.heading}</h2>
-              <p className="text-[15px] leading-relaxed text-ink-700">{s.body}</p>
+          {sections.map((s, i) => (
+            <section key={i}>
+              {s.heading && (
+                <h2 className="mb-2 text-xl font-bold text-brand-900">{s.heading}</h2>
+              )}
+              {/* pre-line: the paragraphs the office typed stay paragraphs. */}
+              <p className="whitespace-pre-line text-[15px] leading-relaxed text-ink-700">
+                {s.body}
+              </p>
             </section>
           ))}
         </div>

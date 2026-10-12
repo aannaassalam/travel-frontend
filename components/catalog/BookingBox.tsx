@@ -5,6 +5,7 @@ import { InlineSelect } from "@/components/ui/InlineSelect";
 import { mediaUrl } from "@/lib/media";
 import { multiply, nightsBetween } from "@/lib/money";
 import { usePrefs } from "@/lib/prefs";
+import { usePolicyNotice } from "@/lib/siteContent";
 import { Listing } from "@/typescript/interface/domain.interface";
 import { ShieldCheck } from "lucide-react";
 import { useRouter } from "next/router";
@@ -24,6 +25,7 @@ const plusDays = (iso: string, n: number) =>
  */
 export default function BookingBox({ listing }: { listing: Listing }) {
   const { t, locale, lz } = usePrefs();
+  const notice = usePolicyNotice();
   const router = useRouter();
   const { start } = useCheckout();
 
@@ -184,7 +186,7 @@ export default function BookingBox({ listing }: { listing: Listing }) {
       <p className="mt-3 flex gap-2 text-xs leading-relaxed text-ink-700">
         <ShieldCheck className="mt-0.5 size-4 shrink-0 text-brand-500" />
         <span>
-          <strong className="font-semibold">{t("policy.title")}</strong> — {t("policy.body")}{" "}
+          <strong className="font-semibold">{t("policy.title")}</strong> — {notice}{" "}
           <Link href="/terms#no-refund" className="text-brand-500 underline">
             {t("policy.readFull")}
           </Link>

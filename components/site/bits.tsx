@@ -1,6 +1,7 @@
 import { isApproximate, price as fmtPrice, settlementNote } from "@/lib/money";
 import { Money } from "@/typescript/interface/domain.interface";
 import { usePrefs } from "@/lib/prefs";
+import { usePolicyNotice } from "@/lib/siteContent";
 import { cn } from "@/lib/utils";
 import { ChevronRight, Info, ShieldCheck, Star } from "lucide-react";
 import Link from "next/link";
@@ -157,11 +158,12 @@ export function Scarcity({
 /** §2.2(3): surfaced on the listing page, the price summary and the payment step. */
 export function PolicyLine({ className }: { className?: string }) {
   const { t } = usePrefs();
+  const notice = usePolicyNotice();
   return (
     <p className={cn("flex items-start gap-2 text-sm text-ink-700", className)}>
       <ShieldCheck className="mt-0.5 size-4 shrink-0 text-brand-500" />
       <span>
-        <strong className="font-semibold">{t("policy.title")}</strong> — {t("policy.body")}{" "}
+        <strong className="font-semibold">{t("policy.title")}</strong> — {notice}{" "}
         <Link href="/terms#no-refund" className="font-medium text-brand-500 underline">
           {t("policy.readFull")}
         </Link>

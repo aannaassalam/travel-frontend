@@ -25,6 +25,7 @@ import { mediaUrl, mediaUrls } from "@/lib/media";
 import { multiply, nightsBetween } from "@/lib/money";
 import { facetLabel } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
+import { usePolicyNotice } from "@/lib/siteContent";
 import { Hotel, RoomType } from "@/typescript/interface/domain.interface";
 import { BedDouble, Check, Clock, MapPin, Maximize, Users } from "lucide-react";
 import { GetStaticPaths, GetStaticProps } from "next";
@@ -51,6 +52,7 @@ const MEAL_LABEL: Record<string, { fr: string; en: string }> = {
 
 export default function HotelDetail({ hotel: initialHotel, others }: Props) {
   const { t, locale, lz } = usePrefs();
+  const notice = usePolicyNotice();
   const router = useRouter();
   const { start } = useCheckout();
   useRecordView(initialHotel.slug);
@@ -476,7 +478,7 @@ export default function HotelDetail({ hotel: initialHotel, others }: Props) {
               </a>
               <p className="mt-3 text-xs leading-relaxed text-ink-700">
                 <strong className="font-semibold">{t("policy.title")}</strong> —{" "}
-                {t("policy.body")}
+                {notice}
               </p>
             </div>
           </aside>

@@ -189,6 +189,9 @@ const fr: Dict = {
   "policy.consentRequired":
     "Vous devez accepter la politique de non-remboursement pour continuer.",
   "policy.readFull": "Lire les conditions complètes",
+  "policy.loadFailed":
+    "La politique de non-remboursement n'a pas pu être chargée. Elle doit être affichée avant de réserver.",
+  "policy.reload": "Réessayer",
 
   "checkout.step1": "Voyageurs",
   "checkout.step2": "Coordonnées",
@@ -230,6 +233,8 @@ const fr: Dict = {
   "pay.errUnavailable": "Le paiement en ligne est momentanément indisponible.",
   "pay.errSoldOut": "Ce stock vient d'être vendu. Revenez en arrière pour choisir autre chose.",
   "pay.errGeneric": "Le paiement n'a pas pu être lancé.",
+  "pay.errPolicyChanged":
+    "La politique de non-remboursement vient d'être mise à jour. Relisez-la et cochez la case à nouveau.",
   "pay.errCancelled":
     "Cette réservation a expiré et les places ont été remises en vente.",
   "pay.retry": "Reprendre la réservation",
@@ -639,6 +644,9 @@ const en: Dict = {
   "policy.consentRequired":
     "You must accept the no-refund policy to continue.",
   "policy.readFull": "Read the full terms",
+  "policy.loadFailed":
+    "The no-refund policy could not be loaded. It has to be shown before you book.",
+  "policy.reload": "Try again",
 
   "checkout.step1": "Travellers",
   "checkout.step2": "Contact",
@@ -680,6 +688,8 @@ const en: Dict = {
   "pay.errUnavailable": "Online payment is temporarily unavailable.",
   "pay.errSoldOut": "That stock just sold. Go back and choose something else.",
   "pay.errGeneric": "The payment could not be started.",
+  "pay.errPolicyChanged":
+    "The no-refund policy has just been updated. Please read it again and tick the box once more.",
   "pay.errCancelled": "This booking expired and the seats went back on sale.",
   "pay.retry": "Take the booking again",
   "pay.errTooSmall": "This amount is too small to pay online.",
