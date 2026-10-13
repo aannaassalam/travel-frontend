@@ -1,4 +1,5 @@
 import Gallery, { PhotoGrid } from "@/components/catalog/Gallery";
+import ListingVideo from "@/components/catalog/ListingVideo";
 import LocationMap, { osmLink } from "@/components/catalog/LocationMap";
 import RecentlyViewed, { useRecordView } from "@/components/catalog/RecentlyViewed";
 import LeadForm from "@/components/catalog/LeadForm";
@@ -132,6 +133,12 @@ export default function PropertyDetail({ listing, related }: Props) {
                 {lz(listing.description)}
               </p>
             </section>
+
+            <ListingVideo
+              url={listing.videoUrl}
+              poster={listing.images[0]}
+              title={lz(listing.title)}
+            />
 
             <PhotoGrid images={listing.images} alt={lz(listing.title)} />
 

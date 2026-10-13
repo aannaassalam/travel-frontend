@@ -1,4 +1,4 @@
-# BUGS — Flexi Agency / CongoTravel pre-release audit
+# BUGS — Flexi Agency pre-release audit
 
 > **Fix status:** every web/admin/backend item below has since been fixed and regression-verified — see [FIXES.md](FIXES.md) for the change per bug, verification evidence, and the handful of items that still need a human (credential rotation, `NODE_ENV`, duplicate phones, reseed).
 

@@ -19,7 +19,7 @@ import {
 type Dict = Record<string, string>;
 
 const fr: Dict = {
-  "brand.name": "Congo Travel",
+  "brand.name": "Flexi Agency",
   "brand.tagline": "Vols, hôtels, transferts et immobilier en RDC",
 
   "nav.flights": "Vols",
@@ -160,6 +160,9 @@ const fr: Dict = {
   "listing.enquire": "Demander des informations",
   "listing.gallery": "Voir les {n} photos",
   "listing.gallery1": "Voir la photo",
+  "listing.video": "Vidéo",
+  "listing.playVideo": "Lire la vidéo : {title}",
+  "listing.videoFailed": "Cette vidéo ne peut pas être lue sur cet appareil ou avec cette connexion.",
   "listing.description": "Description",
   "listing.included": "Ce qui est inclus",
   "listing.excluded": "Non inclus",
@@ -189,6 +192,7 @@ const fr: Dict = {
   "policy.consentRequired":
     "Vous devez accepter la politique de non-remboursement pour continuer.",
   "policy.readFull": "Lire les conditions complètes",
+  "policy.loading": "Chargement de la politique de non-remboursement…",
   "policy.loadFailed":
     "La politique de non-remboursement n'a pas pu être chargée. Elle doit être affichée avant de réserver.",
   "policy.reload": "Réessayer",
@@ -615,6 +619,9 @@ const en: Dict = {
   "listing.enquire": "Request information",
   "listing.gallery": "See all {n} photos",
   "listing.gallery1": "See the photo",
+  "listing.video": "Video",
+  "listing.playVideo": "Play the video: {title}",
+  "listing.videoFailed": "This video could not be played on this device or connection.",
   "listing.description": "Description",
   "listing.included": "What's included",
   "listing.excluded": "Not included",
@@ -644,6 +651,7 @@ const en: Dict = {
   "policy.consentRequired":
     "You must accept the no-refund policy to continue.",
   "policy.readFull": "Read the full terms",
+  "policy.loading": "Loading the no-refund policy…",
   "policy.loadFailed":
     "The no-refund policy could not be loaded. It has to be shown before you book.",
   "policy.reload": "Try again",

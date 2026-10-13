@@ -23,6 +23,7 @@ import RecentlyViewed, { useRecordView } from "./RecentlyViewed";
 import { DealTile } from "./cards";
 import Gallery, { PhotoGrid } from "./Gallery";
 import LeadForm from "./LeadForm";
+import ListingVideo from "./ListingVideo";
 import SaveButton from "./SaveButton";
 
 /**
@@ -126,6 +127,12 @@ export default function ListingDetail({
                 {lz(listing.description)}
               </p>
             </section>
+
+            <ListingVideo
+              url={listing.videoUrl}
+              poster={listing.images[0]}
+              title={lz(listing.title)}
+            />
 
             <PhotoGrid images={listing.images} alt={lz(listing.title)} />
 

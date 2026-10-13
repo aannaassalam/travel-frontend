@@ -12,6 +12,9 @@ import Header from "./Header";
  */
 export const SITE = (process.env.NEXT_PUBLIC_SITE_URL || "https://flexiairbnb.com").replace(/\/$/, "");
 
+/** The name after every page title, and the site name shared links carry. */
+const BRAND = "Flexi Agency";
+
 /**
  * §11.4: every page gets a title, a description, a canonical and hreflang
  * alternates including x-default → French. Structured data is passed in per
@@ -43,7 +46,7 @@ export default function Layout({
   return (
     <>
       <NextSeo
-        title={`${title} | CongoTravel`}
+        title={`${title} | ${BRAND}`}
         description={description}
         canonical={canonical}
         noindex={noindex}
@@ -62,7 +65,7 @@ export default function Layout({
                   : image
             }
           ],
-          siteName: "CongoTravel",
+          siteName: BRAND,
           locale
         }}
         languageAlternates={[

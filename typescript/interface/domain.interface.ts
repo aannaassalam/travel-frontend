@@ -242,6 +242,8 @@ export interface Listing {
   country: string;
   geo?: { lat: number; lng: number };
   images: string[];
+  /** The optional video: the stored address of the uploaded file (see lib/media.ts). */
+  videoUrl?: string;
   /** Per-currency minor units. USD always set; others when priced. */
   sellPrice: Money;
   /** quantityTotal − sold − held, computed server-side. */
@@ -265,6 +267,8 @@ export interface Hotel {
   geo?: { lat: number; lng: number };
   amenities: string[];
   images: string[];
+  /** The optional video: the stored address of the uploaded file (see lib/media.ts). */
+  videoUrl?: string;
   checkInTime: string;
   checkOutTime: string;
   policies: string;
@@ -434,6 +438,8 @@ export interface Restaurant {
   country: string;
   geo?: { lat: number; lng: number };
   images: string[];
+  /** The optional video: the stored address of the uploaded file (see lib/media.ts). */
+  videoUrl?: string;
   openingHours: string;
   /** Minutes in the kitchen, before any travel time. */
   prepTimeMinutes: number;

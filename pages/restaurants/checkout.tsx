@@ -1,3 +1,4 @@
+import { ConsentBox, useNoRefundPolicy } from "@/components/checkout/parts";
 import Layout from "@/components/site/Layout";
 import { TextAreaField, TextField } from "@/components/ui/field";
 import { InlineSelect } from "@/components/ui/InlineSelect";
@@ -50,7 +51,15 @@ export default function RestaurantCheckoutPage() {
     zoneId: "",
     notes: ""
   });
-  const [terms, setTerms] = useState(false);
+  /**
+   * The no-refund sentence the office has published, and which version of it
+   * was agreed to. The order is filed with that sentence as "the text shown",
+   * so it is the one shown: this page used to print a line of its own beside
+   * the box, and every food order recorded a sentence its customer never saw.
+   */
+  const policy = useNoRefundPolicy();
+  const [agreedTo, setAgreedTo] = useState<string | undefined>();
+  const agreed = Boolean(policy.shown && agreedTo === policy.shown);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /** The server's reason code, for the one failure that needs a button. */
@@ -98,7 +107,7 @@ export default function RestaurantCheckoutPage() {
     !form.address.trim() ||
     !zone ||
     Boolean(belowMinimum) ||
-    !terms;
+    !agreed;
 
   /**
    * §4.6: one key per basket, kept across presses. It used to be minted inside
@@ -145,7 +154,8 @@ export default function RestaurantCheckoutPage() {
       // Cash only: the server answers 400 CASH_ONLY to anything else.
       paymentMethod: "CASH" as const,
       currency,
-      locale
+      locale,
+      policyVersionId: policy.versionId
     };
     try {
       let order;
@@ -164,10 +174,18 @@ export default function RestaurantCheckoutPage() {
       if (err instanceof ApiError && err.status === 409) idem.current = null;
       const code = err instanceof ApiError ? err.code : undefined;
       setCode(code);
+      // A new no-refund text was published while this page was open: show it,
+      // and the tick made under the old one no longer counts.
+      if (code === "POLICY_CHANGED") {
+        setAgreedTo(undefined);
+        policy.replace((err as ApiError).body?.policy);
+      }
       setError(
         code === "ACCOUNT_EXISTS"
           ? t("pay.errAccountExists")
-          : err instanceof ApiError
+          : code === "POLICY_CHANGED"
+            ? t("pay.errPolicyChanged")
+            : err instanceof ApiError
             ? err.message
             : locale === "fr"
               ? "La commande n’a pas pu être envoyée. Réessayez."
@@ -380,19 +398,12 @@ export default function RestaurantCheckoutPage() {
                 </p>
               </fieldset>
 
-              <label className="flex cursor-pointer items-start gap-2.5 pt-2 text-sm text-ink-700">
-                <input
-                  type="checkbox"
-                  checked={terms}
-                  onChange={(e) => setTerms(e.target.checked)}
-                  className="mt-0.5 size-4 shrink-0"
-                />
-                <span>
-                  {locale === "fr"
-                    ? "J’accepte que la commande soit ferme et non remboursable une fois préparée."
-                    : "I accept the order is firm and non-refundable once it is being cooked."}
-                </span>
-              </label>
+              {/* §2.2(1): separate, unticked, blocking — and the published text. */}
+              <ConsentBox
+                policy={policy}
+                checked={agreed}
+                onChange={(v) => setAgreedTo(v ? policy.shown : undefined)}
+              />
 
               {error && (
                 <div role="alert" className="rounded-xl bg-bad-100 p-3 text-sm text-bad-600">

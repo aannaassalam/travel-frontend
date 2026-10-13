@@ -1,4 +1,4 @@
-# QA SUMMARY — Flexi Agency / CongoTravel
+# QA SUMMARY — Flexi Agency
 
 > **Update:** all web/admin/backend findings are fixed and re-verified (api.core 16/16, api.destructive 6/6, 360 px overflow 7/7, 0 type errors), online payments are permanently disabled (cash only, verified live and on-device), and the mobile app had its own fix pass plus a real-device run on an iOS simulator (4 Maestro flows passing; one High sign-out bug found and fixed on the spot). Details, device results and remaining human actions in [FIXES.md](FIXES.md).
 

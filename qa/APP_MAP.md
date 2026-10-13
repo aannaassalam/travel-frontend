@@ -1,4 +1,4 @@
-# APP_MAP — Flexi Agency / CongoTravel platform
+# APP_MAP — Flexi Agency platform
 
 Factual map built from code reading on 2026-10-02. Four codebases:
 

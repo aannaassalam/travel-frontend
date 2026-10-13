@@ -1,5 +1,6 @@
 import CartBar from "@/components/restaurant/CartBar";
 import Gallery, { PhotoGrid } from "@/components/catalog/Gallery";
+import ListingVideo from "@/components/catalog/ListingVideo";
 import LocationMap from "@/components/catalog/LocationMap";
 import { Breadcrumbs } from "@/components/site/bits";
 import Layout from "@/components/site/Layout";
@@ -151,6 +152,7 @@ export default function RestaurantPage() {
 
         {/* Bottom padding clears the sticky cart bar on mobile. */}
         <div className="mt-8 space-y-10 pb-28">
+          <ListingVideo url={r.videoUrl} poster={r.images[0]} title={name} />
           <PhotoGrid images={r.images} alt={name} />
           {sections.map(({ section, items }) => (
             <section key={section}>

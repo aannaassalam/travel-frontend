@@ -158,6 +158,10 @@ const nextConfig: NextConfig = {
           // The storage origin must be listed, or every catalogue image is
           // blocked in the browser while server-rendered pages look fine.
           `img-src 'self' data: blob: ${[...MEDIA_ORIGINS, ...TILE_ORIGINS].join(" ")}`.trim(),
+          // The optional video on a detail page (components/catalog/
+          // ListingVideo.tsx) is a file in the same storage as the photos, so
+          // it is allowed from the same origins and from nowhere else.
+          `media-src 'self' ${MEDIA_ORIGINS.join(" ")}`.trim(),
           "font-src 'self' data:",
           // The API origin is the only place the browser may talk to. Derived
           // from the same variable the client uses, so the two cannot drift —

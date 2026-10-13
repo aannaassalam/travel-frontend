@@ -1,4 +1,5 @@
 import Gallery, { PhotoGrid } from "@/components/catalog/Gallery";
+import ListingVideo from "@/components/catalog/ListingVideo";
 import RecentlyViewed, { useRecordView } from "@/components/catalog/RecentlyViewed";
 import Reviews from "@/components/catalog/Reviews";
 import LeadForm from "@/components/catalog/LeadForm";
@@ -223,6 +224,12 @@ export default function HotelDetail({ hotel: initialHotel, others }: Props) {
                 {lz(hotel.description)}
               </p>
             </section>
+
+            <ListingVideo
+              url={hotel.videoUrl}
+              poster={hotel.images[0]}
+              title={lz(hotel.name)}
+            />
 
             <section>
               <h2 className="mb-3 text-xl font-bold text-brand-900">

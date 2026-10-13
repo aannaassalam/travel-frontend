@@ -1,4 +1,4 @@
-# CongoTravel — public website
+# Flexi Agency — public website
 
 Public-facing site for the DRC travel & property booking platform. Built against
 `01-Public-Platform-Build-Guide.md` (v2) and the domain model in the sibling

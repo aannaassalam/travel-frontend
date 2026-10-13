@@ -1,4 +1,4 @@
-# CHECKLIST — Flexi Agency / CongoTravel
+# CHECKLIST — Flexi Agency
 
 Status: ✅ Pass · ❌ Fail (BUG-###) · ⚠️ Suspected / code-confirmed · ⏭️ Skipped (reason)
 

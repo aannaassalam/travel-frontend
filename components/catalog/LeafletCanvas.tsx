@@ -154,7 +154,11 @@ export default function LeafletCanvas({
         <LayersControl position="topright">
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            // No {s} sub-domain: the site's security policy (next.config.ts,
+            // TILE_ORIGINS) names tile.openstreetmap.org itself, and a.tile…,
+            // b.tile… are other hosts to it — every tile was refused and the
+            // map drew blank.
+            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           {/* {BASE_LAYERS.map((layer, i) => (
             <LayersControl.BaseLayer

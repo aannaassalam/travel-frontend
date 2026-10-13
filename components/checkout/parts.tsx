@@ -1,11 +1,10 @@
 import { Price, SettlementNote } from "@/components/site/bits";
-import { getPolicy, type Policy } from "@/lib/api";
+import { ApiError, getPolicy, type Policy } from "@/lib/api";
 import { useCheckout, useCountdown } from "@/lib/checkout";
 import { fmtDate } from "@/lib/format";
 import { mediaUrl } from "@/lib/media";
 import { usePrefs } from "@/lib/prefs";
 import { usePolicyNotice } from "@/lib/siteContent";
-import { policyText } from "@/lib/policy";
 import { cn } from "@/lib/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Check, Clock, ShieldCheck } from "lucide-react";
@@ -181,16 +180,41 @@ export function Summary({ children }: { children?: React.ReactNode }) {
  * language as the server makes: the visitor's, else French.
  */
 const NO_REFUND_KEY = ["policy", "NO_REFUND"];
+const POLICY_PATIENCE_MS = 30_000;
 
 export function useNoRefundPolicy() {
   const { locale } = usePrefs();
   const queryClient = useQueryClient();
   const { data, isPending, isFetching, refetch } = useQuery({
     queryKey: NO_REFUND_KEY,
-    // Past the browser's own copy: this is the text about to be agreed to.
-    queryFn: ({ signal }) => getPolicy("NO_REFUND", { signal, cache: "no-store" }),
+    queryFn: async ({ signal }) => {
+      // A connection that stalls must end in "try again", not in a box that
+      // never opens: nothing can be booked until this answer is in. Half a
+      // minute, because a slow answer is still an answer — and on a line that
+      // cannot return one small reply in that time, no order would get
+      // through either.
+      const giveUp = new AbortController();
+      let tooLong = false;
+      const stop = () => giveUp.abort();
+      signal.addEventListener("abort", stop);
+      const timer = setTimeout(() => {
+        tooLong = true;
+        stop();
+      }, POLICY_PATIENCE_MS);
+      try {
+        // Past the browser's own copy: this is the text about to be agreed to.
+        return await getPolicy("NO_REFUND", { signal: giveUp.signal, cache: "no-store" });
+      } catch (e) {
+        throw tooLong ? new ApiError("The policy took too long to load", 0, "TIMEOUT") : e;
+      } finally {
+        clearTimeout(timer);
+        signal.removeEventListener("abort", stop);
+      }
+    },
     staleTime: 5 * 60_000,
-    retry: 1
+    // One more go after a dropped connection — but not after waiting the full
+    // time for nothing: asked again by itself, slow became twice as slow.
+    retry: (failures, e) => failures < 1 && !(e instanceof ApiError && e.code === "TIMEOUT")
   });
   const from = data?.bodies[locale] ? locale : "fr";
   const sentence = data?.bodies[from];
@@ -213,13 +237,22 @@ export function useNoRefundPolicy() {
     replace: (current: unknown) => {
       const p = current as { versionId?: string; locale?: string; body?: string } | undefined;
       if (!p?.versionId || !p.locale || !p.body) return void refetch();
-      queryClient.setQueryData<Policy>(NO_REFUND_KEY, (old) =>
-        old && {
-          ...old,
-          bodies: { ...old.bodies, [p.locale!]: p.body },
-          versions: { ...old.versions, [p.locale!]: p.versionId }
+      queryClient.setQueryData<Policy>(NO_REFUND_KEY, (old) => {
+        if (!old) return old;
+        const bodies: Record<string, string | undefined> = { ...old.bodies, [p.locale!]: p.body };
+        const versions: Record<string, string | undefined> = {
+          ...old.versions,
+          [p.locale!]: p.versionId
+        };
+        // Answered in another language than the one on screen: the server has
+        // no text in this one (any more), so it is the other that applies —
+        // and keeping ours would have the same old sentence refused for ever.
+        if (p.locale !== locale) {
+          delete bodies[locale];
+          delete versions[locale];
         }
-      );
+        return { ...old, bodies, versions };
+      });
     }
   };
 }
@@ -241,7 +274,7 @@ export function ConsentBox({
   checked: boolean;
   onChange: (v: boolean) => void;
 }) {
-  const { t, locale } = usePrefs();
+  const { t } = usePrefs();
   // Without the published sentence there is nothing to agree to: the server
   // records that one, so no stand-in may be ticked in its place.
   const failed = !policy.sentence && !policy.isPending;
@@ -280,15 +313,24 @@ export function ConsentBox({
           <span
             className={cn(
               "whitespace-pre-line text-[15px] font-medium text-ink-900",
-              !policy.sentence && "opacity-50"
+              !policy.sentence && "opacity-60"
             )}
           >
-            {policy.sentence ?? policyText(locale)}
+            {/* While it loads, say so. The built-in wording shown greyed in
+                its place read as the policy with a box that would not tick. */}
+            {policy.sentence ?? t("policy.loading")}
           </span>
         </label>
       )}
       <p id="consent-help" className="mt-2 pl-8 text-xs text-ink-500">
-        <Link href="/terms#no-refund" className="text-brand-500 underline">
+        {/* In a new tab: a checkout form is not a page to navigate away
+            from — the restaurant one keeps what was typed nowhere else. */}
+        <Link
+          href="/terms#no-refund"
+          target="_blank"
+          rel="noopener"
+          className="text-brand-500 underline"
+        >
           {t("policy.readFull")}
         </Link>
       </p>
