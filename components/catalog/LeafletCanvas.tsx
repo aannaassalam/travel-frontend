@@ -1,7 +1,6 @@
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import {
-  LayersControl,
   MapContainer,
   Marker,
   Popup,
@@ -151,30 +150,17 @@ export default function LeafletCanvas({
       attributionControl
     >
       {showControl ? (
-        <LayersControl position="topright">
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            // No {s} sub-domain: the site's security policy (next.config.ts,
-            // TILE_ORIGINS) names tile.openstreetmap.org itself, and a.tile…,
-            // b.tile… are other hosts to it — every tile was refused and the
-            // map drew blank.
-            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          {/* {BASE_LAYERS.map((layer, i) => (
-            <LayersControl.BaseLayer
-              key={layer.name}
-              name={layer.name}
-              // Exactly one must start checked or the map opens blank.
-              checked={i === 0}
-            >
-              <TileLayer
-                url={layer.url}
-                attribution={layer.attribution}
-                maxZoom={layer.maxZoom}
-              />
-            </LayersControl.BaseLayer>
-          ))} */}
-        </LayersControl>
+        // With a MapTiler key the layers above exist, but offering them is
+        // switched off: the plain map is drawn, with no switcher — one with
+        // nothing registered in it was a "Layers" button opening an empty box.
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          // No {s} sub-domain: the site's security policy (next.config.ts,
+          // TILE_ORIGINS) names tile.openstreetmap.org itself, and a.tile…,
+          // b.tile… are other hosts to it — every tile was refused and the
+          // map drew blank.
+          url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
       ) : (
         <TileLayer
           url={BASE_LAYERS[0].url}

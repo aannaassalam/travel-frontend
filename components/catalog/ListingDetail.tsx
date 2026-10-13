@@ -386,7 +386,7 @@ export default function ListingDetail({
             </section>
 
             {/* §1.1 archetype B, always reachable — the sold-out CTA links here. */}
-            <section id="request" className="scroll-mt-24 rounded-card bg-brand-50 p-6 ring-1 ring-brand-100 ring-inset lg:p-8">
+            <section id="request" className="rounded-card bg-brand-50 p-6 ring-1 ring-brand-100 ring-inset lg:p-8">
               <h2 className="text-lg font-bold text-brand-900">{t("rtb.title")}</h2>
               <p className="mb-4 mt-1 max-w-2xl text-sm text-ink-700">{t("rtb.body")}</p>
               <div className="rounded-lg bg-white p-5">
@@ -401,7 +401,7 @@ export default function ListingDetail({
             </section>
           </div>
 
-          <div className="lg:sticky lg:top-24 lg:h-fit">
+          <div className="lg:sticky lg:top-header lg:h-fit">
             <BookingBox listing={listing} />
           </div>
         </div>

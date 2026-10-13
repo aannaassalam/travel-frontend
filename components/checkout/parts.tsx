@@ -107,7 +107,7 @@ export function Summary({ children }: { children?: React.ReactNode }) {
         : t(selection.units > 1 ? "common.people" : "common.person");
 
   return (
-    <aside className="lg:sticky lg:top-24 lg:h-fit">
+    <aside className="lg:sticky lg:top-header lg:h-fit">
       <div className="overflow-hidden surface">
         <div className="flex gap-3 border-b border-ink-100/70 p-4">
           <div className="relative size-20 shrink-0 overflow-hidden rounded-md bg-ink-50">

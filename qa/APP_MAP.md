@@ -75,7 +75,7 @@ Env (public): `NEXT_PUBLIC_API_BASE_URL`, `NEXT_PUBLIC_STORAGE_ORIGIN`, `NEXT_PU
 
 ## 4. Mobile screens (travel-application)
 
-Root stack (`App.tsx:181-226`): Tabs (Explore, Restaurants, Trips, Account), Restaurant, Hotel, Results, Checkout (modal), Booking (modal), Order, Saved, Login. No guarded routes; **guest checkout allowed**. Token in Keychain (`lib/api.ts:28`); AsyncStorage holds cart/saved/prefs. Deep links `flexiagency://`, `https://flexiairbnb.com/*` — iOS has no associated-domains entitlement; **Android manifest has no intent-filter at all**. No WebViews; payment/docs open externally. No offline handling. API host hardcoded in `lib/config.ts:11-15` (LAN IP in dev, production host in release). No Maestro/Detox; the only jest test is the RN template.
+Root stack (`App.tsx:181-226`): Tabs (Explore, Restaurants, Trips, Account), Restaurant, Hotel, Results, Checkout (modal), Booking (modal), Order, Saved, Login. No guarded routes; **guest checkout allowed**. Token in Keychain (`lib/api.ts:28`); AsyncStorage holds cart/saved/prefs. Deep links `flexiagency://`, `https://flexiagency.net/*` — iOS has no associated-domains entitlement; **Android manifest has no intent-filter at all**. No WebViews; payment/docs open externally. No offline handling. API host hardcoded in `lib/config.ts:11-15` (LAN IP in dev, production host in release). No Maestro/Detox; the only jest test is the RN template.
 
 ---
 

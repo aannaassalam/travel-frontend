@@ -10,7 +10,7 @@ import Header from "./Header";
  * canonical link, og:url, og:image, hreflang and the JSON-LD. Overridable by
  * env so a staging deploy does not advertise production URLs to crawlers.
  */
-export const SITE = (process.env.NEXT_PUBLIC_SITE_URL || "https://flexiairbnb.com").replace(/\/$/, "");
+export const SITE = (process.env.NEXT_PUBLIC_SITE_URL || "https://flexiagency.net").replace(/\/$/, "");
 
 /** The name after every page title, and the site name shared links carry. */
 const BRAND = "Flexi Agency";

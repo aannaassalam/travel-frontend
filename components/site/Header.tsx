@@ -94,6 +94,9 @@ export default function Header({ transparent = false }: { transparent?: boolean 
             : "bg-brand-900 shadow-md"
         }
       >
+        {/* This row's height, and the services row's below it, are what
+            --header-h (styles/globals.css) says the header takes: everything
+            that sticks under it or is scrolled to goes by that. */}
         <div className="container-site flex h-18 items-center justify-between gap-4">
           <Brand />
 

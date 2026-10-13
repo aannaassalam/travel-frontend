@@ -1,5 +1,5 @@
 // next-sitemap.config.js
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXT_PUBLIC_DOMAIN ?? "https://flexiairbnb.com";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXT_PUBLIC_DOMAIN ?? "https://flexiagency.net";
 
 /**
  * §11.4 sitemaps, regenerated on every build via the `postbuild` script.

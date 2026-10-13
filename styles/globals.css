@@ -382,6 +382,8 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    /* Below the sticky header, with a little air — see --header-h. */
+    scroll-padding-top: calc(var(--header-h) + 1rem);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
@@ -534,6 +536,30 @@
 /** Content replacing its own skeleton. Short: the wait already happened. */
 @utility motion-settle {
   animation: var(--animate-settle);
+}
+
+/*
+ * Clearing the sticky header (components/site/Header.tsx): one row on a
+ * phone, two from `lg` up, where the services row sits under the first.
+ * Change its rows and change these two numbers with them.
+ *
+ * Every column that sticks under the header takes `top-header`, and the page
+ * keeps whatever is scrolled to (a link to a section, the next field reached
+ * with Tab) clear of it. Each of those used to carry a number of its own, and
+ * all but one were for a header one row shorter: the booking card slid under
+ * it, and "Available rooms" landed with its heading hidden.
+ */
+:root {
+  --header-h: 4.5rem;
+}
+@media (min-width: 1024px) {
+  :root {
+    --header-h: 7.75rem;
+  }
+}
+
+@utility top-header {
+  top: calc(var(--header-h) + 0.75rem);
 }
 
 @utility container-site {

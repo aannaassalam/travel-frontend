@@ -241,7 +241,7 @@ export default function SearchResults({
                     every results page — not only when the search returns none. */}
                 <section
                   id="request"
-                  className="scroll-mt-24 rounded-card bg-brand-50 p-6 ring-1 ring-brand-100 ring-inset lg:p-8"
+                  className="rounded-card bg-brand-50 p-6 ring-1 ring-brand-100 ring-inset lg:p-8"
                 >
                   <h2 className="text-lg font-bold text-brand-900">
                     {locale === "fr"

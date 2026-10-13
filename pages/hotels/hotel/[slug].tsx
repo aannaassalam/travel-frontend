@@ -248,7 +248,7 @@ export default function HotelDetail({ hotel: initialHotel, others }: Props) {
             <PhotoGrid images={hotel.images} alt={lz(hotel.name)} />
 
             {/* ------------------------------------------------- rooms */}
-            <section id="rooms" className="scroll-mt-24">
+            <section id="rooms">
               <h2 className="mb-4 text-xl font-bold text-brand-900">
                 {t("listing.rooms")}
               </h2>
@@ -454,7 +454,7 @@ export default function HotelDetail({ hotel: initialHotel, others }: Props) {
 
             <Reviews rating={hotel.rating} reviewCount={hotel.reviewCount} title={lz(hotel.name)} />
 
-            <section id="request" className="scroll-mt-24 rounded-card bg-brand-50 p-6 ring-1 ring-brand-100 ring-inset lg:p-8">
+            <section id="request" className="rounded-card bg-brand-50 p-6 ring-1 ring-brand-100 ring-inset lg:p-8">
               <h2 className="text-lg font-bold text-brand-900">{t("rtb.title")}</h2>
               <p className="mb-4 mt-1 max-w-2xl text-sm text-ink-700">{t("rtb.body")}</p>
               <div className="rounded-lg bg-white p-5">
@@ -471,7 +471,7 @@ export default function HotelDetail({ hotel: initialHotel, others }: Props) {
 
           {/* Right rail: a summary that jumps to the room list rather than a
               second booking form that could disagree with it. */}
-          <aside className="lg:sticky lg:top-24 lg:h-fit">
+          <aside className="lg:sticky lg:top-header lg:h-fit">
             <div className="surface p-6">
               <RatingBadge rating={hotel.rating} count={hotel.reviewCount} />
               <p className="mt-4 text-sm text-ink-500">{t("listing.from")}</p>

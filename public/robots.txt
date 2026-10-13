@@ -19,7 +19,7 @@ User-agent: DotBot
 Disallow: /
 
 # Host
-Host: https://flexiairbnb.com
+Host: https://flexiagency.net
 
 # Sitemaps
-Sitemap: https://flexiairbnb.com/sitemap.xml
+Sitemap: https://flexiagency.net/sitemap.xml

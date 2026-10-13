@@ -166,7 +166,7 @@ Scheduled jobs: verified there is **no** payment-reconciliation job (only cash r
 | 6 | Crash/robustness: `openExternal()` helper (12 unguarded `Linking.openURL` sites), optional chaining on office phone/WhatsApp, Splash `.catch` + idempotent `finish()` + backstop timeout | `lib/openExternal.ts`, `AccountScreen`, `ListingSheet`, `LocationMap`, `ExploreScreen`, `Splash` |
 | 7 | Login stores `email` | `screens/LoginScreen.tsx` |
 | 8 | Enquiry idempotency key minted once per sheet session (retries no longer duplicate) | `components/sheets/EnquirySheet.tsx` |
-| 9 | Deep links: Android `VIEW` intent-filters for `flexiagency://` and https `flexiairbnb.com` (autoVerify); iOS `associated-domains` entitlement. **Ops:** host `/.well-known/apple-app-site-association` and `assetlinks.json`, enable Associated Domains on the App ID | `AndroidManifest.xml`, `FlexiAgency.entitlements` |
+| 9 | Deep links: Android `VIEW` intent-filters for `flexiagency://` and https `flexiagency.net` (autoVerify); iOS `associated-domains` entitlement. **Ops:** host `/.well-known/apple-app-site-association` and `assetlinks.json`, enable Associated Domains on the App ID | `AndroidManifest.xml`, `FlexiAgency.entitlements` |
 | 10 | Secrets (non-destructive): `!FlexiAgency.keystore` un-ignore removed; `keystore.properties`, `google-services.json`, `GoogleService-Info.plist` gitignored; keystore + properties `git rm --cached` (files kept on disk). **Keys not rotated** (ops; still in history until purged) | `.gitignore` |
 | 11 | Dev API host: Android `10.0.2.2:3001`, iOS `localhost:3001`, optional `DEV_LAN_HOST` override; release host unchanged | `lib/config.ts` |
 | 12 | Minimum order compared in the selected currency when the zone carries it | `screens/CheckoutScreen.tsx` |

@@ -359,7 +359,7 @@ export default function RestaurantCheckoutPage() {
           </div>
 
           {/* --- summary --- */}
-          <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+          <aside className="space-y-4 lg:sticky lg:top-header lg:self-start">
             <div className="surface space-y-3 p-5">
               <div className="flex justify-between text-sm">
                 <span className="text-ink-700">{locale === "fr" ? "Sous-total" : "Subtotal"}</span>

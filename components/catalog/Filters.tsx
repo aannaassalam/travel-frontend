@@ -141,7 +141,7 @@ export default function Filters({
 
       <aside
         aria-label={t("results.filters")}
-        className={`hidden lg:sticky lg:top-32 lg:block lg:h-fit lg:w-64 lg:shrink-0 lg:rounded-lg lg:border lg:border-ink-100 lg:bg-white lg:p-5 ${className ?? ""}`}
+        className={`hidden lg:sticky lg:top-header lg:block lg:h-fit lg:w-64 lg:shrink-0 lg:rounded-lg lg:border lg:border-ink-100 lg:bg-white lg:p-5 ${className ?? ""}`}
       >
         <h2 className="mb-4 flex items-center gap-2 text-base font-bold text-brand-900">
           <SlidersHorizontal className="size-4" />

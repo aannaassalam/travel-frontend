@@ -208,7 +208,7 @@ export default function PropertyDetail({ listing, related }: Props) {
           </div>
 
           {/* Enquiry rail — the only conversion path on this page. */}
-          <aside className="lg:sticky lg:top-24 lg:h-fit">
+          <aside className="lg:sticky lg:top-header lg:h-fit">
             <div className="surface p-6">
               <h2 className="text-lg font-bold text-brand-900">{t("enquiry.title")}</h2>
               <p className="mb-4 mt-1 text-sm text-ink-500">{t("enquiry.body")}</p>

@@ -60,7 +60,7 @@ export default function TermsPage({ terms, noRefund }: Props) {
         {/* §2.2(3): stated plainly, at the top, never in fine print. */}
         <section
           id="no-refund"
-          className="mt-8 scroll-mt-24 rounded-lg border-2 border-brand-900 bg-brand-50 p-6"
+          className="mt-8 rounded-lg border-2 border-brand-900 bg-brand-50 p-6"
         >
           <h2 className="flex items-center gap-2 text-xl font-bold text-brand-900">
             <ShieldAlert className="size-6 text-brand-500" />
