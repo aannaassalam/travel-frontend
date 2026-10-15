@@ -69,43 +69,13 @@ export const PAYMENT_METHOD = {
 export type PaymentMethod =
   (typeof PAYMENT_METHOD)[keyof typeof PAYMENT_METHOD];
 
-/**
- * How the money moves.
- *
- * MaxiCash settles all four online rails on its hosted page — card, mobile
- * money, its own wallet, and bank transfer — from one integration, and no card
- * data ever touches our servers. CASH is the only rail the office collects, at
- * the counter, against the order reference.
+/*
+ * How the money moves is one of those two and no finer: an online payment is
+ * made on MaxiCash's own page, where the customer — not this site — chooses
+ * card, mobile money or a MaxiCash wallet. Whether online can be offered at
+ * all is the server's to say (`useOnlinePayment` in lib/payments.ts); this
+ * site carries no switch of its own.
  */
-export const PAYMENT_RAILS = [
-  { id: "MOBILE_MONEY", online: true, operators: ["M-Pesa", "Orange Money", "Airtel Money", "Afrimoney"] },
-  { id: "CARD", online: true, operators: ["Visa", "Mastercard"] },
-  { id: "WALLET", online: true, operators: ["MaxiCash", "PayPal"] },
-  { id: "BANK_TRANSFER", online: true, operators: [] },
-  { id: "CASH", online: false, operators: [] }
-] as const;
-
-export type PaymentRail = (typeof PAYMENT_RAILS)[number]["id"];
-
-/**
- * Cash-only. Online payments are permanently off: the site offers CASH and
- * nothing else, and the server answers 400 CASH_ONLY to any other method.
- * Hard-coded, never env-derived — there is no server switch to pair it with.
- *
- * Typed `boolean`, not the literal, so the remaining guards keep type-checking.
- */
-export const ONLINE_PAYMENTS_ENABLED: boolean = false;
-
-/**
- * Rails that go to the provider. The rest are settled at the office.
- *
- * Typed as the full PaymentRail union rather than the narrowed literal set, so
- * `ONLINE_RAILS.includes(someRail)` is a question you are allowed to ask about
- * any rail — which is the only reason this list exists.
- */
-export const ONLINE_RAILS: readonly PaymentRail[] = PAYMENT_RAILS.filter(
-  (r) => r.online
-).map((r) => r.id);
 
 export const MEAL_PLANS = {
   ROOM_ONLY: "ROOM_ONLY",
@@ -361,7 +331,8 @@ export interface Order {
   chargedTotal: number;
   fxRate: number;
   paymentMethod: PaymentMethod;
-  paymentRail?: PaymentRail;
+  /** Back from MaxiCash's page by its "paid" address, its confirmation awaited. */
+  paymentAwaited?: boolean;
   cashDeadline?: string;
   cashReference?: string;
   consent?: OrderConsent;

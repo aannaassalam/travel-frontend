@@ -1,15 +1,17 @@
 import { ConsentBox, useNoRefundPolicy } from "@/components/checkout/parts";
+import PaymentChoice from "@/components/checkout/PaymentChoice";
 import Layout from "@/components/site/Layout";
 import { TextAreaField, TextField } from "@/components/ui/field";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { PhoneField } from "@/components/ui/PhoneField";
-import { ApiError, createOrder, getRestaurant } from "@/lib/api";
+import { ApiError, createOrder, getRestaurant, startPayment } from "@/lib/api";
 import { useCart } from "@/lib/cart";
+import { useOnlinePayment } from "@/lib/payments";
 import { Country, DEFAULT_COUNTRY, toE164 } from "@/lib/countries";
 import { price } from "@/lib/money";
 import { usePrefs } from "@/lib/prefs";
 import { cn } from "@/lib/utils";
-import { Money } from "@/typescript/interface/domain.interface";
+import { Money, PaymentMethod } from "@/typescript/interface/domain.interface";
 import { useQuery } from "@tanstack/react-query";
 import { Banknote, Bike, Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import Link from "next/link";
@@ -62,6 +64,11 @@ export default function RestaurantCheckoutPage() {
   const agreed = Boolean(policy.shown && agreedTo === policy.shown);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Cash on delivery unless the customer says otherwise — and whatever they
+  // said, only what the server offers now for this currency.
+  const online = useOnlinePayment(currency);
+  const [chosen, setChosen] = useState<PaymentMethod>("CASH");
+  const method: PaymentMethod = online.available && chosen === "ONLINE" ? "ONLINE" : "CASH";
   /** The server's reason code, for the one failure that needs a button. */
   const [code, setCode] = useState<string | undefined>();
 
@@ -151,12 +158,14 @@ export default function RestaurantCheckoutPage() {
         lastName: form.lastName.trim(),
         phone: phone!
       },
-      // Cash only: the server answers 400 CASH_ONLY to anything else.
-      paymentMethod: "CASH" as const,
+      // A press replayed with another method gets its first order back: how
+      // THAT order is paid is settled just below.
+      paymentMethod: method,
       currency,
       locale,
       policyVersionId: policy.versionId
     };
+    let reference: string | undefined;
     try {
       let order;
       try {
@@ -166,13 +175,35 @@ export default function RestaurantCheckoutPage() {
         if (!(err instanceof ApiError && err.code === "IDEMPOTENCY_KEY_USED")) throw err;
         order = await createOrder(draft, mint());
       }
+      reference = order.reference;
+      /**
+       * Online: MaxiCash's page, and back to /booking/payment/return/…. Cash
+       * on an order first sent as online (its payment could not be opened, and
+       * the customer chose cash instead) makes that same order a cash one.
+       */
+      if (method === "ONLINE" || order.paymentMethod === "ONLINE") {
+        const result = await startPayment(order.reference, method, locale);
+        if (result.status === "REDIRECT") {
+          clear();
+          // Full navigation: this leaves our origin for MaxiCash's page.
+          window.location.assign(result.paymentUrl);
+          return;
+        }
+      }
       clear();
       router.push(`/booking/confirmation/${order.reference}`);
     } catch (err) {
+      const code = err instanceof ApiError ? err.code : undefined;
+      // Already back from MaxiCash's page on this order, its word awaited:
+      // the order's own page says so.
+      if (code === "PAYMENT_BEING_CONFIRMED" && reference) {
+        clear();
+        router.push(`/booking/confirmation/${reference}`);
+        return;
+      }
       // A key the server has finished with (cancelled order, other currency)
       // must not dead-end the next press.
       if (err instanceof ApiError && err.status === 409) idem.current = null;
-      const code = err instanceof ApiError ? err.code : undefined;
       setCode(code);
       // A new no-refund text was published while this page was open: show it,
       // and the tick made under the old one no longer counts.
@@ -180,8 +211,20 @@ export default function RestaurantCheckoutPage() {
         setAgreedTo(undefined);
         policy.replace((err as ApiError).body?.policy);
       }
+      // Online payment could not be opened: the order is filed, and choosing
+      // cash just above then pressing again pays that same order in cash.
+      const payment: Record<string, string> = {
+        PAYMENT_UNAVAILABLE: t("pay.errUnavailable"),
+        CASH_ONLY: t("pay.errUnavailable"),
+        PROVIDER_ERROR: t("pay.errProvider"),
+        PROVIDER_UNREACHABLE: t("pay.errUnreachable"),
+        CURRENCY_UNSUPPORTED: t("pay.errOnlineCurrency"),
+        AMOUNT_BELOW_MINIMUM: t("pay.errTooSmall")
+      };
       setError(
-        code === "ACCOUNT_EXISTS"
+        code && payment[code]
+          ? `${payment[code]} ${t("pay.errNoCharge")}`
+          : code === "ACCOUNT_EXISTS"
           ? t("pay.errAccountExists")
           : code === "POLICY_CHANGED"
             ? t("pay.errPolicyChanged")
@@ -391,11 +434,33 @@ export default function RestaurantCheckoutPage() {
                 <legend className="eyebrow mb-2 text-brand-600">
                   {locale === "fr" ? "Paiement" : "Payment"}
                 </legend>
-                {/* Cash only: stated, not chosen. */}
-                <p className="flex items-center gap-2 rounded-xl bg-brand-900 px-3 py-2.5 text-sm font-semibold text-white">
-                  <Banknote className="size-4 shrink-0" />
-                  {locale === "fr" ? "Espèces à la livraison" : "Cash on delivery"}
-                </p>
+                {online.available ? (
+                  <PaymentChoice
+                    value={method}
+                    onChange={(next) => {
+                      setChosen(next);
+                      setError(null);
+                    }}
+                    online={online}
+                    cashLabel={locale === "fr" ? "Espèces à la livraison" : "Cash on delivery"}
+                    cashNote={
+                      locale === "fr"
+                        ? "Vous payez le livreur à la réception de la commande."
+                        : "You pay the driver when the food arrives."
+                    }
+                  />
+                ) : (
+                  <>
+                    {/* Cash only: stated, not chosen. */}
+                    <p className="flex items-center gap-2 rounded-xl bg-brand-900 px-3 py-2.5 text-sm font-semibold text-white">
+                      <Banknote className="size-4 shrink-0" />
+                      {locale === "fr" ? "Espèces à la livraison" : "Cash on delivery"}
+                    </p>
+                    {online.offered && (
+                      <p className="mt-2 text-sm text-ink-500">{t("checkout.onlineUsdOnly")}</p>
+                    )}
+                  </>
+                )}
               </fieldset>
 
               {/* §2.2(1): separate, unticked, blocking — and the published text. */}
@@ -431,10 +496,14 @@ export default function RestaurantCheckoutPage() {
                 )}
               >
                 {submitting
-                  ? t("common.loading")
-                  : locale === "fr"
-                    ? "Commander — payer à la livraison"
-                    : "Order — pay on delivery"}
+                  ? t(method === "ONLINE" ? "checkout.waitingOnline" : "common.loading")
+                  : method === "ONLINE"
+                    ? locale === "fr"
+                      ? "Commander — payer en ligne"
+                      : "Order — pay online"
+                    : locale === "fr"
+                      ? "Commander — payer à la livraison"
+                      : "Order — pay on delivery"}
               </button>
 
               {blocked && !belowMinimum && (

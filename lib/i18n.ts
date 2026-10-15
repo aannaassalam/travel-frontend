@@ -80,6 +80,9 @@ const fr: Dict = {
   "home.why1Body":
     "Nous achetons les places et les chambres à l'avance. Ce que vous voyez est disponible ; nous n'affichons jamais une offre que nous ne pouvons pas honorer.",
   "home.why2Title": "Payez en espèces à l'agence",
+  "home.why2TitleOnline": "Payez en ligne ou en espèces",
+  "home.why2BodyOnline":
+    "Par carte bancaire, mobile money ou MaxiCash sur une page sécurisée — ou en espèces à notre bureau de Kinshasa.",
   "home.why2Body":
     "Réservez en ligne, puis réglez en espèces à notre bureau de Kinshasa. La réservation est maintenue 48 heures.",
   "home.why3Title": "Prix clairs, sans surprise",
@@ -243,7 +246,7 @@ const fr: Dict = {
     "Cette réservation a expiré et les places ont été remises en vente.",
   "pay.retry": "Reprendre la réservation",
   "pay.errTooSmall":
-    "Ce montant est trop faible pour le paiement en ligne.",
+    "Le paiement en ligne est proposé à partir de 5 $US. Choisissez le paiement en espèces.",
   "pay.errAmount":
     "Ce montant ne peut pas être réglé en ligne.",
   "pay.errMethod":
@@ -279,6 +282,42 @@ const fr: Dict = {
   "checkout.reserveCash": "Réserver et payer en agence",
   "checkout.waitingTitle": "Vérifiez votre téléphone",
   "checkout.waitingCash": "Enregistrement de votre réservation…",
+  "checkout.online": "Payer en ligne",
+  "checkout.onlineNote":
+    "Par carte bancaire, mobile money ou MaxiCash, sur la page sécurisée de MaxiCash. Le montant est débité en dollars américains.",
+  "checkout.onlineUsdOnly":
+    "Le paiement en ligne est proposé pour les réservations en dollars américains (USD).",
+  "checkout.payOnlineCta": "Continuer vers le paiement",
+  "checkout.waitingOnline": "Vous êtes dirigé vers la page de paiement sécurisée de MaxiCash…",
+  "pay.errOnlineCurrency":
+    "Cette réservation n'est pas en dollars américains : elle ne peut pas être payée en ligne.",
+  "payReturn.checking": "Un instant, nous vérifions votre paiement…",
+  "payReturn.confirmingTitle": "Merci — nous confirmons votre paiement",
+  "payReturn.confirmingBody":
+    "MaxiCash doit encore nous le confirmer. Votre réservation est conservée et vous recevrez un SMS dès que le paiement est confirmé. Vous n'avez rien d'autre à faire.",
+  "payReturn.confirmingLate":
+    "La confirmation tarde un peu plus que d'habitude. Votre réservation reste conservée ; si vous n'avez pas de nouvelles dans l'heure, contactez notre agence avec votre référence.",
+  "payReturn.failedTitle": "Le paiement n'a pas abouti",
+  "payReturn.failedBody":
+    "Le paiement a été refusé ou annulé. À notre connaissance, rien n'a été débité. Votre réservation est conservée quelques minutes : vous pouvez réessayer, ou choisir de payer en espèces.",
+  "payReturn.tryAgain": "Réessayer le paiement en ligne",
+  "payReturn.payCash": "Payer en espèces à la place",
+  "payReturn.expiredTitle": "Cette réservation a expiré",
+  "payReturn.expiredBody":
+    "Le délai de réservation est passé avant que le paiement ne soit confirmé. Si vous avez été débité, contactez notre agence avec la référence ci-dessous : nous réglerons cela avec vous.",
+  "payReturn.invalidTitle": "Ce lien n'est plus valable",
+  "payReturn.invalidBody":
+    "Retrouvez votre réservation dans votre compte, ou avec la référence reçue par SMS.",
+  "payReturn.unreachableTitle": "Nous n'avons pas pu vérifier votre paiement",
+  "payReturn.unreachableBody":
+    "La connexion a été interrompue. Votre paiement n'est pas perdu : réessayez dans un instant.",
+  "confirm.bodyOnlineWaiting":
+    "Conservez cette référence. Vous recevrez un SMS au {phone} dès que le paiement est confirmé.",
+  "confirm.onlinePendingTitle": "Paiement en cours de confirmation",
+  "confirm.onlineUnpaidTitle": "Paiement en ligne non terminé",
+  "confirm.onlineUnpaidBody":
+    "Cette réservation n'est pas encore payée. Elle est conservée jusqu'au {deadline} ; passé ce délai, elle est annulée et les places remises en vente.",
+  "confirm.payNow": "Payer maintenant",
   "checkout.waitingBody":
     "Une demande de paiement de {amount} a été envoyée au {phone}. Validez-la sur votre téléphone. Cette page se met à jour automatiquement.",
   "checkout.waitingCancel": "Annuler et changer de mode de paiement",
@@ -539,6 +578,9 @@ const en: Dict = {
   "home.why1Body":
     "We buy seats and rooms in advance. What you see is available; we never show an offer we cannot honour.",
   "home.why2Title": "Pay in cash at our office",
+  "home.why2TitleOnline": "Pay online or in cash",
+  "home.why2BodyOnline":
+    "By card, mobile money or MaxiCash on a secure page — or in cash at our Kinshasa office.",
   "home.why2Body":
     "Book online, then pay in cash at our Kinshasa office. Your booking is held for 48 hours.",
   "home.why3Title": "Clear prices, no surprises",
@@ -700,7 +742,7 @@ const en: Dict = {
     "The no-refund policy has just been updated. Please read it again and tick the box once more.",
   "pay.errCancelled": "This booking expired and the seats went back on sale.",
   "pay.retry": "Take the booking again",
-  "pay.errTooSmall": "This amount is too small to pay online.",
+  "pay.errTooSmall": "Online payment is available from 5 USD. Please choose cash.",
   "pay.errAmount": "This amount cannot be paid online.",
   "pay.errMethod": "That payment method is not available right now.",
   "pay.errCurrency": "This booking was priced in a different currency.",
@@ -732,6 +774,40 @@ const en: Dict = {
   "checkout.reserveCash": "Reserve and pay at the office",
   "checkout.waitingTitle": "Check your phone",
   "checkout.waitingCash": "Registering your booking…",
+  "checkout.online": "Pay online",
+  "checkout.onlineNote":
+    "By card, mobile money or MaxiCash, on MaxiCash's secure page. The amount is charged in US dollars.",
+  "checkout.onlineUsdOnly": "Online payment is available for bookings in US dollars (USD).",
+  "checkout.payOnlineCta": "Continue to payment",
+  "checkout.waitingOnline": "Taking you to MaxiCash's secure payment page…",
+  "pay.errOnlineCurrency": "This booking is not in US dollars, so it cannot be paid online.",
+  "payReturn.checking": "One moment, we are checking your payment…",
+  "payReturn.confirmingTitle": "Thank you — we are confirming your payment",
+  "payReturn.confirmingBody":
+    "MaxiCash has yet to confirm it to us. Your booking is kept, and you will receive an SMS as soon as the payment is confirmed. There is nothing else you need to do.",
+  "payReturn.confirmingLate":
+    "Confirmation is taking longer than usual. Your booking is still kept; if you hear nothing within the hour, contact our office with your reference.",
+  "payReturn.failedTitle": "The payment did not go through",
+  "payReturn.failedBody":
+    "The payment was declined or cancelled. As far as we know, nothing was charged. Your booking is kept for a few minutes: you can try again, or choose to pay in cash.",
+  "payReturn.tryAgain": "Try paying online again",
+  "payReturn.payCash": "Pay in cash instead",
+  "payReturn.expiredTitle": "This booking has expired",
+  "payReturn.expiredBody":
+    "The booking's hold ran out before the payment was confirmed. If you were charged, contact our office with the reference below and we will sort it out with you.",
+  "payReturn.invalidTitle": "This link is no longer valid",
+  "payReturn.invalidBody":
+    "Find your booking in your account, or with the reference you received by SMS.",
+  "payReturn.unreachableTitle": "We could not check your payment",
+  "payReturn.unreachableBody":
+    "The connection dropped. Your payment is not lost: try again in a moment.",
+  "confirm.bodyOnlineWaiting":
+    "Keep this reference. You will receive an SMS at {phone} as soon as the payment is confirmed.",
+  "confirm.onlinePendingTitle": "Payment being confirmed",
+  "confirm.onlineUnpaidTitle": "Online payment not completed",
+  "confirm.onlineUnpaidBody":
+    "This booking is not paid yet. It is kept until {deadline}; after that it is cancelled and the stock returned to sale.",
+  "confirm.payNow": "Pay now",
   "checkout.waitingBody":
     "A payment request for {amount} was sent to {phone}. Approve it on your phone. This page updates automatically.",
   "checkout.waitingCancel": "Cancel and change payment method",

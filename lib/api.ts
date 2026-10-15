@@ -3,7 +3,6 @@ import {
   Listing,
   Locale,
   Localized,
-  ONLINE_PAYMENTS_ENABLED,
   Order,
   Restaurant,
   Vertical
@@ -250,28 +249,32 @@ export const getOrderDocumentLink = (reference: string, documentId: string) =>
     `/orders/${encodeURIComponent(reference)}/documents/${encodeURIComponent(documentId)}`
   );
 
+/**
+ * GET /payments/options — whether online payment can be offered, and in which
+ * currencies. The server's switch is the only one: this site has none.
+ */
+export const getPaymentOptions = (init?: RequestInit) =>
+  get<{ online: boolean; currencies: string[] }>("/payments/options", init);
+
 /** What `startPayment` can come back with. */
 export type StartPaymentResult =
   | { status: "REDIRECT"; paymentUrl: string; reference: string }
-  | { status: "OFFLINE"; rail: string; reference: string; bankDetails?: unknown }
+  | { status: "OFFLINE"; rail: string; reference: string }
   | { status: "PAID"; reference?: string };
 
 /**
- * POST /orders/:reference/pay — opens a transaction at the provider.
+ * POST /orders/:reference/pay — files the order as cash, or opens a payment at
+ * MaxiCash and answers with its page.
  *
  * Note what is NOT sent: no amount, no currency. The server reads those off the
- * order, so nothing a browser can edit changes what gets charged.
+ * order, so nothing a browser can edit changes what gets charged. Nor how to
+ * pay online: that is chosen on MaxiCash's page.
  */
 export async function startPayment(
   reference: string,
-  rail: string,
+  rail: "ONLINE" | "CASH",
   locale?: string
 ): Promise<StartPaymentResult> {
-  // Cash-only mode: an online rail is refused here, before any request, with
-  // the same code the server would answer. Every caller goes through this.
-  if (!ONLINE_PAYMENTS_ENABLED && rail !== "CASH") {
-    throw new ApiError("Online payment is unavailable", 503, "PAYMENT_UNAVAILABLE");
-  }
   const res = await fetch(
     `${API_BASE}/orders/${encodeURIComponent(reference)}/pay`,
     {
@@ -292,11 +295,42 @@ export async function startPayment(
   return body as StartPaymentResult;
 }
 
+/** What the server says about the payment a customer has just come back from. */
+export interface PaymentReturn {
+  reference: string;
+  /** Which of MaxiCash's addresses this was. Not proof of payment: `paid` is. */
+  outcome: "SUCCESS" | "FAILURE";
+  paymentStatus: string;
+  paid: boolean;
+  /** The booking's hold ran out before the payment was confirmed. */
+  cancelled: boolean;
+}
+
+/**
+ * POST /payments/maxicash/return — the customer is back from MaxiCash's page.
+ * `token` is the end of the address they were sent to; `params` is whatever
+ * MaxiCash added to it. Says which booking this is, and where it stands.
+ */
+export async function reportPaymentReturn(
+  token: string,
+  params: Record<string, string>
+): Promise<PaymentReturn> {
+  const res = await fetch(`${API_BASE}/payments/maxicash/return`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, params })
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new ApiError("Payment not found", res.status, body?.code);
+  return body as PaymentReturn;
+}
+
 /**
  * GET /orders/:reference/payment — is it actually paid?
  *
- * The server re-asks MaxiCash rather than trusting that we landed on a success
- * URL, so this is the only thing the return screen believes.
+ * Only MaxiCash's own word to the server makes this true — never the address
+ * the customer landed on — so it is the only thing the return screen believes.
  */
 export async function getPaymentStatus(
   reference: string

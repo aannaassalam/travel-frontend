@@ -5,12 +5,14 @@ import {
   Summary,
   useNoRefundPolicy
 } from "@/components/checkout/parts";
+import PaymentChoice from "@/components/checkout/PaymentChoice";
 import Layout from "@/components/site/Layout";
 import { ApiError, startPayment } from "@/lib/api";
 import { useCheckout } from "@/lib/checkout";
+import { useOnlinePayment } from "@/lib/payments";
 import { usePrefs } from "@/lib/prefs";
 import { cn } from "@/lib/utils";
-import { AlertTriangle, Banknote, Loader2 } from "lucide-react";
+import { AlertTriangle, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
@@ -25,6 +27,7 @@ export default function PaymentStep() {
     contact,
     consentAccepted,
     consentFor,
+    paymentMethod,
     update,
     confirm,
     expired,
@@ -35,6 +38,10 @@ export default function PaymentStep() {
   const [terms, setTerms] = useState(false);
   const [errors, setErrors] = useState<{ consent?: boolean; terms?: boolean }>({});
   const policy = useNoRefundPolicy();
+  // What the server offers now decides, not what was chosen earlier: a choice
+  // of "online" kept from before it was switched off is a cash booking.
+  const online = useOnlinePayment(currency);
+  const method = online.available && paymentMethod === "ONLINE" ? "ONLINE" : "CASH";
   // A tick counts for the sentence it was made under and no other: not while
   // the text is still loading, not after the language (so the version) changed,
   // and not when it comes back from an earlier visit to this page.
@@ -58,17 +65,32 @@ export default function PaymentStep() {
   if (!ready || !selection || !contact) return null;
 
   /**
-   * Creates the order, then files it as a cash booking.
+   * Creates the order, then settles how it is paid.
    *
-   * Cash only: there is no provider and nothing to redirect to. The server
-   * takes the inventory hold at creation and the confirmation screen carries
-   * the instructions for paying at the office.
+   * The order is created FIRST, always: the server takes the inventory hold at
+   * creation, so a payment can only ever be for stock that is already
+   * reserved. Cash has nothing to redirect to — the confirmation screen
+   * carries the instructions for paying at the office. Online leaves this site
+   * for MaxiCash's page, and the customer comes back to
+   * /booking/payment/return/….
    */
   async function finish() {
     setError(null);
+    let reference: string | undefined;
     try {
-      const order = await confirm({ currency, locale, policyVersionId: policy.versionId });
-      await startPayment(order.reference, "CASH", locale);
+      const order = await confirm({
+        currency,
+        locale,
+        policyVersionId: policy.versionId,
+        paymentMethod: method
+      });
+      reference = order.reference;
+      const result = await startPayment(order.reference, method, locale);
+      if (result.status === "REDIRECT") {
+        // Full navigation, not router.push: this leaves our origin entirely.
+        window.location.assign(result.paymentUrl);
+        return;
+      }
       router.push(`/booking/confirmation/${order.reference}`);
     } catch (err) {
       setWaiting(false);
@@ -81,6 +103,13 @@ export default function PaymentStep() {
        */
       const status = err instanceof ApiError ? err.status : 0;
       const code = err instanceof ApiError ? err.code : undefined;
+      // The customer has already come back from MaxiCash's page on this
+      // booking and its confirmation is on its way: that page says so, and
+      // there is nothing to pay again.
+      if (code === "PAYMENT_BEING_CONFIRMED" && reference) {
+        router.push(`/booking/confirmation/${reference}`);
+        return;
+      }
       setCode(code);
       setDead(code === "ORDER_CANCELLED" || code === "CURRENCY_CHANGED");
       // The office published a new no-refund text while this page was open:
@@ -100,7 +129,15 @@ export default function PaymentStep() {
         /** A guest typed a number that belongs to an account: sign in first. */
         ACCOUNT_EXISTS: t("pay.errAccountExists"),
         POLICY_CHANGED: t("pay.errPolicyChanged"),
+        // Online payment could not be opened. The booking exists and its seat
+        // is held: cash, just above, is one press away on the same booking.
         PAYMENT_UNAVAILABLE: t("pay.errUnavailable"),
+        CASH_ONLY: t("pay.errUnavailable"),
+        PROVIDER_ERROR: t("pay.errProvider"),
+        PROVIDER_UNREACHABLE: t("pay.errUnreachable"),
+        CURRENCY_UNSUPPORTED: t("pay.errOnlineCurrency"),
+        AMOUNT_BELOW_MINIMUM: t("pay.errTooSmall"),
+        PAYMENT_BEING_CONFIRMED: t("payReturn.confirmingTitle"),
         RAIL_INVALID: t("pay.errGeneric")
       };
       setError(
@@ -123,11 +160,17 @@ export default function PaymentStep() {
   // a spinner that silently stops is the worst of both.
   if (waiting && !error) {
     return (
-      <Layout title={t("checkout.waitingCash")} description="" noindex>
+      <Layout
+        title={t(method === "ONLINE" ? "checkout.waitingOnline" : "checkout.waitingCash")}
+        description=""
+        noindex
+      >
         <div className="container-site flex min-h-[60vh] items-center justify-center py-12">
           <div className="max-w-md surface p-8 text-center">
             <Loader2 className="mx-auto mb-4 size-10 animate-spin text-brand-500" />
-            <h1 className="text-xl font-bold text-brand-900">{t("checkout.waitingCash")}</h1>
+            <h1 className="text-xl font-bold text-brand-900">
+              {t(method === "ONLINE" ? "checkout.waitingOnline" : "checkout.waitingCash")}
+            </h1>
           </div>
         </div>
       </Layout>
@@ -146,15 +189,16 @@ export default function PaymentStep() {
               <legend className="px-1 text-xl font-bold text-brand-900">
                 {t("checkout.payWith")}
               </legend>
-              {/* Cash only: one way to pay, stated — not a list of one radio. */}
-              <p className="mt-2 text-[15px] text-ink-700">{t("checkout.cashOnly")}</p>
-              <div className="mt-3 flex gap-3 rounded-lg border border-brand-500 bg-brand-50 p-4">
-                <Banknote className="mt-0.5 size-5 shrink-0 text-brand-500" />
-                <span className="min-w-0">
-                  <span className="block font-bold text-ink-900">{t("checkout.cash")}</span>
-                  <span className="block text-sm text-ink-500">{t("checkout.cashNote")}</span>
-                </span>
-              </div>
+              <PaymentChoice
+                value={method}
+                onChange={(next) => {
+                  update({ paymentMethod: next });
+                  setError(null);
+                }}
+                online={online}
+                cashLabel={t("checkout.cash")}
+                cashNote={t("checkout.cashNote")}
+              />
             </fieldset>
 
             {/* §2.2(1): separate, unticked, blocking. Never bundled with T&Cs. */}
@@ -221,7 +265,9 @@ export default function PaymentStep() {
                       ? t("pay.errCancelledBody")
                       : code === "ACCOUNT_EXISTS"
                         ? t("pay.errAccountExistsBody")
-                        : t("pay.errNoChargeCash")}
+                        : online.available
+                          ? t("pay.errNoCharge")
+                          : t("pay.errNoChargeCash")}
                   </p>
                   {code === "ACCOUNT_EXISTS" && (
                     <div className="mt-3">
@@ -308,7 +354,7 @@ export default function PaymentStep() {
                       : "btn-primary"
                   )}
                 >
-                  {t("checkout.reserveCash")}
+                  {t(method === "ONLINE" ? "checkout.payOnlineCta" : "checkout.reserveCash")}
                 </button>
                 {blocked && (
                   <p id="consent-required" className="text-sm text-ink-500">

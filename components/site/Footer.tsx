@@ -5,18 +5,14 @@ import Link from "next/link";
 import Brand from "./Brand";
 import { dial, officeLines, officeTitle, useSiteContact, waLink } from "@/lib/contact";
 import { VERTICAL_NAV } from "./Header";
-import { ONLINE_PAYMENTS_ENABLED } from "@/typescript/interface/domain.interface";
+import { useOnlinePayment } from "@/lib/payments";
 
 /**
- * §9.1 — the rails that actually matter in this market, named plainly.
- * Cash-only mode names cash and nothing else.
+ * §9.1 — how one can pay, named plainly. Online it is MaxiCash's page, which
+ * takes cards and mobile money: named as it does, not as a list of brands this
+ * site cannot vouch for. With online payment off, cash and nothing else.
  */
-const PAYMENT_METHODS = [
-  ...(ONLINE_PAYMENTS_ENABLED
-    ? ["M-Pesa", "Orange Money", "Airtel Money", "Afrimoney", "Visa", "Mastercard"]
-    : []),
-  "Espèces"
-];
+const ONLINE_METHODS = ["MaxiCash", "Carte bancaire", "Mobile money"];
 
 export default function Footer() {
   const contact = useSiteContact();
@@ -25,6 +21,7 @@ export default function Footer() {
   const footer = useSiteFooter();
   const notice = usePolicyNotice();
   const { t, locale, lowData, setLowData } = usePrefs();
+  const paymentMethods = [...(useOnlinePayment().offered ? ONLINE_METHODS : []), "Espèces"];
 
   /*
    * `wash-dark` rather than flat brand-900: it is the treatment the hero and
@@ -209,7 +206,7 @@ export default function Footer() {
             <span className="eyebrow w-full text-white/60 sm:mr-1 sm:w-auto">
               {t("footer.payments")}
             </span>
-            {PAYMENT_METHODS.map((p) => (
+            {paymentMethods.map((p) => (
               <span
                 key={p}
                 className="rounded-lg bg-white/8 px-2.5 py-1.5 text-xs font-semibold text-white/85 ring-1 ring-white/15 ring-inset"

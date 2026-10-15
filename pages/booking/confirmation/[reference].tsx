@@ -6,6 +6,7 @@ import {
 } from "@/components/account/order";
 import { SettlementNote } from "@/components/site/bits";
 import Layout from "@/components/site/Layout";
+import { ApiError, startPayment } from "@/lib/api";
 import { useCheckout } from "@/lib/checkout";
 import { fmtDateTime } from "@/lib/format";
 import { useSiteContact } from "@/lib/contact";
@@ -16,6 +17,8 @@ import { Order } from "@/typescript/interface/domain.interface";
 import {
   Banknote,
   CalendarPlus,
+  Clock,
+  CreditCard,
   KeyRound,
   MessageSquare,
   Bike,
@@ -24,7 +27,7 @@ import {
 import Link from "next/link";
 import { BookingConfirmedSpot } from "@/components/art/spots";
 import { useRouter } from "next/router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 /**
  * §11.2 confirmation screen.
@@ -43,7 +46,17 @@ export default function ConfirmationPage() {
 
   const reference = String(router.query.reference ?? "");
   /** Read from the server, so this page shows the real order, not a local echo. */
-  const { data: fetched, isPending, isError } = useOrder(router.isReady ? reference : undefined);
+  const {
+    data: fetched,
+    isPending,
+    isError,
+    refetch
+  } = useOrder(router.isReady ? reference : undefined);
+  /** "Pay now" / "pay in cash instead" on an online order that is not paid yet. */
+  const [paying, setPaying] = useState<"ONLINE" | "CASH" | null>(null);
+  const [payError, setPayError] = useState<string | null>(null);
+  /** The server answered "being confirmed" to a press of Pay now. */
+  const [awaited, setAwaited] = useState(false);
   const order: Order | null | undefined = isPending ? undefined : isError ? null : fetched;
 
   // From the order itself — the number the customer actually booked with,
@@ -84,10 +97,52 @@ export default function ConfirmationPage() {
   }
 
   const isCash = order.paymentMethod === "CASH";
+  /**
+   * An online order is "confirmed" once it is paid, and only the server says
+   * when that is. Until then it is a booking that has been registered — said
+   * as plainly as for a cash one — with where its payment stands just below.
+   */
+  const paid = order.paymentStatus === "PAID";
+  const unsettled = !isCash && !paid && order.status !== "CANCELLED";
+  // Back from MaxiCash's page with its word awaited: nothing to do but wait.
+  // Otherwise the customer never finished there (or was declined) and can
+  // still pay — online again, or in cash.
+  const confirming = unsettled && (order.paymentAwaited === true || awaited);
+  const registered = isCash || !paid;
+
+  async function settle(how: "ONLINE" | "CASH") {
+    setPayError(null);
+    setPaying(how);
+    try {
+      const result = await startPayment(order!.reference, how, locale);
+      if (result.status === "REDIRECT") {
+        // Full navigation: this leaves our origin for MaxiCash's page.
+        window.location.assign(result.paymentUrl);
+        return;
+      }
+    } catch (err) {
+      const code = err instanceof ApiError ? err.code : undefined;
+      if (code === "PAYMENT_BEING_CONFIRMED") setAwaited(true);
+      // Being confirmed, or just cancelled: the order read again says which.
+      if (code !== "PAYMENT_BEING_CONFIRMED" && code !== "ORDER_CANCELLED") {
+        setPayError(
+          code === "PROVIDER_ERROR"
+            ? t("pay.errProvider")
+            : code === "PROVIDER_UNREACHABLE"
+              ? t("pay.errUnreachable")
+              : code === "CASH_ONLY" || code === "PAYMENT_UNAVAILABLE"
+                ? t("pay.errUnavailable")
+                : t("pay.errGeneric")
+        );
+      }
+    }
+    await refetch();
+    setPaying(null);
+  }
 
   return (
     <Layout
-      title={isCash ? t("confirm.titleCash") : t("confirm.title")}
+      title={registered ? t("confirm.titleCash") : t("confirm.title")}
       description=""
       noindex
     >
@@ -95,12 +150,15 @@ export default function ConfirmationPage() {
         <div className="rounded-card bg-ok-100 p-6 ring-1 ring-ok-600/20 ring-inset text-center">
           <BookingConfirmedSpot className="mx-auto mb-2 w-full max-w-[200px] text-brand-900" />
           <h1 className="display text-2xl text-brand-900">
-            {isCash ? t("confirm.titleCash") : t("confirm.title")}
+            {registered ? t("confirm.titleCash") : t("confirm.title")}
           </h1>
           <p className="mt-2 text-[15px] text-ink-700">
             {/* §10.7: the number is masked even back to its owner — the last
                 three digits are enough to confirm we used the right one. */}
-            {t("confirm.body", { phone: phone ?? "—" })}
+            {/* An online order gets its SMS when it is paid, not before. */}
+            {t(unsettled ? "confirm.bodyOnlineWaiting" : "confirm.body", {
+              phone: phone ?? "—"
+            })}
           </p>
           <p className="mt-4 text-sm font-semibold uppercase tracking-wide text-ink-500">
             {t("confirm.reference")}
@@ -116,7 +174,9 @@ export default function ConfirmationPage() {
             office address and a "bring the reference in" deadline to someone
             waiting for a driver is the wrong instruction on the one screen
             that exists to give the right one. */}
-        {order.delivery && (
+        {/* Not for a meal whose online payment is still open: "on its way" is
+            said once it is paid for, or to be paid to the driver. */}
+        {order.delivery && !unsettled && (
           <div className="mt-6 rounded-card bg-brand-50 p-6 ring-1 ring-brand-100 ring-inset">
             <h2 className="flex items-center gap-2 text-lg font-bold text-brand-900">
               <Bike className="size-5 text-brand-500" />
@@ -138,6 +198,57 @@ export default function ConfirmationPage() {
                   ? "Payez le livreur en espèces à la réception de la commande."
                   : "Pay the driver in cash when the food arrives."}
               </p>
+            )}
+          </div>
+        )}
+
+        {/* An online order that is not paid yet: where its payment stands, and
+            — when the customer never finished on MaxiCash's page — the two
+            ways on from here. Never "paid" before the server says so. */}
+        {unsettled && (
+          <div className="mt-6 rounded-card bg-warn-100 p-6 ring-2 ring-warn-600/30 ring-inset">
+            <h2 className="flex items-center gap-2 text-lg font-bold text-brand-900">
+              {confirming ? (
+                <Clock className="size-5 text-warn-600" />
+              ) : (
+                <CreditCard className="size-5 text-warn-600" />
+              )}
+              {t(confirming ? "confirm.onlinePendingTitle" : "confirm.onlineUnpaidTitle")}
+            </h2>
+            <p className="mt-2 text-[15px] text-ink-900">
+              {confirming
+                ? t("payReturn.confirmingBody")
+                : t("confirm.onlineUnpaidBody", {
+                    deadline: order.cashDeadline ? fmtDateTime(order.cashDeadline, locale) : "—"
+                  })}
+            </p>
+            {payError && (
+              <p role="alert" className="mt-3 text-sm font-semibold text-bad-600">
+                {payError}
+              </p>
+            )}
+            {/* Not while a payment is being confirmed: paying again, or
+                switching to cash, would ask for money that may already have
+                been taken. */}
+            {!confirming && (
+              <div className="mt-4 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  disabled={paying !== null}
+                  onClick={() => void settle("ONLINE")}
+                  className="btn btn-md btn-primary"
+                >
+                  {paying === "ONLINE" ? t("checkout.waitingOnline") : t("confirm.payNow")}
+                </button>
+                <button
+                  type="button"
+                  disabled={paying !== null}
+                  onClick={() => void settle("CASH")}
+                  className="btn btn-md btn-outline"
+                >
+                  {t("payReturn.payCash")}
+                </button>
+              </div>
             )}
           </div>
         )}
@@ -180,12 +291,16 @@ export default function ConfirmationPage() {
         <div className="mt-6 surface p-6">
           <h2 className="mb-3 text-lg font-bold text-brand-900">{t("confirm.next")}</h2>
           <ul className="space-y-3 text-[15px] text-ink-700">
-            <li className="flex gap-3">
-              <MessageSquare className="mt-0.5 size-5 shrink-0 text-brand-500" />
-              {locale === "fr"
-                ? "Une confirmation vous a été envoyée avec la référence et les conditions."
-                : "A confirmation with the reference and conditions has been sent."}
-            </li>
+            {/* Sent when a cash booking is filed and when an online one is
+                paid — not for an online booking still waiting on its payment. */}
+            {!unsettled && (
+              <li className="flex gap-3">
+                <MessageSquare className="mt-0.5 size-5 shrink-0 text-brand-500" />
+                {locale === "fr"
+                  ? "Une confirmation vous a été envoyée avec la référence et les conditions."
+                  : "A confirmation with the reference and conditions has been sent."}
+              </li>
+            )}
             <li className="flex gap-3">
               <CalendarPlus className="mt-0.5 size-5 shrink-0 text-brand-500" />
               {locale === "fr"

@@ -2,6 +2,8 @@
 
 > **Update:** all web/admin/backend findings are fixed and re-verified (api.core 16/16, api.destructive 6/6, 360 px overflow 7/7, 0 type errors), online payments are permanently disabled (cash only, verified live and on-device), and the mobile app had its own fix pass plus a real-device run on an iOS simulator (4 Maestro flows passing; one High sign-out bug found and fixed on the spot). Details, device results and remaining human actions in [FIXES.md](FIXES.md).
 
+> **Later (2026-10-13):** online payment was brought back, through MaxiCash, behind a switch on the backend (`ONLINE_PAYMENTS_ENABLED`, off by default). Where this file and FIXES.md say it is "permanently disabled" or "a compiled `false`", that was the state on the audit date.
+
 Audit date: 2026-10-02 · Auditor: automated QA pass (Playwright + direct API probes + full code review of all four repos).
 
 ## Totals

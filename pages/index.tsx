@@ -20,6 +20,7 @@ import {
 import { cityImage } from "@/lib/catalog";
 import { mediaUrl } from "@/lib/media";
 import { dial, useSiteContact } from "@/lib/contact";
+import { useOnlinePayment } from "@/lib/payments";
 import { usePrefs } from "@/lib/prefs";
 import { siteText } from "@/lib/siteContent";
 import { Hotel, Listing } from "@/typescript/interface/domain.interface";
@@ -115,10 +116,12 @@ export default function Home({ deals, hotels, properties, heroImage, hero, desti
   const heroTitle = siteText(hero?.heroTitle, locale, t("home.heroTitle"));
   const heroSubtitle = siteText(hero?.heroSubtitle, locale, t("home.heroSubtitle"));
   const l = locale === "en" ? "en" : "fr";
+  // "Pay in cash" until the server says online payment is on.
+  const payOnline = useOnlinePayment().offered ? "Online" : "";
 
   const why = [
     { Icon: BadgeCheck, title: "home.why1Title", body: "home.why1Body" },
-    { Icon: Banknote, title: "home.why2Title", body: "home.why2Body" },
+    { Icon: Banknote, title: `home.why2Title${payOnline}`, body: `home.why2Body${payOnline}` },
     { Icon: Receipt, title: "home.why3Title", body: "home.why3Body" },
     { Icon: Headphones, title: "home.why4Title", body: "home.why4Body" }
   ];

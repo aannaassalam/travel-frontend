@@ -2,10 +2,8 @@ import {
   Currency,
   Money,
   Locale,
-  ONLINE_PAYMENTS_ENABLED,
   Order,
   PaymentMethod,
-  PaymentRail,
   Traveller,
   Vertical
 } from "@/typescript/interface/domain.interface";
@@ -66,9 +64,13 @@ interface CheckoutState {
   /** What that tick was agreement to: the policy version on screen. A tick
    *  restored from storage counts only while that version is still the one shown. */
   consentFor?: string;
+  /**
+   * What the customer chose on the payment step. Kept, like the rest, so a
+   * reload does not quietly put it back to cash — and read there only together
+   * with what the server offers now (`useOnlinePayment`): a choice of "online"
+   * restored after online payment was switched off is a cash booking.
+   */
   paymentMethod: PaymentMethod;
-  paymentRail: PaymentRail;
-  mobileOperator: string;
 }
 
 const EMPTY: CheckoutState = {
@@ -77,19 +79,10 @@ const EMPTY: CheckoutState = {
   travellers: [],
   contact: null,
   consentAccepted: false,
-  paymentMethod: ONLINE_PAYMENTS_ENABLED ? "ONLINE" : "CASH",
-  paymentRail: ONLINE_PAYMENTS_ENABLED ? "MOBILE_MONEY" : "CASH",
-  mobileOperator: "M-Pesa"
+  // Cash until the customer says otherwise: it is the one way to pay that is
+  // always there.
+  paymentMethod: "CASH"
 };
-
-/**
- * Cash-only mode: the state can hold CASH and nothing else. Applied to what
- * comes back from sessionStorage too — a visitor who picked mobile money before
- * the switch went off would otherwise return with no option selected and an
- * online rail ready to submit.
- */
-const cashOnly = (s: CheckoutState): CheckoutState =>
-  ONLINE_PAYMENTS_ENABLED ? s : { ...s, paymentMethod: "CASH", paymentRail: "CASH" };
 
 /** §4.5(4). Minutes. */
 export const HOLD_MINUTES_ONLINE = 15;
@@ -107,6 +100,7 @@ type Ctx = CheckoutState & {
     currency: Currency;
     locale: Locale;
     policyVersionId?: string;
+    paymentMethod?: PaymentMethod;
   }) => Promise<Order>;
   /**
    * Abandons the current attempt and takes a fresh hold, keeping the basket.
@@ -133,7 +127,7 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem(KEY);
-      if (raw) setState(cashOnly({ ...EMPTY, ...JSON.parse(raw) }));
+      if (raw) setState({ ...EMPTY, ...JSON.parse(raw) });
     } catch {
       /* ignore */
     }
@@ -194,7 +188,7 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
   const update = useCallback(
     (patch: Partial<CheckoutState>) => {
       setState((prev) => {
-        const next = cashOnly({ ...prev, ...patch });
+        const next = { ...prev, ...patch };
         try {
           sessionStorage.setItem(KEY, JSON.stringify(next));
         } catch {
@@ -265,11 +259,14 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
     async ({
       currency,
       locale,
-      policyVersionId
+      policyVersionId,
+      paymentMethod = "CASH"
     }: {
       currency: Currency;
       locale: Locale;
       policyVersionId?: string;
+      /** ONLINE only where the server offers it for this currency. */
+      paymentMethod?: PaymentMethod;
     }): Promise<Order> => {
       if (!sel || !state.contact) {
         throw new Error("confirm() called before a selection and contact exist");
@@ -329,8 +326,9 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
               ? t.documentType ?? "PASSPORT"
               : t.documentType
           })),
-        // Cash only: the server answers 400 CASH_ONLY to anything else.
-        paymentMethod: "CASH" as const,
+        // An attempt replayed with another method gets its first order back:
+        // the payment step then says how THAT order is to be paid.
+        paymentMethod,
         currency,
         locale,
         policyVersionId

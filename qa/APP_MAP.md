@@ -9,7 +9,7 @@ Factual map built from code reading on 2026-10-02. Four codebases:
 | `travel-backend` | Node/Express, Mongoose (MongoDB Atlas), node-cron | http://localhost:3001 (`/api/v1`, `/admin/v1`) |
 | `travel-application` | React Native 0.86 CLI, React Navigation 7, TanStack Query 5 | — (no emulator in this audit) |
 
-Payments: cash by default. MaxiCash online rail exists but `ONLINE_PAYMENTS_ENABLED` is false in both backend and frontend. Stripe/Razorpay/msg91 are installed but unused.
+Payments: cash by default. Online payment through MaxiCash (its "Pay Entry Web" flow) is offered when the backend's `ONLINE_PAYMENTS_ENABLED=true` and the `MAXICASH_*` settings are in place — the website and the app ask `GET /payments/options` and carry no switch of their own (since 2026-10-13). Stripe/Razorpay/msg91 are installed but unused.
 
 ---
 
