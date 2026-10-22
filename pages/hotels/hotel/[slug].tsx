@@ -12,7 +12,6 @@ import {
   PolicyLine,
   Price,
   RatingBadge,
-  Scarcity,
   SettlementNote,
   Stars
 } from "@/components/site/bits";
@@ -97,15 +96,11 @@ export default function HotelDetail({ hotel: initialHotel, others }: Props) {
   const nights = nightsBetween(from, to);
 
   /**
-   * Re-price for the nights the customer actually chose.
+   * Re-read the rooms once the customer has picked dates.
    *
-   * The page is statically generated without dates, so `initialHotel` carries
-   * the cheapest rate on record and the full allotment — a fair thing to show
-   * someone who has not picked dates yet, and wrong the moment they do.
-   * `getStaticProps` always said the page "refetches for the visitor's actual
-   * nights once they pick them"; this is that refetch, which had never been
-   * written. Until now, changing the dates moved the labels and left the
-   * prices and availability untouched.
+   * A room costs the same every night, but the page is statically generated
+   * and may be minutes old: this is the live price — and the live CDF and EUR,
+   * which follow the office's exchange rates — before anyone books on it.
    *
    * `placeholderData` keeps the previous rooms on screen while the new ones
    * load, so the list does not collapse to a spinner on every date tweak.
@@ -140,8 +135,7 @@ export default function HotelDetail({ hotel: initialHotel, others }: Props) {
       roomTypeId: room.id,
       startDate: from,
       endDate: to,
-      adults,
-      available: room.available
+      adults
     });
     router.push("/booking/travellers");
   }
@@ -300,7 +294,7 @@ export default function HotelDetail({ hotel: initialHotel, others }: Props) {
                     ariaLabel={t("search.rooms")}
                     value={String(rooms)}
                     onValueChange={(v) => setRooms(Number(v))}
-                    options={[1, 2, 3].map((n) => ({ value: String(n), label: String(n) }))}
+                    options={Array.from({ length: 9 }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }))}
                     triggerClassName="w-full justify-between rounded-xl px-4 py-3 text-base shadow-xs"
                   />
                 </label>
@@ -328,7 +322,9 @@ export default function HotelDetail({ hotel: initialHotel, others }: Props) {
               >
                 {hotel.roomTypes.map((room) => {
                   const total = multiply(room.sellPrice, nights * rooms);
-                  const soldOut = room.available <= 0;
+                  // Rooms are not counted: one without a price is the only one
+                  // that cannot be booked.
+                  const soldOut = !(room.sellPrice?.USD && room.sellPrice.USD > 0);
                   return (
                     <li
                       key={room.id}
@@ -374,9 +370,6 @@ export default function HotelDetail({ hotel: initialHotel, others }: Props) {
                               <SettlementNote money={total} />
                             </>
                           )}
-                        </div>
-                        <div className="sm:self-end">
-                          <Scarcity available={room.available} noun="room" />
                         </div>
                         <button
                           type="button"

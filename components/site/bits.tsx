@@ -122,10 +122,12 @@ export function Scarcity({
   available,
   noun = "unit"
 }: {
-  available: number;
+  /** Absent when the stock is not counted (rooms, bus and flight seats): nothing to say. */
+  available?: number;
   noun?: "seat" | "room" | "unit";
 }) {
   const { t } = usePrefs();
+  if (available === undefined) return null;
   if (available <= 0) {
     return (
       <span className="inline-flex shrink-0 items-center rounded-md bg-ink-50 px-2 py-1 text-[11px] font-bold whitespace-nowrap uppercase tracking-wide text-ink-500 ring-1 ring-ink-100 ring-inset">

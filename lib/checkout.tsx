@@ -1,14 +1,17 @@
 import {
+  Baggage,
   Currency,
   Money,
   Locale,
   Order,
+  Passengers,
   PaymentMethod,
   Traveller,
   Vertical
 } from "@/typescript/interface/domain.interface";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { multiply } from "./money";
+import { Fares, passengerCount, routeTotal } from "./routes";
 import { rememberOrderRef } from "./store";
 import { ApiError, createOrder } from "./api";
 
@@ -39,12 +42,21 @@ export interface CheckoutSelection {
   units: number;
   unitNoun: "night" | "day" | "person" | "unit";
   roomTypeId?: string;
+  /** For a bus or flight, the departure chosen: "YYYY-MM-DDTHH:MM". */
   startDate?: string;
   endDate?: string;
   adults?: number;
   children?: number;
-  /** How many stock units remain — drives the honest scarcity line. */
-  available: number;
+  /**
+   * A bus or flight: seats by fare, each fare's price, and (flights) the
+   * baggage declared. The total is each fare times its passengers, not one
+   * unit price times a quantity.
+   */
+  passengers?: Passengers;
+  fares?: Fares;
+  baggage?: Baggage;
+  /** How many stock units remain — drives the honest scarcity line. Absent when not counted. */
+  available?: number;
 }
 
 export interface ContactDetails {
@@ -176,8 +188,16 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
         holdExpiresAt: new Date(
           Date.now() + HOLD_MINUTES_ONLINE * 60_000
         ).toISOString(),
+        // One per seat: every passenger of a bus or flight, babies included.
         travellers: Array.from(
-          { length: Math.max(1, selection.adults ?? selection.quantity) },
+          {
+            length: Math.max(
+              1,
+              selection.passengers
+                ? passengerCount(selection.passengers)
+                : (selection.adults ?? selection.quantity)
+            )
+          },
           () => ({ firstName: "", lastName: "" })
         )
       });
@@ -231,7 +251,12 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
   // times the quantity — never the USD total converted after the fact.
   // Memoised because `confirm()` closes over it.
   const subtotal: Money = useMemo(
-    () => (sel ? multiply(sel.unitPrice, sel.quantity * sel.units) : { USD: 0 }),
+    () =>
+      !sel
+        ? { USD: 0 }
+        : sel.passengers && sel.fares
+          ? routeTotal(sel.fares, sel.passengers)
+          : multiply(sel.unitPrice, sel.quantity * sel.units),
     [sel]
   );
   /**
@@ -302,7 +327,9 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
             roomTypeId: sel.roomTypeId,
             startDate: sel.startDate,
             endDate: sel.endDate,
-            quantity: sel.quantity
+            quantity: sel.quantity,
+            passengers: sel.passengers,
+            baggage: sel.baggage
           }
         ],
         contact: {

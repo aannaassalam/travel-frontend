@@ -30,8 +30,8 @@ export default function FlightsPage({ facets }: Props) {
       title={locale === "fr" ? "Vols intérieurs en RDC" : "Domestic flights in the DRC"}
       description={
         locale === "fr"
-          ? "Offres de vols achetées à l'avance entre Kinshasa, Lubumbashi, Goma, Bukavu et Kisangani. Places réelles, prix fermes, paiement en espèces à notre agence."
-          : "Flight offers bought in advance between Kinshasa, Lubumbashi, Goma, Bukavu and Kisangani. Real seats, firm prices, pay in cash at our office."
+          ? "Vols entre Kinshasa, Lubumbashi, Goma, Bukavu et Kisangani : choisissez votre date et l'heure du vol. Tarifs adulte, enfant et bébé, paiement à notre agence."
+          : "Flights between Kinshasa, Lubumbashi, Goma, Bukavu and Kisangani: choose your date and flight time. Adult, child and baby fares, pay at our office."
       }
       priceRange={bounds(facets, "FLIGHT")}
       filters={[
@@ -42,15 +42,6 @@ export default function FlightsPage({ facets }: Props) {
           options: [
             { value: "ECONOMY", label: t("cabin.ECONOMY") },
             { value: "BUSINESS", label: t("cabin.BUSINESS") }
-          ]
-        },
-        {
-          key: "tripType",
-          label: t("search.tripType"),
-          type: "radio",
-          options: [
-            { value: "ONE_WAY", label: t("search.oneWay") },
-            { value: "RETURN", label: t("search.return") }
           ]
         },
         {

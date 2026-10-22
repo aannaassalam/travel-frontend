@@ -137,6 +137,10 @@ export default function PaymentStep() {
         PROVIDER_UNREACHABLE: t("pay.errUnreachable"),
         CURRENCY_UNSUPPORTED: t("pay.errOnlineCurrency"),
         AMOUNT_BELOW_MINIMUM: t("pay.errTooSmall"),
+        // A bus or flight line the server would not price as chosen.
+        DEPARTURE_UNAVAILABLE: t("route.errDeparture"),
+        INVALID_PASSENGERS: t("route.errPassengers"),
+        BAGGAGE_REQUIRED: t("route.errBaggage"),
         PAYMENT_BEING_CONFIRMED: t("payReturn.confirmingTitle"),
         RAIL_INVALID: t("pay.errGeneric")
       };

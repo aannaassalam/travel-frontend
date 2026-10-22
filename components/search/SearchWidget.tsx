@@ -127,7 +127,6 @@ export default function SearchWidget({
   const { t, locale } = usePrefs();
   const router = useRouter();
   const [vertical, setVertical] = useState<Vertical>(initialVertical);
-  const [tripType, setTripType] = useState(initial.tripType || "RETURN");
   const [form, setForm] = useState<Record<string, string>>({
     origin: initial.origin ?? "",
     destination: initial.destination ?? "",
@@ -174,7 +173,8 @@ export default function SearchWidget({
     e.preventDefault();
     // §8: only allow-listed params travel in the URL. No raw filter DSL.
     const allowed: Record<Vertical, string[]> = {
-      FLIGHT: ["origin", "destination", "from", "to", "adults", "cabin"],
+      // A flight is booked one way, on one day: a return is a second booking.
+      FLIGHT: ["origin", "destination", "from", "adults", "cabin"],
       HOTEL: ["destination", "from", "to", "adults", "children", "rooms"],
       BUS: ["origin", "destination", "from", "adults"],
       CAR: ["destination", "from", "to", "withDriver"],
@@ -187,7 +187,6 @@ export default function SearchWidget({
     for (const key of allowed[vertical]) {
       if (form[key]) params.set(key, form[key]);
     }
-    if (vertical === "FLIGHT") params.set("tripType", tripType);
     /**
      * Somewhere we do not service is still a real customer with real intent.
      * Rather than refusing the search or dumping them on an empty results page
@@ -305,38 +304,6 @@ export default function SearchWidget({
             showTabs && "rounded-tl-none"
           )}
         >
-          {vertical === "FLIGHT" && (
-            <fieldset className="flex flex-wrap items-center gap-4 px-2 pb-2 pt-1">
-              <legend className="sr-only">{t("search.tripType")}</legend>
-              {[
-                ["RETURN", "search.return"],
-                ["ONE_WAY", "search.oneWay"],
-                ["MULTI_CITY", "search.multiCity"]
-              ].map(([value, label]) => (
-                <label key={value} className="flex cursor-pointer items-center gap-2 text-sm font-medium text-ink-700">
-                  <input
-                    type="radio"
-                    name="tripType"
-                    value={value}
-                    checked={tripType === value}
-                    onChange={() => setTripType(value)}
-                    className="size-4 accent-brand-500"
-                  />
-                  {t(label)}
-                </label>
-              ))}
-              {tripType === "MULTI_CITY" && (
-                // §1.2: multi-city launches as archetype B only. Saying so here
-                // is cheaper than a search that always returns nothing.
-                <span className="text-xs text-ink-500">
-                  {locale === "fr"
-                    ? "Multi-destinations : traité sur demande, nous vous recontactons avec un prix ferme."
-                    : "Multi-city is handled on request; we come back with a firm price."}
-                </span>
-              )}
-            </fieldset>
-          )}
-
           <div className="flex flex-col gap-1.5 md:flex-row">
             {(vertical === "FLIGHT" || vertical === "BUS") && (
               <>
@@ -418,20 +385,13 @@ export default function SearchWidget({
               </Field>
             )}
 
-            {((vertical === "FLIGHT" && tripType === "RETURN") ||
-              vertical === "HOTEL" ||
-              vertical === "CAR") && (
+            {(vertical === "HOTEL" || vertical === "CAR") && (
               <Field
                 as="div"
                 className="cursor-text"
                 label={
-                  vertical === "HOTEL"
-                    ? t("search.checkout")
-                    : vertical === "CAR"
-                      ? // "Restitution" is the right word for handing a vehicle
-                        // back, and the wrong one for a return flight.
-                        t("search.returnDate")
-                      : t("search.returnFlight")
+                  // "Restitution" is the right word for handing a vehicle back.
+                  vertical === "HOTEL" ? t("search.checkout") : t("search.returnDate")
                 }
               >
                 <DatePicker

@@ -2,9 +2,10 @@ import { NoImageSpot } from "@/components/art/spots";
 import { Price, PolicyChip, RatingBadge, Scarcity, Stars, hasPrice } from "@/components/site/bits";
 import { detailHref, hotelHref } from "@/lib/catalog";
 import { mediaUrl } from "@/lib/media";
-import { durationBetween, fmtDate, fmtTime, formatMinutes } from "@/lib/format";
+import { fmtDateLong, formatMinutes } from "@/lib/format";
 import { facetLabel } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
+import { arrivalOf, bookableTimesOn, timetableSummary } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 import { Hotel, Listing, Money } from "@/typescript/interface/domain.interface";
 import {
@@ -21,6 +22,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { useState } from "react";
 
 /** Per-vertical chip tint. Amber stays reserved for calls to action. */
@@ -127,12 +129,13 @@ function PriceRail({
   suffix?: string;
   href: string;
   cta: string;
-  available: number;
+  /** Absent when the stock is not counted: never sold out. */
+  available?: number;
   noun?: "seat" | "room" | "unit";
   soldOutCta?: string;
 }) {
   const { t } = usePrefs();
-  const soldOut = available <= 0;
+  const soldOut = available !== undefined && available <= 0;
   return (
     <div className="flex shrink-0 flex-col justify-end gap-3 bg-ink-50/60 p-5 sm:w-60 sm:text-right">
       <div className="flex items-center justify-between gap-2 sm:flex-col sm:items-end">
@@ -157,119 +160,94 @@ function PriceRail({
   );
 }
 
-/* --------------------------------------------------------------- flight row */
+/* ------------------------------------------------------- bus and flight row */
 
-export function FlightRow({ listing }: { listing: Listing }) {
+/**
+ * A bus or flight route: the agency, the two ends, and its departures — the
+ * searched day's when the search had a date (the link carries the day on to
+ * the booking box), otherwise its timetable.
+ */
+export function RouteRow({ listing }: { listing: Listing }) {
   const { t, locale, lz } = usePrefs();
-  const segs = listing.attributes.segments ?? [];
-  return (
-    <article className={cn(SHELL, "sm:flex-row")}>
-      <div className="flex min-w-0 flex-1 flex-col gap-3 p-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <VerticalChip vertical="FLIGHT" label={segs[0]?.carrier ?? ""} Icon={Plane} />
-          <span className="rounded bg-ink-50 px-2 py-1 text-xs font-medium text-ink-700">
-            {t(`cabin.${listing.attributes.cabin ?? "ECONOMY"}`)}
-          </span>
-          <span className="rounded bg-ink-50 px-2 py-1 text-xs font-medium text-ink-700">
-            {listing.attributes.tripType === "RETURN"
-              ? t("search.return")
-              : t("search.oneWay")}
-          </span>
-          <PolicyChip />
-        </div>
-
-        <h3 className="text-lg font-bold text-brand-900">
-          <Link href={detailHref(listing)} className="after:absolute after:inset-0 hover:underline">
-            {lz(listing.title)}
-          </Link>
-        </h3>
-
-        <ul className="space-y-2.5">
-          {segs.map((s, i) => (
-            <li key={i} className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-              <span className="font-mono text-base font-bold text-ink-900">
-                {fmtTime(s.departsAt, locale)}
-              </span>
-              <span className="font-semibold text-ink-700">{s.origin}</span>
-              <span className="flex items-center gap-1 text-xs text-ink-500">
-                <span className="h-px w-8 bg-ink-300" />
-                {durationBetween(s.departsAt, s.arrivesAt, locale)}
-                <span className="h-px w-8 bg-ink-300" />
-              </span>
-              <span className="font-mono text-base font-bold text-ink-900">
-                {fmtTime(s.arrivesAt, locale)}
-              </span>
-              <span className="font-semibold text-ink-700">{s.destination}</span>
-              <span className="text-xs text-ink-500">
-                {[fmtDate(s.departsAt, locale), s.flightNumber].filter(Boolean).join(" · ")}
-              </span>
-            </li>
-          ))}
-        </ul>
-
-        {listing.attributes.baggage && (
-          <p className="line-clamp-1 text-xs text-ink-500">{listing.attributes.baggage}</p>
-        )}
-        <p className="sr-only">{lz(listing.description)}</p>
-      </div>
-
-      <PriceRail
-        money={listing.sellPrice}
-        suffix={t("listing.perPerson")}
-        href={detailHref(listing)}
-        cta={t("listing.select")}
-        available={listing.available}
-        noun="seat"
-      />
-    </article>
-  );
-}
-
-/* ------------------------------------------------------------------ bus row */
-
-export function BusRow({ listing }: { listing: Listing }) {
-  const { t, locale, lz } = usePrefs();
+  const router = useRouter();
   const a = listing.attributes;
+  const raw = router.query.from;
+  const day = typeof raw === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : undefined;
+  const times = day ? bookableTimesOn(a, day) : [];
+  const href = `${detailHref(listing)}${day ? `?date=${day}` : ""}`;
+  const isFlight = listing.vertical === "FLIGHT";
+
   return (
     <article className={SHELL}>
       <Thumb src={mediaUrl(listing.images[0])} alt={lz(listing.title)} className="h-44 sm:h-auto sm:w-60" />
       <div className="flex min-w-0 flex-1 flex-col gap-2 p-4">
         <div className="flex flex-wrap items-center gap-2">
-          <VerticalChip vertical="BUS" label={a.operator ?? ""} />
-          <span className="rounded bg-ink-50 px-2 py-1 text-xs font-medium text-ink-700">
-            {a.vehicleClass}
-          </span>
+          <VerticalChip
+            vertical={listing.vertical}
+            label={a.operator ?? ""}
+            Icon={isFlight ? Plane : undefined}
+          />
+          {a.vehicleClass ? (
+            <span className="rounded bg-ink-50 px-2 py-1 text-xs font-medium text-ink-700">
+              {a.vehicleClass}
+            </span>
+          ) : null}
+          {isFlight && a.cabin ? (
+            <span className="rounded bg-ink-50 px-2 py-1 text-xs font-medium text-ink-700">
+              {t(`cabin.${a.cabin}`)}
+            </span>
+          ) : null}
           <PolicyChip />
         </div>
         <h3 className="text-lg font-bold text-brand-900">
-          <Link href={detailHref(listing)} className="after:absolute after:inset-0 hover:underline">
-            {lz(listing.title)}
+          <Link href={href} className="after:absolute after:inset-0 hover:underline">
+            {listing.city} → {a.destination}
           </Link>
         </h3>
-        {a.departsAt && a.arrivesAt && (
-          <p className="flex flex-wrap items-center gap-3 text-sm">
-            <span className="font-mono text-base font-bold">{fmtTime(a.departsAt, locale)}</span>
-            <span className="flex items-center gap-1 text-xs text-ink-500">
-              <Clock className="size-3.5" />
-              {durationBetween(a.departsAt, a.arrivesAt, locale)}
-            </span>
-            <span className="font-mono text-base font-bold">{fmtTime(a.arrivesAt, locale)}</span>
-            <span className="text-xs text-ink-500">{fmtDate(a.departsAt, locale)}</span>
+        {a.durationMinutes ? (
+          <p className="flex items-center gap-1.5 text-sm text-ink-500">
+            <Clock className="size-3.5" />
+            {formatMinutes(a.durationMinutes, locale)}
+          </p>
+        ) : null}
+        {day ? (
+          times.length ? (
+            <div>
+              <p className="mb-1.5 text-xs text-ink-500">{fmtDateLong(`${day}T12:00:00`, locale)}</p>
+              <ul className="flex flex-wrap gap-1.5">
+                {times.map((time) => (
+                  <li
+                    key={time}
+                    className="rounded-md bg-brand-50 px-2.5 py-1 font-mono text-sm font-bold text-brand-900"
+                    title={arrivalOf(time, a.durationMinutes) ? t("route.arrives", { time: arrivalOf(time, a.durationMinutes)! }) : undefined}
+                  >
+                    {time}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p className="text-sm text-ink-500">
+              {t("route.noDeparture")} {timetableSummary(a, locale)}
+            </p>
+          )
+        ) : (
+          <p className="text-sm text-ink-700">
+            <span className="font-semibold">{t("route.times")} :</span> {timetableSummary(a, locale)}
           </p>
         )}
-        {a.routeStops && (
+        {a.routeStops?.length ? (
           <p className="line-clamp-1 text-sm text-ink-500">
             {t("listing.stops")} : {a.routeStops.join(" → ")}
           </p>
-        )}
+        ) : null}
         <RatingBadge rating={listing.rating} count={listing.reviewCount} size="sm" />
       </div>
       <PriceRail
         money={listing.sellPrice}
-        suffix={t("listing.perPerson")}
-        href={detailHref(listing)}
+        suffix={`${t("listing.perPerson")} · ${t("route.adult").toLowerCase()}`}
+        href={href}
         cta={t("listing.select")}
-        available={listing.available}
         noun="seat"
       />
     </article>
@@ -378,11 +356,6 @@ export function ActivityRow({ listing }: { listing: Listing }) {
 
 export function HotelRow({ hotel }: { hotel: Hotel }) {
   const { t, locale, lz } = usePrefs();
-  const cheapest = hotel.roomTypes.reduce(
-    (best, r) => (r.available > 0 && r.sellPrice < best ? r.sellPrice : best),
-    hotel.fromPrice
-  );
-  const available = hotel.roomTypes.reduce((n, r) => n + r.available, 0);
   return (
     <article className={SHELL}>
       <Thumb src={mediaUrl(hotel.images[0])} alt={lz(hotel.name)} className="h-52 sm:h-auto sm:w-64" />
@@ -413,11 +386,10 @@ export function HotelRow({ hotel }: { hotel: Hotel }) {
         </div>
       </div>
       <PriceRail
-        money={cheapest}
+        money={hotel.fromPrice}
         suffix={t("listing.perNight")}
         href={hotelHref(hotel)}
         cta={t("listing.details")}
-        available={available}
         noun="room"
       />
     </article>
@@ -700,9 +672,8 @@ export function DestinationTile({
 export function ResultRow({ listing }: { listing: Listing }) {
   switch (listing.vertical) {
     case "FLIGHT":
-      return <FlightRow listing={listing} />;
     case "BUS":
-      return <BusRow listing={listing} />;
+      return <RouteRow listing={listing} />;
     case "CAR":
       return <CarRow listing={listing} />;
     case "ACTIVITY":

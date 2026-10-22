@@ -23,6 +23,11 @@ export default function TravellersStep() {
   if (!ready || !selection) return null;
 
   const needsDocuments = selection.vertical === "FLIGHT";
+  // A bus or flight seats its passengers by fare, adults first: say which
+  // fare each traveller was booked at, so a child is not named as an adult.
+  const p = selection.passengers;
+  const fareOf = (i: number) =>
+    !p ? "" : i < p.adults ? t("route.adult") : i < p.adults + p.children ? t("route.child") : t("route.infant");
 
   function setTraveller(i: number, patch: Partial<Traveller>) {
     const next = travellers.map((tr, idx) => (idx === i ? { ...tr, ...patch } : tr));
@@ -74,6 +79,7 @@ export default function TravellersStep() {
                       {i === 0
                         ? t("checkout.leadGuest")
                         : t("checkout.traveller", { n: i + 1 })}
+                      {p ? <span className="font-normal text-ink-500"> · {fareOf(i)}</span> : null}
                     </legend>
 
                     <div className="grid gap-4 sm:grid-cols-2">

@@ -31,8 +31,8 @@ export default function BusPage({ facets }: Props) {
       title={locale === "fr" ? "Bus et cars en RDC" : "Buses and coaches in the DRC"}
       description={
         locale === "fr"
-          ? "Places de bus achetées à l'avance sur les grandes liaisons : Kinshasa–Matadi, Kinshasa–Kikwit, Lubumbashi–Kolwezi, Goma–Bukavu."
-          : "Coach seats bought in advance on the main routes: Kinshasa–Matadi, Kinshasa–Kikwit, Lubumbashi–Kolwezi, Goma–Bukavu."
+          ? "Départs tous les jours sur les grandes liaisons : Kinshasa–Matadi, Kinshasa–Kikwit, Lubumbashi–Kolwezi, Goma–Bukavu. Choisissez votre date et l'heure de départ."
+          : "Departures every day on the main routes: Kinshasa–Matadi, Kinshasa–Kikwit, Lubumbashi–Kolwezi, Goma–Bukavu. Choose your date and departure time."
       }
       priceRange={bounds(facets, "BUS")}
       filters={[

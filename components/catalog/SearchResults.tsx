@@ -63,8 +63,6 @@ export default function SearchResults({
       destination: q.destination,
       origin: q.origin,
       cabin: q.cabin,
-      // §1.2: multi-city launches as Request-to-Book, so it is never a filter.
-      tripType: q.tripType === "MULTI_CITY" ? undefined : q.tripType,
       propertyType: q.propertyType,
       operator: q.operator,
       category: q.category,

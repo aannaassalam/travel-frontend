@@ -183,6 +183,10 @@ export interface OrderDraft {
     startDate?: string;
     endDate?: string;
     quantity: number;
+    /** A bus or flight: seats by fare. The server prices each fare. */
+    passengers?: { adults: number; children: number; infants: number };
+    /** Flights: the weights declared, in kg. */
+    baggage?: { cabinKg: number; checkedKg: number };
   }[];
   contact: { firstName: string; lastName: string; phone: string; email?: string };
   /** Restaurant orders only. The server re-reads the zone and its fee — this

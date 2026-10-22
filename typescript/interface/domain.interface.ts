@@ -125,34 +125,31 @@ export type Localized = Partial<Record<Locale, string>>;
 
 /**
  * Prices, per currency, in integer minor units — mirroring the backend Money
- * field. Each currency is an explicit price an administrator typed, NOT a
- * conversion: a converted price drifts with the rate between the moment a
- * customer sees it and the moment they pay, and under a no-refund policy that
- * difference is not something anyone wants to argue about.
- *
- * USD is always present (the reporting base). CDF and EUR are optional; an
- * unset currency simply is not offered at that price.
+ * field. The office enters USD only; the API works out CDF and EUR from its
+ * exchange rates and sends all three, so what is shown is what is charged.
+ * A currency with no rate set is simply absent.
  */
 export type Money = Partial<Record<Currency, number>>;
 
-export interface FlightSegment {
-  carrier: string;
-  flightNumber: string;
-  origin: string;
-  destination: string;
-  departsAt: string;
-  arrivesAt: string;
+/** One flight of a route's week: 0 = Sunday … 6 = Saturday, "HH:MM". */
+export interface WeeklyTime {
+  day: number;
+  time: string;
 }
 
 export interface ListingAttributes {
+  // Bus and flight routes: from the listing's `city` to `destination`, run by
+  // `operator` (the travel agency). A bus leaves at `dailyTimes` every day; a
+  // flight at `weeklyTimes`. The customer picks the date and the time.
+  destination?: string;
+  operator?: string;
+  dailyTimes?: string[];
+  weeklyTimes?: WeeklyTime[];
   // Flights
-  tripType?: "ONE_WAY" | "RETURN" | "MULTI_CITY";
-  segments?: FlightSegment[];
   cabin?: "ECONOMY" | "PREMIUM" | "BUSINESS" | "FIRST";
   baggage?: string;
   fareRules?: string;
   // Bus
-  operator?: string;
   routeStops?: string[];
   vehicleClass?: string;
   // Cars
@@ -214,10 +211,16 @@ export interface Listing {
   images: string[];
   /** The optional video: the stored address of the uploaded file (see lib/media.ts). */
   videoUrl?: string;
-  /** Per-currency minor units. USD always set; others when priced. */
+  /** Per-currency minor units. For a bus or flight, the adult fare (12+). */
   sellPrice: Money;
-  /** quantityTotal − sold − held, computed server-side. */
-  available: number;
+  /** Bus and flight fares for a child of 2 to 12 and a baby under 2. */
+  childPrice?: Money;
+  infantPrice?: Money;
+  /**
+   * quantityTotal − sold − held, computed server-side. Absent for a bus or
+   * flight route: its seats are not counted.
+   */
+  available?: number;
   validFrom?: string;
   validUntil?: string;
   attributes: ListingAttributes;
@@ -260,11 +263,22 @@ export interface RoomType {
   amenities: string[];
   images: string[];
   mealPlan: MealPlan;
-  /** Nightly price, per currency. */
+  /** Nightly price, per currency — the same every night. Rooms are not counted. */
   sellPrice: Money;
-  /** Nightly allotment still sellable. */
-  available: number;
   sizeSqm?: number;
+}
+
+/** Bus and flight seats by fare. */
+export interface Passengers {
+  adults: number;
+  children: number;
+  infants: number;
+}
+
+/** Flights: what the customer declared they will carry, in kg. */
+export interface Baggage {
+  cabinKg: number;
+  checkedKg: number;
 }
 
 export interface OrderItem {
@@ -274,6 +288,12 @@ export interface OrderItem {
   roomTypeId?: string;
   startDate?: string;
   endDate?: string;
+  /** A bus or flight: the time of the departure chosen, "HH:MM". */
+  departureTime?: string;
+  origin?: string;
+  destination?: string;
+  passengers?: Passengers;
+  baggage?: Baggage;
   quantity: number;
   unitSellPrice: Money;
   lineTotal: Money;

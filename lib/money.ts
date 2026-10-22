@@ -8,14 +8,14 @@ import {
  * §5. Money is integer minor units plus an ISO-4217 code. Never a float, never
  * a price without a currency.
  *
- * The catalogue carries an explicit price per currency (`Money`), typed by the
- * administrator rather than converted at read time — so what the customer sees
- * is what they are charged, and no rate movement can open a gap between the two.
+ * The catalogue carries a price per currency (`Money`). The office enters USD
+ * only; the API works out CDF and EUR from the exchange rates set in the admin
+ * and sends all three, and an order is charged exactly those figures.
  *
- * Conversion still exists, for one job only: a currency the administrator has
- * not priced. That result is marked approximate everywhere it is shown, because
- * presenting a derived number as if it were the charge is exactly the ambiguity
- * §5 warns generates disputes.
+ * Conversion here exists for one job only: a currency the API sent no price in
+ * (no rate set for it). That result is marked approximate everywhere it is
+ * shown, because presenting a derived number as if it were the charge is
+ * exactly the ambiguity §5 warns generates disputes.
  */
 export const MINOR_UNIT_EXPONENT: Record<Currency, number> = {
   USD: 2,
@@ -26,7 +26,7 @@ export const MINOR_UNIT_EXPONENT: Record<Currency, number> = {
   CDF: 0
 };
 
-/** §5: admin-controlled rates, never a live feed. Shape matches GET /api/v1/fx. */
+/** Indicative only: used for the `≈` fallback when the API sent no price in a currency. */
 export const FX_RATES: Record<
   Currency,
   { rate: number; spreadPct: number; effectiveFrom: string }

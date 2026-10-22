@@ -3,6 +3,7 @@ import { ApiError, getPolicy, type Policy } from "@/lib/api";
 import { useCheckout, useCountdown } from "@/lib/checkout";
 import { fmtDate } from "@/lib/format";
 import { mediaUrl } from "@/lib/media";
+import { multiply } from "@/lib/money";
 import { usePrefs } from "@/lib/prefs";
 import { usePolicyNotice } from "@/lib/siteContent";
 import { cn } from "@/lib/utils";
@@ -124,25 +125,59 @@ export function Summary({ children }: { children?: React.ReactNode }) {
             {selection.sublabel && (
               <p className="mt-0.5 text-sm text-ink-500">{selection.sublabel}</p>
             )}
-            {selection.startDate && (
+            {selection.passengers && selection.startDate ? (
+              // A bus or flight: the departure chosen, as timetabled.
+              <p className="mt-1 text-sm text-ink-500">
+                {fmtDate(`${selection.startDate.slice(0, 10)}T12:00:00`, locale)} ·{" "}
+                <strong className="font-semibold text-ink-700">{selection.startDate.slice(11, 16)}</strong>
+              </p>
+            ) : selection.startDate ? (
               <p className="mt-1 text-sm text-ink-500">
                 {fmtDate(selection.startDate, locale)}
                 {selection.endDate ? ` → ${fmtDate(selection.endDate, locale)}` : ""}
               </p>
-            )}
+            ) : null}
+            {selection.baggage ? (
+              <p className="mt-0.5 text-xs text-ink-500">
+                {t("route.cabinKg")} : {selection.baggage.cabinKg} · {t("route.checkedKg")} :{" "}
+                {selection.baggage.checkedKg}
+              </p>
+            ) : null}
           </div>
         </div>
 
         <dl className="space-y-2 p-4 text-sm">
-          <div className="flex justify-between gap-4">
-            <dt className="text-ink-500">
-              <Price money={selection.unitPrice} /> × {selection.quantity} ×{" "}
-              {selection.units} {unitLabel}
-            </dt>
-            <dd className="font-medium">
-              <Price money={subtotal} />
-            </dd>
-          </div>
+          {selection.passengers && selection.fares ? (
+            // Each fare is its own price: one line per kind of passenger.
+            (
+              [
+                [selection.passengers.adults, t("route.adults"), selection.fares.adult],
+                [selection.passengers.children, t("route.children"), selection.fares.child],
+                [selection.passengers.infants, t("route.infants"), selection.fares.infant]
+              ] as const
+            )
+              .filter(([n]) => n > 0)
+              .map(([n, who, fare]) => (
+                <div key={who} className="flex justify-between gap-4">
+                  <dt className="text-ink-500">
+                    {n} × {who} · <Price money={fare} />
+                  </dt>
+                  <dd className="font-medium">
+                    <Price money={multiply(fare, n)} />
+                  </dd>
+                </div>
+              ))
+          ) : (
+            <div className="flex justify-between gap-4">
+              <dt className="text-ink-500">
+                <Price money={selection.unitPrice} /> × {selection.quantity} ×{" "}
+                {selection.units} {unitLabel}
+              </dt>
+              <dd className="font-medium">
+                <Price money={subtotal} />
+              </dd>
+            </div>
+          )}
           <div className="flex justify-between gap-4 border-t border-ink-100/70 pt-3 text-base">
             <dt className="font-bold text-brand-900">{t("checkout.totalDue")}</dt>
             <dd className="font-bold text-brand-900">

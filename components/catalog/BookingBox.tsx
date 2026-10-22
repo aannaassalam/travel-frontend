@@ -3,14 +3,27 @@ import { CheckoutSelection, useCheckout } from "@/lib/checkout";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { mediaUrl } from "@/lib/media";
-import { multiply, nightsBetween } from "@/lib/money";
+import { baseMinor, multiply, nightsBetween } from "@/lib/money";
 import { usePrefs } from "@/lib/prefs";
+import {
+  addDays,
+  arrivalOf,
+  bookableTimesOn,
+  faresOf,
+  isRoute,
+  nextDayWithDepartures,
+  passengerCount,
+  routeTotal,
+  todayIso
+} from "@/lib/routes";
+import { fmtDateLong } from "@/lib/format";
 import { usePolicyNotice } from "@/lib/siteContent";
-import { Listing } from "@/typescript/interface/domain.interface";
-import { ShieldCheck } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Listing, Money, Passengers } from "@/typescript/interface/domain.interface";
+import { Clock, Minus, Plus, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const today = () => new Date().toISOString().slice(0, 10);
 const plusDays = (iso: string, n: number) =>
@@ -24,6 +37,11 @@ const plusDays = (iso: string, n: number) =>
  * would strand capital the client has already spent.
  */
 export default function BookingBox({ listing }: { listing: Listing }) {
+  return isRoute(listing) ? <RouteBookingBox listing={listing} /> : <StockBookingBox listing={listing} />;
+}
+
+/** A car or an activity: a quantity from a counted stock. */
+function StockBookingBox({ listing }: { listing: Listing }) {
   const { t, locale, lz } = usePrefs();
   const notice = usePolicyNotice();
   const router = useRouter();
@@ -42,7 +60,8 @@ export default function BookingBox({ listing }: { listing: Listing }) {
   }
 
   const units = isCar ? nightsBetween(from, to) : 1;
-  const soldOut = listing.available <= 0;
+  const available = listing.available ?? 9;
+  const soldOut = available <= 0;
   // Scale every currency together rather than converting a USD total.
   const total = multiply(listing.sellPrice, quantity * units);
 
@@ -61,10 +80,10 @@ export default function BookingBox({ listing }: { listing: Listing }) {
       quantity,
       units,
       unitNoun,
-      startDate: isCar ? from : listing.attributes.segments?.[0]?.departsAt ?? listing.attributes.departsAt ?? from,
+      startDate: isCar ? from : listing.attributes.departsAt ?? from,
       endDate: isCar ? to : undefined,
       adults: isCar ? undefined : quantity,
-      available: listing.available
+      available
     });
     router.push("/booking/travellers");
   }
@@ -145,7 +164,7 @@ export default function BookingBox({ listing }: { listing: Listing }) {
               }
               value={String(quantity)}
               onValueChange={(v) => setQuantity(Number(v))}
-              options={Array.from({ length: Math.min(9, listing.available) }, (_, i) => ({
+              options={Array.from({ length: Math.min(9, available) }, (_, i) => ({
                 value: String(i + 1),
                 label: `${i + 1} ${t(i === 0 ? "common.person" : "common.people")}`
               }))}
@@ -198,6 +217,316 @@ export default function BookingBox({ listing }: { listing: Listing }) {
           ? "Paiement en espèces à notre agence. Aucun frais caché."
           : "Pay in cash at our office. No hidden fees."}
       </p>
+    </div>
+  );
+}
+
+const DAY_RX = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * A bus or flight: the date, one of that day's departures, the passengers by
+ * fare (adult 12+, child 2–12, baby under 2 — each pays its own price) and,
+ * for a flight, the baggage the airline is told about. The server checks all
+ * of it again against the same timetable.
+ */
+function RouteBookingBox({ listing }: { listing: Listing }) {
+  const { t, locale } = usePrefs();
+  const notice = usePolicyNotice();
+  const router = useRouter();
+  const { start } = useCheckout();
+  const a = listing.attributes;
+  const isFlight = listing.vertical === "FLIGHT";
+  const fares = faresOf(listing);
+
+  // The day starts on the client: a static page cannot know today, and the
+  // searched day arrives in the address only once the router is ready.
+  const [day, setDay] = useState("");
+  useEffect(() => {
+    if (!router.isReady) return;
+    const asked = typeof router.query.date === "string" ? router.query.date : "";
+    const from = DAY_RX.test(asked) && asked >= todayIso() ? asked : todayIso();
+    setDay((current) => current || (nextDayWithDepartures(a, from) ?? from));
+  }, [router.isReady, router.query.date, a]);
+
+  const [time, setTime] = useState("");
+  const [p, setP] = useState<Passengers>({ adults: 1, children: 0, infants: 0 });
+  const [bags, setBags] = useState({ cabinKg: "", checkedKg: "" });
+  const [tried, setTried] = useState(false);
+
+  const times = day ? bookableTimesOn(a, day) : [];
+  const chosen = times.includes(time) ? time : "";
+  const next = day && !times.length ? nextDayWithDepartures(a, addDays(day, 1)) : undefined;
+  const kg = (v: string) => v !== "" && Number(v) >= 0 && Number(v) <= 200;
+  const bagsOk = !isFlight || (kg(bags.cabinKg) && kg(bags.checkedKg));
+  const total = routeTotal(fares, p);
+
+  function book() {
+    setTried(true);
+    if (!day || !chosen || !bagsOk) return;
+    start({
+      vertical: listing.vertical,
+      listingSlug: listing.slug,
+      listingId: listing.id,
+      label: `${listing.city} → ${a.destination ?? ""}`,
+      sublabel: a.operator,
+      image: mediaUrl(listing.images[0]),
+      unitPrice: listing.sellPrice,
+      quantity: passengerCount(p),
+      units: 1,
+      unitNoun: "person",
+      startDate: `${day}T${chosen}`,
+      passengers: p,
+      fares,
+      baggage: isFlight
+        ? { cabinKg: Number(bags.cabinKg), checkedKg: Number(bags.checkedKg) }
+        : undefined
+    });
+    router.push("/booking/travellers");
+  }
+
+  const fareText = (m: Money) => (baseMinor(m) > 0 ? <Price money={m} /> : t("route.free"));
+  const label = "mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500";
+
+  return (
+    <div className="surface p-6">
+      <p className="text-sm text-ink-500">{t("listing.from")}</p>
+      <Price money={listing.sellPrice} className="text-3xl font-bold text-brand-900" />
+      <p className="text-sm text-ink-500">
+        {t("listing.perPerson")} · {t("route.adult").toLowerCase()}
+      </p>
+
+      <div className="mt-4 space-y-4">
+        <label className="block">
+          <span className={label}>{t("route.date")}</span>
+          <DatePicker
+            value={day}
+            onChange={(v) => {
+              setDay(v);
+              setTime("");
+            }}
+            locale={locale}
+            min={todayIso()}
+            placeholder={t("search.date")}
+            triggerClassName="rounded-md border border-ink-100 px-3 py-2.5 focus-within:border-brand-500"
+          />
+        </label>
+
+        <div>
+          <span className={label}>{t("route.time")}</span>
+          {!day ? null : times.length ? (
+            <div role="radiogroup" aria-label={t("route.time")} className="flex flex-wrap gap-2">
+              {times.map((x) => (
+                <button
+                  key={x}
+                  type="button"
+                  role="radio"
+                  aria-checked={chosen === x}
+                  onClick={() => setTime(x)}
+                  className={cn(
+                    "rounded-md px-3 py-2 font-mono text-[15px] font-bold ring-1 ring-inset transition-colors",
+                    chosen === x
+                      ? "bg-brand-900 text-white ring-brand-900"
+                      : "bg-white text-brand-900 ring-ink-100 hover:ring-brand-500"
+                  )}
+                >
+                  {x}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-ink-700">
+              {t("route.noDeparture")}{" "}
+              {next ? (
+                <button
+                  type="button"
+                  className="font-semibold text-brand-500 underline"
+                  onClick={() => {
+                    setDay(next);
+                    setTime("");
+                  }}
+                >
+                  {t("route.nextOn", { date: fmtDateLong(`${next}T12:00:00`, locale) })}
+                </button>
+              ) : null}
+            </p>
+          )}
+          {chosen && arrivalOf(chosen, a.durationMinutes) ? (
+            <p className="mt-2 flex items-center gap-1.5 text-xs text-ink-500">
+              <Clock className="size-3.5" />
+              {t("route.arrives", { time: arrivalOf(chosen, a.durationMinutes)! })}
+            </p>
+          ) : null}
+          {tried && !chosen ? (
+            <p role="alert" className="mt-2 text-sm font-semibold text-bad-600">
+              {t("route.pickTime")}
+            </p>
+          ) : null}
+        </div>
+
+        <div>
+          <span className={label}>{t("search.passengers")}</span>
+          <div className="divide-y divide-ink-100/70 rounded-md ring-1 ring-ink-100 ring-inset">
+            <Counter
+              label={t("route.adults")}
+              hint={t("route.adultsHint")}
+              price={fareText(fares.adult)}
+              value={p.adults}
+              min={1}
+              max={9}
+              onChange={(adults) => setP((x) => ({ ...x, adults, infants: Math.min(x.infants, adults) }))}
+            />
+            <Counter
+              label={t("route.children")}
+              hint={t("route.childrenHint")}
+              price={fareText(fares.child)}
+              value={p.children}
+              min={0}
+              max={9}
+              onChange={(children) => setP((x) => ({ ...x, children }))}
+            />
+            <Counter
+              label={t("route.infants")}
+              hint={t("route.infantsHint")}
+              price={fareText(fares.infant)}
+              value={p.infants}
+              min={0}
+              max={p.adults}
+              onChange={(infants) => setP((x) => ({ ...x, infants }))}
+            />
+          </div>
+          {p.infants >= p.adults ? (
+            <p className="mt-1.5 text-xs text-ink-500">{t("route.infantsLimit")}</p>
+          ) : null}
+        </div>
+
+        {isFlight ? (
+          <div>
+            <span className={label}>{t("route.baggage")}</span>
+            <div className="grid grid-cols-2 gap-3">
+              {(
+                [
+                  ["cabinKg", t("route.cabinKg")],
+                  ["checkedKg", t("route.checkedKg")]
+                ] as const
+              ).map(([key, text]) => (
+                <label key={key} className="block">
+                  <span className="mb-1 block text-xs text-ink-700">{text}</span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    max={200}
+                    step="0.5"
+                    value={bags[key]}
+                    onChange={(e) => setBags((b) => ({ ...b, [key]: e.target.value }))}
+                    aria-invalid={tried && !kg(bags[key])}
+                    className="w-full rounded-md border border-ink-100 px-3 py-2.5 text-[15px] focus:border-brand-500 focus:outline-none"
+                  />
+                </label>
+              ))}
+            </div>
+            <p className={cn("mt-1.5 text-xs", tried && !bagsOk ? "font-semibold text-bad-600" : "text-ink-500")}>
+              {tried && !bagsOk ? t("route.baggageRequired") : t("route.baggageHint")}
+            </p>
+          </div>
+        ) : null}
+      </div>
+
+      <dl className="mt-4 space-y-1.5 border-t border-ink-100/70 pt-4 text-sm">
+        {(
+          [
+            [p.adults, t("route.adults"), fares.adult],
+            [p.children, t("route.children"), fares.child],
+            [p.infants, t("route.infants"), fares.infant]
+          ] as const
+        )
+          .filter(([n]) => n > 0)
+          .map(([n, who, fare]) => (
+            <div key={who} className="flex justify-between">
+              <dt className="text-ink-500">
+                {n} × {who} · {fareText(fare)}
+              </dt>
+              <dd className="font-medium">
+                <Price money={multiply(fare, n)} />
+              </dd>
+            </div>
+          ))}
+        <div className="flex justify-between text-base font-bold text-brand-900">
+          <dt>{t("checkout.totalDue")}</dt>
+          <dd>
+            <Price money={total} />
+          </dd>
+        </div>
+        <SettlementNote money={total} />
+      </dl>
+
+      <button type="button" onClick={book} className="btn btn-lg btn-primary mt-4 w-full">
+        {t("listing.book")}
+      </button>
+
+      <p className="mt-3 flex gap-2 text-xs leading-relaxed text-ink-700">
+        <ShieldCheck className="mt-0.5 size-4 shrink-0 text-brand-500" />
+        <span>
+          <strong className="font-semibold">{t("policy.title")}</strong> — {notice}{" "}
+          <Link href="/terms#no-refund" className="text-brand-500 underline">
+            {t("policy.readFull")}
+          </Link>
+        </span>
+      </p>
+    </div>
+  );
+}
+
+/** One fare's passengers: a label, its price, and − / +. */
+function Counter({
+  label,
+  hint,
+  price,
+  value,
+  min,
+  max,
+  onChange
+}: {
+  label: string;
+  hint: string;
+  price: React.ReactNode;
+  value: number;
+  min: number;
+  max: number;
+  onChange: (n: number) => void;
+}) {
+  const step = "flex size-9 items-center justify-center rounded-full bg-ink-50 text-brand-900 disabled:text-ink-300";
+  return (
+    <div className="flex items-center justify-between gap-3 px-3 py-2.5">
+      <div className="min-w-0">
+        <p className="text-[15px] font-semibold text-ink-900">{label}</p>
+        <p className="text-xs text-ink-500">
+          {hint} · {price}
+        </p>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        <button
+          type="button"
+          className={step}
+          aria-label={`${label} −`}
+          disabled={value <= min}
+          onClick={() => onChange(Math.max(min, value - 1))}
+        >
+          <Minus className="size-4" />
+        </button>
+        <span className="w-5 text-center text-base font-bold tabular-nums" aria-live="polite">
+          {value}
+        </span>
+        <button
+          type="button"
+          className={step}
+          aria-label={`${label} +`}
+          disabled={value >= max}
+          onClick={() => onChange(Math.min(max, value + 1))}
+        >
+          <Plus className="size-4" />
+        </button>
+      </div>
     </div>
   );
 }

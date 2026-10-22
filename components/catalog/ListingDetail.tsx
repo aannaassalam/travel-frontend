@@ -3,8 +3,9 @@ import Layout from "@/components/site/Layout";
 import { detailHref, VERTICAL_SLUGS } from "@/lib/catalog";
 import { mediaUrl, mediaUrls } from "@/lib/media";
 import { baseMinor } from "@/lib/money";
-import { durationBetween, fmtDateTime, fmtTime, formatMinutes } from "@/lib/format";
+import { formatMinutes } from "@/lib/format";
 import { usePrefs } from "@/lib/prefs";
+import { dayName, isRoute, WEEK_ORDER } from "@/lib/routes";
 import { Listing } from "@/typescript/interface/domain.interface";
 import {
   Check,
@@ -75,7 +76,7 @@ export default function ListingDetail({
           price: (baseMinor(listing.sellPrice) / 100).toFixed(2),
           priceCurrency: "USD",
           availability:
-            listing.available > 0
+            (listing.available ?? 1) > 0
               ? "https://schema.org/InStock"
               : "https://schema.org/SoldOut"
         },
@@ -136,53 +137,73 @@ export default function ListingDetail({
 
             <PhotoGrid images={listing.images} alt={lz(listing.title)} />
 
-            {/* ------------------------------------------------- flights */}
-            {listing.vertical === "FLIGHT" && a.segments && (
+            {/* --------------------------------------- bus and flight routes */}
+            {isRoute(listing) && (
               <section>
                 <h2 className="mb-3 text-xl font-bold text-brand-900">
-                  {t("listing.itinerary")}
+                  {t("route.timetable")}
                 </h2>
-                <ol className="space-y-4">
-                  {a.segments.map((s, i) => (
-                    <li
-                      key={i}
-                      className="surface p-5"
-                    >
-                      <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-brand-700">
-                        <Plane className="size-4" />
-                        {s.carrier} {s.flightNumber} ·{" "}
-                        {t(`cabin.${a.cabin ?? "ECONOMY"}`)}
-                      </p>
-                      <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-                        <div>
-                          <p className="font-mono text-2xl font-bold text-ink-900">
-                            {fmtTime(s.departsAt, locale)}
-                          </p>
-                          <p className="text-sm font-semibold text-ink-700">{s.origin}</p>
-                          <p className="text-xs text-ink-500">
-                            {fmtDateTime(s.departsAt, locale)}
-                          </p>
-                        </div>
-                        <div className="flex flex-col items-center text-xs text-ink-500">
-                          <Clock className="size-4" />
-                          {durationBetween(s.departsAt, s.arrivesAt, locale)}
-                          <span className="mt-1 h-px w-20 bg-ink-300" />
-                        </div>
-                        <div>
-                          <p className="font-mono text-2xl font-bold text-ink-900">
-                            {fmtTime(s.arrivesAt, locale)}
-                          </p>
-                          <p className="text-sm font-semibold text-ink-700">
-                            {s.destination}
-                          </p>
-                          <p className="text-xs text-ink-500">
-                            {fmtDateTime(s.arrivesAt, locale)}
-                          </p>
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ol>
+                <div className="surface p-5">
+                  <p className="mb-1 flex items-center gap-2 text-sm font-semibold text-brand-700">
+                    {listing.vertical === "FLIGHT" ? <Plane className="size-4" /> : null}
+                    {a.operator}
+                    {listing.vertical === "FLIGHT" && a.cabin ? ` · ${t(`cabin.${a.cabin}`)}` : ""}
+                  </p>
+                  <p className="text-lg font-bold text-ink-900">
+                    {listing.city} → {a.destination}
+                  </p>
+                  {a.durationMinutes ? (
+                    <p className="mt-1 flex items-center gap-1.5 text-sm text-ink-500">
+                      <Clock className="size-4" />
+                      {formatMinutes(a.durationMinutes, locale)}
+                    </p>
+                  ) : null}
+
+                  {a.dailyTimes?.length ? (
+                    <div className="mt-4">
+                      <p className="mb-2 text-sm font-semibold text-ink-700">{t("route.everyDay")}</p>
+                      <ul className="flex flex-wrap gap-2">
+                        {a.dailyTimes.map((time) => (
+                          <li
+                            key={time}
+                            className="rounded-md bg-brand-50 px-3 py-1.5 font-mono text-[15px] font-bold text-brand-900"
+                          >
+                            {time}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+
+                  {a.weeklyTimes?.length ? (
+                    <div className="mt-4">
+                      <p className="mb-2 text-sm font-semibold text-ink-700">{t("route.weekly")}</p>
+                      <dl className="divide-y divide-ink-100/70 rounded-md ring-1 ring-ink-100 ring-inset">
+                        {WEEK_ORDER.map((d) => {
+                          const times = a
+                            .weeklyTimes!.filter((w) => w.day === d)
+                            .map((w) => w.time)
+                            .sort();
+                          return (
+                            <div key={d} className="flex items-center gap-4 px-3 py-2 text-sm">
+                              <dt className="w-12 font-semibold text-ink-700">{dayName(d, locale)}</dt>
+                              <dd className={times.length ? "font-mono font-bold text-brand-900" : "text-ink-300"}>
+                                {times.length ? times.join("  ·  ") : "—"}
+                              </dd>
+                            </div>
+                          );
+                        })}
+                      </dl>
+                    </div>
+                  ) : null}
+                </div>
+
+                {a.routeStops?.length ? (
+                  <p className="mt-4 text-sm text-ink-700">
+                    <strong className="font-semibold">{t("listing.stops")} :</strong>{" "}
+                    {a.routeStops.join(" → ")}
+                  </p>
+                ) : null}
                 {a.baggage && (
                   <p className="mt-4 flex items-center gap-2 text-sm text-ink-700">
                     <Luggage className="size-4 text-ink-500" />
@@ -190,43 +211,10 @@ export default function ListingDetail({
                     {a.baggage}
                   </p>
                 )}
-                {a.fareRules && (
-                  <p className="mt-2 text-sm text-ink-500">{a.fareRules}</p>
-                )}
-              </section>
-            )}
-
-            {/* ----------------------------------------------------- bus */}
-            {listing.vertical === "BUS" && (
-              <section>
-                <h2 className="mb-3 text-xl font-bold text-brand-900">
-                  {t("listing.itinerary")}
-                </h2>
-                <ol className="relative space-y-4 border-l-2 border-ink-100 pl-6">
-                  {(a.routeStops ?? []).map((stop, i, arr) => (
-                    <li key={stop} className="relative">
-                      <span className="absolute -left-[31px] top-1 size-3 rounded-full border-2 border-white bg-brand-500" />
-                      <p className="font-semibold text-ink-900">{stop}</p>
-                      {i === 0 && a.departsAt && (
-                        <p className="text-sm text-ink-500">
-                          {fmtDateTime(a.departsAt, locale)}
-                        </p>
-                      )}
-                      {i === arr.length - 1 && a.arrivesAt && (
-                        <p className="text-sm text-ink-500">
-                          {fmtDateTime(a.arrivesAt, locale)}
-                        </p>
-                      )}
-                    </li>
-                  ))}
-                </ol>
+                {a.fareRules && <p className="mt-2 text-sm text-ink-500">{a.fareRules}</p>}
                 <dl className="mt-5 grid gap-3 sm:grid-cols-3">
-                  <Spec label={t("results.operator")} value={a.operator} />
+                  <Spec label={t("route.agency")} value={a.operator} />
                   <Spec label={t("results.category")} value={a.vehicleClass} />
-                  <Spec
-                    label={locale === "fr" ? "Capacité" : "Capacity"}
-                    value={a.seatsOrCapacity ? `${a.seatsOrCapacity}` : undefined}
-                  />
                 </dl>
               </section>
             )}
@@ -374,9 +362,12 @@ export default function ListingDetail({
 
             {/* No map here: a flight, bus, car or activity has no address
                 to pin. The meeting point and city are stated in the facts. */}
-            <section>
-              <p className="text-[15px] text-ink-700">{place}</p>
-            </section>
+            {/* A route already names both of its ends above. */}
+            {isRoute(listing) ? null : (
+              <section>
+                <p className="text-[15px] text-ink-700">{place}</p>
+              </section>
+            )}
 
             <section className="rounded-card bg-ink-50 p-6 ring-1 ring-ink-100 ring-inset">
               <h2 className="mb-2 text-lg font-bold text-brand-900">

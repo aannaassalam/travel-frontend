@@ -221,15 +221,54 @@ export function OrderItems({ order }: { order: Order }) {
         <li key={i} className="flex flex-wrap justify-between gap-3 py-3">
           <div>
             <p className="font-semibold text-ink-900">{item.listingLabel}</p>
-            {item.startDate && (
-              <p className="text-sm text-ink-500">
-                {fmtDate(item.startDate, locale)}
-                {item.endDate ? ` → ${fmtDate(item.endDate, locale)}` : ""}
-              </p>
+            {item.passengers ? (
+              <>
+                {/* A bus or flight: the route, the departure chosen, who travels. */}
+                {item.origin ? (
+                  <p className="text-sm text-ink-700">
+                    {item.origin} → {item.destination}
+                  </p>
+                ) : null}
+                {item.startDate ? (
+                  <p className="text-sm text-ink-500">
+                    {fmtDate(`${item.startDate}T12:00:00`, locale)}
+                    {item.departureTime ? (
+                      <>
+                        {" · "}
+                        <strong className="font-semibold text-ink-700">{item.departureTime}</strong>
+                      </>
+                    ) : null}
+                  </p>
+                ) : null}
+                <p className="text-sm text-ink-500">
+                  {[
+                    item.passengers.adults ? `${item.passengers.adults} × ${t("route.adult")}` : "",
+                    item.passengers.children ? `${item.passengers.children} × ${t("route.child")}` : "",
+                    item.passengers.infants ? `${item.passengers.infants} × ${t("route.infant")}` : ""
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+                {item.baggage ? (
+                  <p className="text-sm text-ink-500">
+                    {t("route.cabinKg")} : {item.baggage.cabinKg} · {t("route.checkedKg")} :{" "}
+                    {item.baggage.checkedKg}
+                  </p>
+                ) : null}
+              </>
+            ) : (
+              <>
+                {item.startDate && (
+                  <p className="text-sm text-ink-500">
+                    {fmtDate(item.startDate, locale)}
+                    {item.endDate ? ` → ${fmtDate(item.endDate, locale)}` : ""}
+                  </p>
+                )}
+                <p className="text-sm text-ink-500">
+                  {item.quantity} × <Price money={item.unitSellPrice} />
+                </p>
+              </>
             )}
-            <p className="text-sm text-ink-500">
-              {item.quantity} × <Price money={item.unitSellPrice} />
-            </p>
           </div>
           <p className="font-bold text-brand-900">
             <Price money={item.lineTotal} />
