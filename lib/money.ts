@@ -8,14 +8,15 @@ import {
  * §5. Money is integer minor units plus an ISO-4217 code. Never a float, never
  * a price without a currency.
  *
- * The catalogue carries a price per currency (`Money`). The office enters USD
- * only; the API works out CDF and EUR from the exchange rates set in the admin
- * and sends all three, and an order is charged exactly those figures.
+ * The catalogue carries a price per currency (`Money`). The office enters
+ * francs only; the API works out USD and EUR from the exchange rates set in the
+ * admin (francs per dollar, per euro) and sends each one that has a rate, and
+ * an order is charged exactly those figures.
  *
- * Conversion here exists for one job only: a currency the API sent no price in
- * (no rate set for it). That result is marked approximate everywhere it is
- * shown, because presenting a derived number as if it were the charge is
- * exactly the ambiguity §5 warns generates disputes.
+ * No price is converted here. A currency the API sent no price in (no rate
+ * set) is shown in the francs the price was entered in. This file used to fill
+ * the gap with a rate of its own (2 870 FC + 1.5 %, marked ≈), which is the
+ * "conversion is not accurate" customers saw next to the office's real figures.
  */
 export const MINOR_UNIT_EXPONENT: Record<Currency, number> = {
   USD: 2,
@@ -26,56 +27,70 @@ export const MINOR_UNIT_EXPONENT: Record<Currency, number> = {
   CDF: 0
 };
 
-/** Indicative only: used for the `≈` fallback when the API sent no price in a currency. */
-export const FX_RATES: Record<
-  Currency,
-  { rate: number; spreadPct: number; effectiveFrom: string }
-> = {
-  USD: { rate: 1, spreadPct: 0, effectiveFrom: "2026-07-01" },
-  CDF: { rate: 2870, spreadPct: 1.5, effectiveFrom: "2026-07-28" },
-  EUR: { rate: 0.92, spreadPct: 1.0, effectiveFrom: "2026-07-28" }
-};
-
-/** USD minor units → another currency's minor units, at the admin rate. */
-export function convert(usdMinor: number, to: Currency): number {
-  if (to === BASE_CURRENCY) return usdMinor;
-  const { rate, spreadPct } = FX_RATES[to];
-  const usdMajor = usdMinor / 10 ** MINOR_UNIT_EXPONENT.USD;
-  const target = usdMajor * rate * (1 + spreadPct / 100);
-  const minor = target * 10 ** MINOR_UNIT_EXPONENT[to];
-  // Round up to a sensible display unit in CDF; rounding down would leave the
-  // client short on every sale.
-  return to === "CDF" ? Math.ceil(minor / 100) * 100 : Math.round(minor);
-}
-
-/** Money in the display currency: the typed price, or a converted fallback. */
+/**
+ * A price as it is shown: the API's figure in the visitor's currency, or the
+ * franc base when it sent none. `currency` is the one actually shown — the one
+ * a checkout must ask to be charged in.
+ */
 export function resolve(
   money: Money | number | undefined,
   currency: Currency
-): { minor: number; exact: boolean } {
-  // A bare number is a pre-migration record; treat it as the USD base.
-  if (typeof money === "number") {
-    return currency === BASE_CURRENCY
-      ? { minor: money, exact: true }
-      : { minor: convert(money, currency), exact: false };
-  }
+): { minor: number; currency: Currency } {
+  // A bare number is a base amount: francs.
+  if (typeof money === "number") return { minor: money, currency: BASE_CURRENCY };
+  // A 0 is a real figure too (a free infant fare or delivery): the API works
+  // every currency out from francs, so it never sends a 0 to mean "no price".
   const typed = money?.[currency];
-  if (typeof typed === "number" && typed > 0) return { minor: typed, exact: true };
-  const usd = money?.USD ?? 0;
-  return currency === BASE_CURRENCY
-    ? { minor: usd, exact: true }
-    : { minor: convert(usd, currency), exact: false };
+  if (typeof typed === "number") return { minor: typed, currency };
+  return { minor: money?.CDF ?? 0, currency: BASE_CURRENCY };
 }
 
-/** The base-currency amount — what totals, sorting and reporting compare. */
+/**
+ * A bare franc amount (a filter bound or a deposit, not a catalogue price) in
+ * each currency the office has a rate for, worked out exactly as the server's
+ * fx.service `convert`: dollars and euros rounded UP to the cent, so the office
+ * is never short (`toFixed` drops the float noise first). Not a guess — the
+ * office's own rates (francs per 1 unit) from /site/currencies; without one,
+ * the amount stays in francs only.
+ */
+export function fromBase(
+  cdf: number,
+  rates: Partial<Record<Currency, number>> | undefined
+): Money {
+  const out: Money = { CDF: cdf };
+  for (const c of ["USD", "EUR"] as const) {
+    const rate = rates?.[c];
+    if (!rate || !(rate > 0)) continue;
+    out[c] = Math.ceil(Number(((cdf / rate) * 100).toFixed(6)));
+  }
+  return out;
+}
+
+/** The base-currency amount (francs) — what totals, sorting and reporting compare. */
 export const baseMinor = (money: Money | number | undefined): number =>
-  typeof money === "number" ? money : (money?.USD ?? 0);
+  typeof money === "number" ? money : (money?.CDF ?? 0);
+
+/**
+ * The currency prices are shown in: the visitor's own choice while it is still
+ * offered; otherwise francs, the base, which always are (and the client's
+ * default). Until the server has said what is offered, the choice stands —
+ * `resolve` shows francs for any price the API sent nothing in, so nothing is
+ * invented while waiting.
+ */
+export function pickCurrency(
+  saved: Currency | undefined,
+  offered: readonly Currency[] | undefined
+): Currency {
+  const wanted = saved ?? BASE_CURRENCY;
+  return !offered || offered.includes(wanted) ? wanted : BASE_CURRENCY;
+}
 
 const LOCALE_FOR_FORMAT: Record<string, string> = { fr: "fr-FR", en: "en-GB" };
 
 /**
  * §6: DRC conventions — space thousands separator, comma decimal — come free
- * from Intl with fr-FR. Never hand-build a currency string.
+ * from Intl with fr-FR. The number is always Intl's; only the franc sign is
+ * ours (below).
  */
 export function formatMoney(
   minor: number,
@@ -87,12 +102,14 @@ export function formatMoney(
   // wall of "480,00 $US" reads as an accounting export. Display only — the
   // stored value is always exact.
   const fraction = minor % 10 ** digits === 0 ? 0 : digits;
-  return new Intl.NumberFormat(LOCALE_FOR_FORMAT[locale] ?? "fr-FR", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: fraction,
-    maximumFractionDigits: fraction
-  }).format(minor / 10 ** digits);
+  const options = { minimumFractionDigits: fraction, maximumFractionDigits: fraction };
+  const tag = LOCALE_FOR_FORMAT[locale] ?? "fr-FR";
+  // Francs are written "28 500 FC" ("28,500 FC" in English), as in Kinshasa —
+  // not Intl's "28 500 CDF" / "CDF 28,500".
+  if (currency === "CDF") return `${new Intl.NumberFormat(tag, options).format(minor)}\u00a0FC`;
+  return new Intl.NumberFormat(tag, { style: "currency", currency, ...options }).format(
+    minor / 10 ** digits
+  );
 }
 
 /** Resolve then format — the pairing behind nearly every price on the site. */
@@ -101,43 +118,38 @@ export function price(
   currency: Currency,
   locale = "fr"
 ): string {
-  const { minor, exact } = resolve(money, currency);
-  const text = formatMoney(minor, currency, locale);
-  return exact ? text : `≈ ${text}`;
+  const shown = resolve(money, currency);
+  return formatMoney(shown.minor, shown.currency, locale);
 }
 
-/** True when the displayed figure is a conversion rather than a typed price. */
-export const isApproximate = (
-  money: Money | number | undefined,
-  currency: Currency
-) => !resolve(money, currency).exact;
-
 /**
- * §5: "You will be charged 2 850 000 CDF (≈ $980)". Ambiguity about the
+ * §5: "You will be charged 10 $ (28 500 FC)". Ambiguity about the
  * settlement currency generates disputes, and disputes are expensive when
- * there is no refund path to defuse them.
+ * there is no refund path to defuse them. Nothing to add when the figure is
+ * shown in francs: that is the charge.
  */
 export function settlementNote(
   money: Money | number | undefined,
   currency: Currency,
   locale = "fr"
 ): string | null {
-  if (currency === BASE_CURRENCY) return null;
-  return `${price(money, currency, locale)} (${formatMoney(
+  const shown = resolve(money, currency);
+  if (shown.currency === BASE_CURRENCY) return null;
+  return `${formatMoney(shown.minor, shown.currency, locale)} (${formatMoney(
     baseMinor(money),
-    "USD",
+    BASE_CURRENCY,
     locale
   )})`;
 }
 
 /** Multiply a whole Money by a quantity — every currency scales together. */
 export function multiply(money: Money | number | undefined, factor: number): Money {
-  if (typeof money === "number") return { USD: money * factor };
+  if (typeof money === "number") return { CDF: money * factor };
   const out: Money = {};
   for (const [c, v] of Object.entries(money ?? {})) {
     if (typeof v === "number") out[c as Currency] = Math.round(v * factor);
   }
-  return out.USD === undefined ? { ...out, USD: 0 } : out;
+  return out.CDF === undefined ? { ...out, CDF: 0 } : out;
 }
 
 export function nightsBetween(from: string, to: string): number {

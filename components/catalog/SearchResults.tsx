@@ -1,11 +1,12 @@
 import { Breadcrumbs } from "@/components/site/bits";
 import Layout from "@/components/site/Layout";
 import SearchWidget from "@/components/search/SearchWidget";
-import { Skeleton } from "@/components/ui/field";
+import { CardSkeleton, Skeleton } from "@/components/ui/field";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { searchHotels, searchListings } from "@/lib/api";
 import { resultsLabel } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
+import { cn } from "@/lib/utils";
 import { Vertical } from "@/typescript/interface/domain.interface";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { AlertTriangle, RotateCw } from "lucide-react";
@@ -15,7 +16,8 @@ import EmptyState from "./EmptyState";
 import Filters, { FilterSection } from "./Filters";
 import LeadForm from "./LeadForm";
 import ResultsSearch from "./ResultsSearch";
-import { HotelRow, ResultRow } from "./cards";
+import ViewToggle from "./ViewToggle";
+import { HotelRow, HotelTile, ResultRow, ResultTile } from "./cards";
 
 /**
  * One results page for all six verticals.
@@ -41,8 +43,9 @@ export default function SearchResults({
   priceRange: [number, number];
   heroLabel: string;
 }) {
-  const { t, locale } = usePrefs();
+  const { t, locale, view = "list" } = usePrefs();
   const router = useRouter();
+  const grid = view === "grid";
 
   // A repeated param (?stars=4&stars=5) arrives as an array. Collapsing it here
   // means a hand-edited or crawler-mangled URL degrades to the first value
@@ -66,6 +69,7 @@ export default function SearchResults({
       propertyType: q.propertyType,
       operator: q.operator,
       category: q.category,
+      make: q.make,
       transmission: q.transmission,
       withDriver: q.withDriver,
       stars: q.stars,
@@ -151,7 +155,9 @@ export default function SearchResults({
             </div>
           </div>
 
-          <div className="flex items-center gap-3 text-sm">
+          {/* Wraps: on a narrow phone a long sort label and the toggle do not
+              both fit on one line. */}
+          <div className="flex flex-wrap items-center gap-3 text-sm">
             <span className="font-semibold text-ink-500">{t("results.sort")}</span>
             <InlineSelect
               ariaLabel={t("results.sort")}
@@ -160,6 +166,7 @@ export default function SearchResults({
               options={sortOptions.map(([value, key]) => ({ value, label: t(key) }))}
               triggerClassName="rounded-xl px-4 py-2.5 shadow-xs"
             />
+            <ViewToggle value={view} />
           </div>
         </div>
 
@@ -188,10 +195,10 @@ export default function SearchResults({
                 </button>
               </div>
             ) : isPending ? (
-              <div className="space-y-4">
-                {Array.from({ length: 5 }, (_, i) => (
-                  <RowSkeleton key={i} />
-                ))}
+              <div className={grid ? GRID : "space-y-4"}>
+                {Array.from({ length: grid ? 6 : 5 }, (_, i) =>
+                  grid ? <CardSkeleton key={i} /> : <RowSkeleton key={i} />
+                )}
               </div>
             ) : count === 0 ? (
               <div className="space-y-6">
@@ -227,19 +234,26 @@ export default function SearchResults({
                  * nudge, not a page reload, so the list stays put and fades
                  * rather than collapsing back to skeletons.
                  */
-                className={`motion-settle space-y-4 transition-opacity duration-200 ${
+                className={cn(
+                  "motion-settle transition-opacity duration-200",
+                  grid ? GRID : "space-y-4",
                   isFetching ? "opacity-55" : "opacity-100"
-                }`}
+                )}
               >
                 {isHotel
-                  ? hotelQuery.data?.items.map((h) => <HotelRow key={h.id} hotel={h} />)
-                  : listingQuery.data?.items.map((l) => <ResultRow key={l.id} listing={l} />)}
+                  ? hotelQuery.data?.items.map((h) =>
+                      grid ? <HotelTile key={h.id} hotel={h} /> : <HotelRow key={h.id} hotel={h} />
+                    )
+                  : listingQuery.data?.items.map((l) =>
+                      grid ? <ResultTile key={l.id} listing={l} /> : <ResultRow key={l.id} listing={l} />
+                    )}
 
                 {/* §1: stock is thin by design, so the lead capture belongs on
-                    every results page — not only when the search returns none. */}
+                    every results page — not only when the search returns none.
+                    Full width in the grid too: it is a form, not a result. */}
                 <section
                   id="request"
-                  className="rounded-card bg-brand-50 p-6 ring-1 ring-brand-100 ring-inset lg:p-8"
+                  className="col-span-full rounded-card bg-brand-50 p-6 ring-1 ring-brand-100 ring-inset lg:p-8"
                 >
                   <h2 className="text-lg font-bold text-brand-900">
                     {locale === "fr"
@@ -264,6 +278,9 @@ export default function SearchResults({
     </Layout>
   );
 }
+
+/** The results grid: two tiles a row beside the filters, three on a wide screen. */
+const GRID = "grid gap-5 sm:grid-cols-2 xl:grid-cols-3";
 
 /** Shaped like a result row, so the layout does not jump when data lands. */
 function RowSkeleton() {

@@ -5,6 +5,7 @@ import {
   Money,
   Passengers
 } from "@/typescript/interface/domain.interface";
+import { translate } from "./i18n";
 import { multiply } from "./money";
 
 /**
@@ -93,18 +94,24 @@ export const dayName = (day: number, locale: Locale) => (DAY_NAMES[locale] ?? DA
 /** Monday first, as a timetable is read. */
 export const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
 
-/** "Tous les jours : 06:30, 14:00" or "Lun 08:00 · Mer 15:45". */
-export const timetableSummary = (a: ListingAttributes | undefined, locale: Locale) => {
+/**
+ * A route's timetable as a card shows it, a line a day, Monday first —
+ * "Lun 07:30 · 08:00 · 13:15" — or for a bus one "Tous les jours 06:30 · 14:00".
+ */
+export const timetableLines = (a: ListingAttributes | undefined, locale: Locale) => {
   const daily = a?.dailyTimes ?? [];
-  const weekly = [...(a?.weeklyTimes ?? [])].sort(
-    (x, y) => WEEK_ORDER.indexOf(x.day) - WEEK_ORDER.indexOf(y.day) || x.time.localeCompare(y.time)
-  );
+  const weekly = a?.weeklyTimes ?? [];
   return [
-    daily.length ? `${locale === "fr" ? "Tous les jours" : "Every day"} : ${daily.join(", ")}` : "",
-    ...weekly.map((w) => `${dayName(w.day, locale)} ${w.time}`)
-  ]
-    .filter(Boolean)
-    .join(" · ");
+    ...(daily.length ? [`${translate(locale, "route.everyDay")} ${daily.join(" · ")}`] : []),
+    ...WEEK_ORDER.filter((d) => weekly.some((w) => w.day === d)).map(
+      (d) =>
+        `${dayName(d, locale)} ${weekly
+          .filter((w) => w.day === d)
+          .map((w) => w.time)
+          .sort()
+          .join(" · ")}`
+    )
+  ];
 };
 
 export interface Fares {
@@ -116,7 +123,9 @@ export interface Fares {
 export const faresOf = (l: Listing): Fares => ({
   adult: l.sellPrice,
   child: l.childPrice ?? l.sellPrice,
-  infant: l.infantPrice ?? { USD: 0 }
+  // No baby fare is a free one, in every currency the adult fare is in: a
+  // currency missing from one part would drop out of the route's total.
+  infant: l.infantPrice ?? multiply(l.sellPrice, 0)
 });
 
 /** Each fare times its passengers, added up currency by currency. */
@@ -136,3 +145,11 @@ export const routeTotal = (fares: Fares, p: Passengers): Money => {
 };
 
 export const passengerCount = (p: Passengers) => p.adults + p.children + p.infants;
+
+/**
+ * The most one fare's stepper may reach with the others as they are: 9 a fare,
+ * no more babies than adults, and 20 people in all — the server refuses a
+ * booking or a request above that (pricing.service parsePassengers).
+ */
+export const passengerMax = (p: Passengers, key: keyof Passengers) =>
+  Math.min(key === "infants" ? p.adults : 9, 20 - passengerCount(p) + p[key]);

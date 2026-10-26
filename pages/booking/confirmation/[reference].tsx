@@ -4,13 +4,14 @@ import {
   OrderProgress,
   OrderStatusBadges
 } from "@/components/account/order";
-import { SettlementNote } from "@/components/site/bits";
 import Layout from "@/components/site/Layout";
+import RidePanel from "@/components/transfers/RidePanel";
 import { ApiError, startPayment } from "@/lib/api";
 import { useCheckout } from "@/lib/checkout";
 import { fmtDateTime } from "@/lib/format";
 import { useSiteContact } from "@/lib/contact";
 import { usePrefs } from "@/lib/prefs";
+import { usePolicyTitle } from "@/lib/siteContent";
 import { useSession } from "@/lib/session";
 import { useOrder } from "@/lib/orders";
 import { Order } from "@/typescript/interface/domain.interface";
@@ -38,6 +39,7 @@ import { useEffect, useState } from "react";
  * enforced in the query, not checked after the fetch).
  */
 export default function ConfirmationPage() {
+  const policyTitle = usePolicyTitle();
   const contact = useSiteContact();
   const { t, locale } = usePrefs();
   const { signedIn, isPending: sessionPending } = useSession();
@@ -109,6 +111,8 @@ export default function ConfirmationPage() {
   // still pay — online again, or in cash.
   const confirming = unsettled && (order.paymentAwaited === true || awaited);
   const registered = isCash || !paid;
+  // A ride has a driver on the way, not documents to issue.
+  const isRide = order.items.some((i) => i.ride);
 
   async function settle(how: "ONLINE" | "CASH") {
     setPayError(null);
@@ -253,7 +257,9 @@ export default function ConfirmationPage() {
           </div>
         )}
 
-        {isCash && !order.delivery && order.cashDeadline && (
+        {/* Nor for a ride: its cash goes to the driver at the end of it, which
+            the ride block below says in place of any office deadline. */}
+        {isCash && !order.delivery && !isRide && order.cashDeadline && (
           <div className="mt-6 rounded-card bg-warn-100 p-6 ring-2 ring-warn-600/30 ring-inset">
             <h2 className="flex items-center gap-2 text-lg font-bold text-brand-900">
               <Banknote className="size-5 text-warn-600" />
@@ -272,15 +278,16 @@ export default function ConfirmationPage() {
           </div>
         )}
 
+        {/* A transfer: where the ride stands, the map, the driver once named. */}
+        <RidePanel order={order} className="mt-6" />
+
         <div className="mt-6 surface p-6">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-lg font-bold text-brand-900">{t("checkout.summary")}</h2>
             <OrderStatusBadges order={order} />
           </div>
+          {/* Its total says what was charged, the francs beside it. */}
           <OrderItems order={order} />
-          <div className="mt-2">
-            <SettlementNote money={order.total} />
-          </div>
         </div>
 
         <div className="mt-6 surface p-6">
@@ -301,12 +308,14 @@ export default function ConfirmationPage() {
                   : "A confirmation with the reference and conditions has been sent."}
               </li>
             )}
-            <li className="flex gap-3">
-              <CalendarPlus className="mt-0.5 size-5 shrink-0 text-brand-500" />
-              {locale === "fr"
-                ? "Vos documents de voyage sont émis sous 24 heures ouvrées et apparaissent dans votre compte."
-                : "Your travel documents are issued within 24 working hours and appear in your account."}
-            </li>
+            {!isRide && (
+              <li className="flex gap-3">
+                <CalendarPlus className="mt-0.5 size-5 shrink-0 text-brand-500" />
+                {locale === "fr"
+                  ? "Vos documents de voyage sont émis sous 24 heures ouvrées et apparaissent dans votre compte."
+                  : "Your travel documents are issued within 24 working hours and appear in your account."}
+              </li>
+            )}
           </ul>
 
           <div className="mt-4">
@@ -366,7 +375,7 @@ export default function ConfirmationPage() {
           <div className="mt-6 rounded-card bg-ink-50 p-6 ring-1 ring-ink-100 ring-inset">
             <h2 className="flex items-center gap-2 text-base font-bold text-brand-900">
               <ShieldCheck className="size-5 text-brand-500" />
-              {t("policy.title")}
+              {policyTitle}
             </h2>
             <p className="mt-2 text-sm text-ink-900">« {order.consent.textShown} »</p>
             <p className="mt-2 text-xs text-ink-500">

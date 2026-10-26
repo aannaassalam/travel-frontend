@@ -7,6 +7,7 @@ import { PROPERTY_LABEL, PropertyTile } from "@/components/catalog/cards";
 import { Breadcrumbs, Price } from "@/components/site/bits";
 import Layout, { SITE } from "@/components/site/Layout";
 import { getListing, getSlugs, safely } from "@/lib/api";
+import { propertySizes, sqm } from "@/lib/catalog";
 import { dial, useSiteContact, waLink } from "@/lib/contact";
 import { mediaUrl, mediaUrls } from "@/lib/media";
 import { usePrefs } from "@/lib/prefs";
@@ -108,20 +109,15 @@ export default function PropertyDetail({ listing, related }: Props) {
                     value={String(a.bathrooms)}
                   />
                 ) : null}
-                {a.areaSqm ? (
+                {/* Land one size, a house its built area and plot, an apartment its area. */}
+                {propertySizes(a).map((s) => (
                   <Fact
-                    Icon={Maximize}
-                    label={locale === "fr" ? "Surface habitable" : "Living area"}
-                    value={`${a.areaSqm.toLocaleString("fr-FR")} m²`}
+                    key={s.kind}
+                    Icon={s.kind === "plot" ? Ruler : Maximize}
+                    label={t(`property.${s.kind}`)}
+                    value={sqm(s.sqm)}
                   />
-                ) : null}
-                {a.plotSizeSqm ? (
-                  <Fact
-                    Icon={Ruler}
-                    label={locale === "fr" ? "Parcelle" : "Plot"}
-                    value={`${a.plotSizeSqm.toLocaleString("fr-FR")} m²`}
-                  />
-                ) : null}
+                ))}
               </ul>
             </section>
 

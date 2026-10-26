@@ -2,7 +2,6 @@ import { usePrefs } from "@/lib/prefs";
 import { useSession } from "@/lib/session";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import {
-  CURRENCIES,
   Currency,
   ENABLED_LOCALES,
   Locale
@@ -10,6 +9,7 @@ import {
 import {
   Bus,
   Car,
+  CarTaxiFront,
   Compass,
   Hotel,
   LifeBuoy,
@@ -37,6 +37,7 @@ export const VERTICAL_NAV = [
   { href: "/flights", key: "nav.flights", Icon: Plane },
   { href: "/bus", key: "nav.bus", Icon: Bus },
   { href: "/cars", key: "nav.cars", Icon: Car },
+  { href: "/transfers", key: "nav.transfers", Icon: CarTaxiFront },
   { href: "/restaurants", key: "nav.restaurants", Icon: UtensilsCrossed },
   { href: "/property", key: "nav.property", Icon: Building2 },
   { href: "/activities", key: "nav.activities", Icon: Compass }
@@ -55,7 +56,8 @@ const LOCALE_LABEL: Record<Locale, string> = {
  * trained to expect and fighting it costs conversion.
  */
 export default function Header({ transparent = false }: { transparent?: boolean }) {
-  const { t, locale, setLocale, currency, setCurrency } = usePrefs();
+  // Francs, and the currencies the office has set a rate for: the API has prices in no other.
+  const { t, locale, setLocale, currency, currencies, setCurrency } = usePrefs();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   // Server-owned: the session cookie is httpOnly, so this is the only way to
@@ -108,7 +110,7 @@ export default function Header({ transparent = false }: { transparent?: boolean 
                 ariaLabel={t("common.currency")}
                 value={currency}
                 onValueChange={(v) => setCurrency(v as Currency)}
-                options={CURRENCIES.map((c) => ({ value: c, label: c }))}
+                options={currencies.map((c) => ({ value: c, label: c }))}
               />
               <span className="h-4 w-px bg-white/20" aria-hidden="true" />
               <InlineSelect
@@ -230,7 +232,7 @@ export default function Header({ transparent = false }: { transparent?: boolean 
                   ariaLabel={t("common.currency")}
                   value={currency}
                   onValueChange={(v) => setCurrency(v as Currency)}
-                  options={CURRENCIES.map((c) => ({ value: c, label: c }))}
+                  options={currencies.map((c) => ({ value: c, label: c }))}
                   triggerClassName="rounded-lg bg-white/10 px-3 py-2 ring-1 ring-white/15 ring-inset"
                 />
               </label>

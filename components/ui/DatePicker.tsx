@@ -129,7 +129,9 @@ export function DatePicker({
               aria-label={
                 locale === "fr" ? "Ouvrir le calendrier" : "Open the calendar"
               }
-              className="-m-1 shrink-0 rounded-md p-1 text-ink-500 transition-colors hover:text-brand-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
+              // The padding and the negative margin cancel out, so the icon sits
+              // where it did while the button itself is a 44px tap target.
+              className="-m-3.5 shrink-0 rounded-md p-3.5 text-ink-500 transition-colors hover:text-brand-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
             >
               <CalendarDays className="size-4" />
             </button>

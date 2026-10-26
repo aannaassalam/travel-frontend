@@ -17,15 +17,18 @@ export default function PaymentChoice({
   onChange,
   online,
   cashLabel,
-  cashNote
+  cashNote,
+  cashOnly
 }: {
   value: PaymentMethod;
   onChange: (next: PaymentMethod) => void;
   /** From `useOnlinePayment`: can this order be paid online, and is online on at all. */
   online: { available: boolean; offered: boolean };
-  /** Cash is "at our office" for a booking and "on delivery" for a meal. */
+  /** Cash is "at our office" for a booking, "on delivery" for a meal, "to the driver" for a ride. */
   cashLabel: string;
   cashNote: string;
+  /** The one-way-to-pay sentence when online is off; "at our office" unless said otherwise. */
+  cashOnly?: string;
 }) {
   const { t } = usePrefs();
 
@@ -33,7 +36,7 @@ export default function PaymentChoice({
     return (
       <>
         {/* Cash only: one way to pay, stated — not a list of one radio. */}
-        <p className="mt-2 text-[15px] text-ink-700">{t("checkout.cashOnly")}</p>
+        <p className="mt-2 text-[15px] text-ink-700">{cashOnly ?? t("checkout.cashOnly")}</p>
         <div className="mt-3 flex gap-3 rounded-lg border border-brand-500 bg-brand-50 p-4">
           <Banknote className="mt-0.5 size-5 shrink-0 text-brand-500" />
           <span className="min-w-0">

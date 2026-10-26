@@ -69,7 +69,7 @@ test.beforeAll(async ({ request }) => {
   // relies on mass-assignment to set status PUBLISHED + counters from the request body.)
   const r = await request.post(`${ADMIN}/listings`, {
     // publish-blockers require a French description, >=1 image, and make+model
-    ...json({ vertical: "CAR", title: { fr: "qa_test_bookable", en: "qa_test_bookable" }, description: { fr: "qa_test", en: "qa_test" }, images: ["https://example.com/qa_test.jpg"], city: "Lubumbashi", quantityTotal: 50, sellPrice: { USD: 10 }, costPrice: { USD: 5 }, attributes: { vehicleClass: "SUV", transmission: "AUTOMATIC", withDriver: true, make: "qa_test", model: "qa_test" } }),
+    ...json({ vertical: "CAR", title: { fr: "qa_test_bookable", en: "qa_test_bookable" }, description: { fr: "qa_test", en: "qa_test" }, images: ["https://example.com/qa_test.jpg"], city: "Lubumbashi", quantityTotal: 50, sellPrice: { CDF: 300 }, costPrice: { CDF: 200 }, attributes: { vehicleClass: "SUV", transmission: "AUTOMATIC", withDriver: true, make: "qa_test", model: "qa_test" } }),
     headers: adm({ "content-type": "application/json" }),
   });
   const l = (await r.json()).listing ?? {};
@@ -101,7 +101,7 @@ test.afterAll(async ({ request }) => {
 test("BUG-010: mass-assignment forges status PUBLISHED + quantitySold on create, and rewrites vertical on update", async ({ request }) => {
   // create a draft-looking listing but force PUBLISHED + a bogus quantitySold via the request body
   const r = await request.post(`${ADMIN}/listings`, {
-    ...json({ vertical: "CAR", title: { fr: "qa_test_massassign", en: "qa_test_massassign" }, city: "Lubumbashi", status: "PUBLISHED", quantityTotal: 50, quantitySold: 777, quantityHeld: 0, sellPrice: { USD: 10 }, costPrice: { USD: 5 }, attributes: { vehicleClass: "SUV", transmission: "AUTOMATIC", withDriver: true } }),
+    ...json({ vertical: "CAR", title: { fr: "qa_test_massassign", en: "qa_test_massassign" }, city: "Lubumbashi", status: "PUBLISHED", quantityTotal: 50, quantitySold: 777, quantityHeld: 0, sellPrice: { CDF: 300 }, costPrice: { CDF: 200 }, attributes: { vehicleClass: "SUV", transmission: "AUTOMATIC", withDriver: true } }),
     headers: adm({ "content-type": "application/json" }),
   });
   const id = ((await r.json()).listing ?? {}).id;

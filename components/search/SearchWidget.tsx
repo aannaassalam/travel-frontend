@@ -1,5 +1,6 @@
 import { VERTICAL_SLUGS } from "@/lib/catalog";
 import { isUnserviced, useLocations, useRoutes } from "@/lib/locations";
+import { formatMoney } from "@/lib/money";
 import { usePrefs } from "@/lib/prefs";
 import { cn } from "@/lib/utils";
 import { InlineSelect } from "@/components/ui/InlineSelect";
@@ -10,6 +11,7 @@ import {
   Building2,
   Bus,
   Car,
+  CarTaxiFront,
   Compass,
   Hotel,
   History,
@@ -32,6 +34,7 @@ const TABS: { vertical: Vertical; key: string; Icon: typeof Plane }[] = [
   { vertical: "FLIGHT", key: "nav.flights", Icon: Plane },
   { vertical: "BUS", key: "nav.bus", Icon: Bus },
   { vertical: "CAR", key: "nav.cars", Icon: Car },
+  { vertical: "TRANSFER", key: "nav.transfers", Icon: CarTaxiFront },
   { vertical: "RESTAURANT", key: "nav.restaurants", Icon: UtensilsCrossed },
   { vertical: "PROPERTY", key: "nav.property", Icon: Building2 },
   { vertical: "ACTIVITY", key: "nav.activities", Icon: Compass }
@@ -178,6 +181,8 @@ export default function SearchWidget({
       HOTEL: ["destination", "from", "to", "adults", "children", "rooms"],
       BUS: ["origin", "destination", "from", "adults"],
       CAR: ["destination", "from", "to", "withDriver"],
+      // A ride is booked on /transfers: the city and the day go ahead of it.
+      TRANSFER: ["destination", "from"],
       // Restaurants are browsed by city; there are no dates to carry.
       RESTAURANT: ["destination"],
       ACTIVITY: ["destination", "from", "adults"],
@@ -332,7 +337,8 @@ export default function SearchWidget({
               vertical === "CAR" ||
               vertical === "ACTIVITY" ||
               vertical === "PROPERTY" ||
-              vertical === "RESTAURANT") && (
+              vertical === "RESTAURANT" ||
+              vertical === "TRANSFER") && (
               <Field as="div" label={t("search.where")} className="md:flex-[1.4]">
                 <LocationField
                   value={form.destination}
@@ -450,12 +456,17 @@ export default function SearchWidget({
                   ariaLabel={t("search.budget")}
                   value={toSelect(form.maxPrice)}
                   onValueChange={(v) => set("maxPrice", fromSelect(v))}
+                  // In francs, like every price and `maxPrice` (about 2 000 $ a
+                  // month, 10 000, 200 000 and 500 000 $).
                   options={[
                     { value: ANY, label: locale === "fr" ? "Tous budgets" : "Any budget" },
-                    { value: "200000", label: "≤ 2 000 $ / mois" },
-                    { value: "1000000", label: "≤ 10 000 $" },
-                    { value: "20000000", label: "≤ 200 000 $" },
-                    { value: "50000000", label: "≤ 500 000 $" }
+                    {
+                      value: "6000000",
+                      label: `≤ ${formatMoney(6_000_000, "CDF", locale)} / ${locale === "fr" ? "mois" : "month"}`
+                    },
+                    { value: "30000000", label: `≤ ${formatMoney(30_000_000, "CDF", locale)}` },
+                    { value: "600000000", label: `≤ ${formatMoney(600_000_000, "CDF", locale)}` },
+                    { value: "1500000000", label: `≤ ${formatMoney(1_500_000_000, "CDF", locale)}` }
                   ]}
                   triggerClassName={selectTriggerCls}
                 />

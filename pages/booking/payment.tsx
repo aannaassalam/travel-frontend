@@ -9,8 +9,10 @@ import PaymentChoice from "@/components/checkout/PaymentChoice";
 import Layout from "@/components/site/Layout";
 import { ApiError, startPayment } from "@/lib/api";
 import { useCheckout } from "@/lib/checkout";
+import { resolve } from "@/lib/money";
 import { useOnlinePayment } from "@/lib/payments";
 import { usePrefs } from "@/lib/prefs";
+import { transferRefusalKey } from "@/lib/transfers";
 import { cn } from "@/lib/utils";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import Link from "next/link";
@@ -28,19 +30,24 @@ export default function PaymentStep() {
     consentAccepted,
     consentFor,
     paymentMethod,
+    total,
     update,
     confirm,
     expired,
     clear,
     retryAttempt
   } = useCheckout();
+  // The currency the summary shows the total in — the visitor's, or francs when
+  // the API sent this offer no price in theirs — is the one the order is made
+  // and paid in: never a currency the customer was not shown.
+  const charged = resolve(total, currency).currency;
 
   const [terms, setTerms] = useState(false);
   const [errors, setErrors] = useState<{ consent?: boolean; terms?: boolean }>({});
   const policy = useNoRefundPolicy();
   // What the server offers now decides, not what was chosen earlier: a choice
   // of "online" kept from before it was switched off is a cash booking.
-  const online = useOnlinePayment(currency);
+  const online = useOnlinePayment(charged);
   const method = online.available && paymentMethod === "ONLINE" ? "ONLINE" : "CASH";
   // A tick counts for the sentence it was made under and no other: not while
   // the text is still loading, not after the language (so the version) changed,
@@ -64,6 +71,9 @@ export default function PaymentStep() {
 
   if (!ready || !selection || !contact) return null;
 
+  /** A ride: cash is handed to the driver at the end of it, never to the office. */
+  const ride = Boolean(selection.transfer);
+
   /**
    * Creates the order, then settles how it is paid.
    *
@@ -79,7 +89,7 @@ export default function PaymentStep() {
     let reference: string | undefined;
     try {
       const order = await confirm({
-        currency,
+        currency: charged,
         locale,
         policyVersionId: policy.versionId,
         paymentMethod: method
@@ -141,11 +151,18 @@ export default function PaymentStep() {
         DEPARTURE_UNAVAILABLE: t("route.errDeparture"),
         INVALID_PASSENGERS: t("route.errPassengers"),
         BAGGAGE_REQUIRED: t("route.errBaggage"),
+        // A stay or a car hire whose dates the server would not take — most
+        // often a pick-up hour that has passed while the form was open.
+        INVALID_DATES: t("err.datesInvalid"),
         PAYMENT_BEING_CONFIRMED: t("payReturn.confirmingTitle"),
         RAIL_INVALID: t("pay.errGeneric")
       };
+      // A ride the server would not book as asked says which box is wrong, in
+      // its own words — before the bus/flight reading of the same codes.
+      const rideKey = ride ? transferRefusalKey(code) : undefined;
       setError(
-        (code && byCode[code]) ||
+        (rideKey && t(rideKey)) ||
+          (code && byCode[code]) ||
           (status === 409 ? t("pay.errSoldOut") : t("pay.errGeneric"))
       );
     }
@@ -200,8 +217,11 @@ export default function PaymentStep() {
                   setError(null);
                 }}
                 online={online}
-                cashLabel={t("checkout.cash")}
-                cashNote={t("checkout.cashNote")}
+                cashLabel={t(ride ? "checkout.cashRide" : "checkout.cash")}
+                cashNote={t(
+                  ride ? (online.available ? "ride.cashBody" : "ride.cashDriver") : "checkout.cashNote"
+                )}
+                cashOnly={ride ? t("checkout.cashOnlyRide") : undefined}
               />
             </fieldset>
 
@@ -269,10 +289,18 @@ export default function PaymentStep() {
                       ? t("pay.errCancelledBody")
                       : code === "ACCOUNT_EXISTS"
                         ? t("pay.errAccountExistsBody")
-                        : online.available
+                        : online.available && !ride
                           ? t("pay.errNoCharge")
                           : t("pay.errNoChargeCash")}
                   </p>
+                  {/* The sentence above says to change the ride; the form is on /transfers. */}
+                  {ride && transferRefusalKey(code) && (
+                    <div className="mt-3">
+                      <Link href="/transfers" className="btn btn-sm btn-dark">
+                        {t("transfer.editRide")}
+                      </Link>
+                    </div>
+                  )}
                   {code === "ACCOUNT_EXISTS" && (
                     <div className="mt-3">
                       {/* Checkout lives in sessionStorage, so it is still here
@@ -358,7 +386,13 @@ export default function PaymentStep() {
                       : "btn-primary"
                   )}
                 >
-                  {t(method === "ONLINE" ? "checkout.payOnlineCta" : "checkout.reserveCash")}
+                  {t(
+                    method === "ONLINE"
+                      ? "checkout.payOnlineCta"
+                      : ride
+                        ? "checkout.reserveCashRide"
+                        : "checkout.reserveCash"
+                  )}
                 </button>
                 {blocked && (
                   <p id="consent-required" className="text-sm text-ink-500">

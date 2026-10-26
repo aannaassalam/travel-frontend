@@ -1,7 +1,7 @@
 import Layout from "@/components/site/Layout";
 import { Breadcrumbs } from "@/components/site/bits";
 import { usePrefs } from "@/lib/prefs";
-import { usePolicyNotice } from "@/lib/siteContent";
+import { usePolicyNotice, usePolicyTitle } from "@/lib/siteContent";
 import {
   CURRENT_POLICY,
   POLICY_SECTIONS,
@@ -24,6 +24,7 @@ type Props = { terms: Policy | null; noRefund: Policy | null };
 export default function TermsPage({ terms, noRefund }: Props) {
   const { t, locale } = usePrefs();
   const notice = usePolicyNotice();
+  const policyTitle = usePolicyTitle();
 
   const published = terms?.bodies[locale] ?? terms?.bodies.fr;
   const parsed = published ? parsePolicyBody(published) : [];
@@ -64,7 +65,7 @@ export default function TermsPage({ terms, noRefund }: Props) {
         >
           <h2 className="flex items-center gap-2 text-xl font-bold text-brand-900">
             <ShieldAlert className="size-6 text-brand-500" />
-            {t("policy.title")}
+            {policyTitle}
           </h2>
           <p className="mt-3 text-[15px] leading-relaxed text-ink-900">
             {notice}

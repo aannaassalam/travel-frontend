@@ -11,7 +11,9 @@ import {
 } from "@/typescript/interface/domain.interface";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { multiply } from "./money";
+import type { RentalBlock } from "./rental";
 import { Fares, passengerCount, routeTotal } from "./routes";
+import type { TransferRequest } from "./transfers";
 import { rememberOrderRef } from "./store";
 import { ApiError, createOrder } from "./api";
 
@@ -35,16 +37,19 @@ export interface CheckoutSelection {
   label: string;
   sublabel?: string;
   image: string;
-  /** Per-currency minor units, per unit per night/day/person. */
+  /** Per-currency minor units, per unit per night/day/person. A car: the whole hire, per car. */
   unitPrice: Money;
   quantity: number;
-  /** Nights for hotels, days for cars, 1 otherwise. */
+  /** Nights for hotels, 1 otherwise. */
   units: number;
   unitNoun: "night" | "day" | "person" | "unit";
   roomTypeId?: string;
-  /** For a bus or flight, the departure chosen: "YYYY-MM-DDTHH:MM". */
+  /** For a bus or flight, the departure chosen: "YYYY-MM-DDTHH:MM". A car: pick-up and return, the same way. */
   startDate?: string;
   endDate?: string;
+  /** A car: the hours hired and the mix of rates they cost, for display — the server prices it again. */
+  rentalHours?: number;
+  rentalBlocks?: RentalBlock[];
   adults?: number;
   children?: number;
   /**
@@ -57,6 +62,10 @@ export interface CheckoutSelection {
   baggage?: Baggage;
   /** How many stock units remain — drives the honest scarcity line. Absent when not counted. */
   available?: number;
+  /** A transfer: what was asked for — the server quotes it again — with the category and the note. */
+  transfer?: TransferRequest;
+  /** What the summary says about that ride. Display only: the server keeps its own figures. */
+  transferInfo?: { category: string; distanceKm?: number; durationMinutes?: number };
 }
 
 export interface ContactDetails {
@@ -138,8 +147,12 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     try {
-      const raw = sessionStorage.getItem(KEY);
-      if (raw) setState({ ...EMPTY, ...JSON.parse(raw) });
+      const saved: CheckoutState | null = JSON.parse(sessionStorage.getItem(KEY) || "null");
+      // A choice kept from before prices were in francs has no franc price and
+      // would read "0 FC": it is dropped, and is picked again from the listing.
+      if (saved && (!saved.selection || typeof saved.selection.unitPrice?.CDF === "number")) {
+        setState({ ...EMPTY, ...saved });
+      }
     } catch {
       /* ignore */
     }
@@ -247,13 +260,13 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
   }, [update]);
 
   const sel = state.selection;
-  // Every currency scales together, so the CDF total is the CDF unit price
-  // times the quantity — never the USD total converted after the fact.
+  // Every currency scales together, so the dollar total is the dollar unit
+  // price times the quantity — never the franc total converted after the fact.
   // Memoised because `confirm()` closes over it.
   const subtotal: Money = useMemo(
     () =>
       !sel
-        ? { USD: 0 }
+        ? { CDF: 0 }
         : sel.passengers && sel.fares
           ? routeTotal(sel.fares, sel.passengers)
           : multiply(sel.unitPrice, sel.quantity * sel.units),
@@ -329,7 +342,8 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
             endDate: sel.endDate,
             quantity: sel.quantity,
             passengers: sel.passengers,
-            baggage: sel.baggage
+            baggage: sel.baggage,
+            transfer: sel.transfer
           }
         ],
         contact: {

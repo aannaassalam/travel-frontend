@@ -2,8 +2,17 @@ import { Price } from "@/components/site/bits";
 import { getOrderDocumentLink } from "@/lib/api";
 import { fmtDate, fmtDateTime } from "@/lib/format";
 import { usePrefs } from "@/lib/prefs";
+import { durationLabel } from "@/lib/rental";
+import { fmtAt, fmtKm, placeText } from "@/lib/transfers";
 import { cn } from "@/lib/utils";
-import { Order } from "@/typescript/interface/domain.interface";
+import {
+  Currency,
+  Locale,
+  Money,
+  Order,
+  OrderDelivery,
+  OrderItem
+} from "@/typescript/interface/domain.interface";
 import { CheckCircle2, Circle, CircleDot, Download, FileText, XCircle } from "lucide-react";
 import { useState } from "react";
 
@@ -70,6 +79,7 @@ export function orderSteps(order: Order): Step[] {
     order.fulfilmentStatus === "DOCUMENTS_ISSUED" ||
     order.fulfilmentStatus === "DELIVERED" ||
     (order.documents?.length ?? 0) > 0;
+  const ride = order.items.some((i) => i.ride);
 
   const planned: { key: string; done: boolean; at?: string; note?: string }[] = [
     { key: "created", done: true, at: order.createdAt ?? at(["ORDER_CREATED"]) },
@@ -77,7 +87,12 @@ export function orderSteps(order: Order): Step[] {
       key: cash ? "cash" : "online",
       done: paid,
       at: at(["CASH_RECEIVED", "PAYMENT_RECEIVED"]),
-      note: !paid && cash && order.cashDeadline ? order.cashDeadline : undefined
+      // A ride's cash is handed to the driver at the end of it, a meal's at the
+      // door: no deadline to meet.
+      note:
+        !paid && cash && order.cashDeadline && !ride && !order.delivery
+          ? order.cashDeadline
+          : undefined
     },
     {
       key: "confirmed",
@@ -86,10 +101,13 @@ export function orderSteps(order: Order): Step[] {
     },
     ...(order.delivery
       ? [{ key: "delivered", done: completed, at: at(["STATUS_COMPLETED"]) }]
-      : [
-          { key: "documents", done: documents, at: at(["DOCUMENTS_ISSUED"]) },
-          { key: "completed", done: completed, at: at(["STATUS_COMPLETED"]) }
-        ])
+      : ride
+        ? // A ride issues no ticket: after confirmation comes the ride itself.
+          [{ key: "completed", done: completed, at: at(["STATUS_COMPLETED"]) }]
+        : [
+            { key: "documents", done: documents, at: at(["DOCUMENTS_ISSUED"]) },
+            { key: "completed", done: completed, at: at(["STATUS_COMPLETED"]) }
+          ])
   ];
 
   const steps: Step[] = [];
@@ -116,12 +134,26 @@ export function orderSteps(order: Order): Step[] {
 export function OrderProgress({ order }: { order: Order }) {
   const { t, locale } = usePrefs();
   const steps = orderSteps(order);
+  // Cash on a ride is paid to the driver, on a meal at the door — not at the office.
+  const ride = order.items.some((i) => i.ride);
   const label = (s: Step) => {
     switch (s.key) {
       case "created":
         return t("steps.created");
       case "cash":
-        return t(s.state === "done" ? "steps.paidCash" : "steps.payCash");
+        return t(
+          s.state === "done"
+            ? ride
+              ? "steps.paidCashDriver"
+              : order.delivery
+                ? "steps.paidCashDelivery"
+                : "steps.paidCash"
+            : ride
+              ? "steps.payCashDriver"
+              : order.delivery
+                ? "steps.payCashDelivery"
+                : "steps.payCash"
+        );
       case "online":
         return t(s.state === "done" ? "steps.paidOnline" : "steps.payOnline");
       case "confirmed":
@@ -191,6 +223,10 @@ export function OrderProgress({ order }: { order: Order }) {
 /** What happened, in order. Every entry is in the past, so every one is ticked. */
 export function StatusTimeline({ order }: { order: Order }) {
   const { t, locale } = usePrefs();
+  const ride = order.items.some((i) => i.ride);
+  // A ride's cash is received from the driver, not over the office counter.
+  const key = (event: string) =>
+    ride && event === "CASH_RECEIVED" ? "ev.CASH_RECEIVED_RIDE" : `ev.${event}`;
   return (
     <ol className="relative space-y-3 border-l-2 border-ink-100 pl-6">
       {order.timeline.map((entry, i) => (
@@ -199,9 +235,9 @@ export function StatusTimeline({ order }: { order: Order }) {
             <CheckCircle2 className="size-5 text-ink-300" />
           </span>
           <p className="font-semibold text-ink-900">
-            {t(`ev.${entry.event}`) === `ev.${entry.event}`
+            {t(key(entry.event)) === key(entry.event)
               ? entry.event.replace(/_/g, " ").toLowerCase()
-              : t(`ev.${entry.event}`)}
+              : t(key(entry.event))}
           </p>
           <p className="text-sm text-ink-500">{fmtDateTime(entry.at, locale)}</p>
           {entry.detail && !/^\w+=/.test(entry.detail) && (
@@ -213,15 +249,54 @@ export function StatusTimeline({ order }: { order: Order }) {
   );
 }
 
+/**
+ * A car hired by the hour: "03 nov. 2026 · 08:00 → 04 nov. 2026 · 14:00". The
+ * times are as written, with no zone, so the days are the item's own rather
+ * than its instants converted to this device's zone.
+ */
+export const rentalSpan = (item: OrderItem, locale: Locale) =>
+  `${fmtDate(`${item.startDate}T12:00:00`, locale)} · ${item.pickupTime} → ${fmtDate(
+    `${item.endDate}T12:00:00`,
+    locale
+  )} · ${item.returnTime}`;
+
+/**
+ * The delivery charge as the money helpers read it: francs, and the figure in
+ * the charged currency beside them when that is another one.
+ */
+const deliveryMoney = (d: OrderDelivery, charged: Currency): Money => {
+  const out: Money = { CDF: d.fee };
+  if (charged !== "CDF") out[charged] = d.feeCharged;
+  return out;
+};
+
+/** Every figure in the currency the order was charged in, whatever is picked now. */
 export function OrderItems({ order }: { order: Order }) {
   const { t, locale } = usePrefs();
+  const charged = order.chargedCurrency;
   return (
     <ul className="divide-y divide-ink-100/70">
       {order.items.map((item, i) => (
         <li key={i} className="flex flex-wrap justify-between gap-3 py-3">
           <div>
             <p className="font-semibold text-ink-900">{item.listingLabel}</p>
-            {item.passengers ? (
+            {item.ride ? (
+              <>
+                {/* A ride: the two points, when, which vehicle, how far. */}
+                <p className="text-sm text-ink-700">
+                  {item.ride.pickup.label} →{" "}
+                  {item.ride.dropoff?.label ?? t("ride.hourly", { n: item.ride.hours ?? 0 })}
+                </p>
+                <p className="text-sm text-ink-500">
+                  {fmtAt(item.ride.at, locale)} · {placeText(item.ride.category, locale)}
+                </p>
+                <p className="text-sm text-ink-500">
+                  {item.ride.mode === "DISTANCE" ? `${fmtKm(item.ride.distanceKm, locale)} · ` : ""}
+                  {item.ride.passengers}{" "}
+                  {t(item.ride.passengers > 1 ? "common.people" : "common.person")}
+                </p>
+              </>
+            ) : item.passengers ? (
               <>
                 {/* A bus or flight: the route, the departure chosen, who travels. */}
                 {item.origin ? (
@@ -258,27 +333,49 @@ export function OrderItems({ order }: { order: Order }) {
               </>
             ) : (
               <>
-                {item.startDate && (
+                {item.rentalHours ? (
+                  <>
+                    <p className="text-sm text-ink-500">{rentalSpan(item, locale)}</p>
+                    <p className="text-sm text-ink-500">
+                      {t("listing.duration")} : {durationLabel(item.rentalHours, t)}
+                    </p>
+                  </>
+                ) : item.startDate ? (
                   <p className="text-sm text-ink-500">
                     {fmtDate(item.startDate, locale)}
                     {item.endDate ? ` → ${fmtDate(item.endDate, locale)}` : ""}
                   </p>
-                )}
+                ) : null}
                 <p className="text-sm text-ink-500">
-                  {item.quantity} × <Price money={item.unitSellPrice} />
+                  {item.quantity} × <Price money={item.unitSellPrice} charged={charged} />
                 </p>
               </>
             )}
           </div>
           <p className="font-bold text-brand-900">
-            <Price money={item.lineTotal} />
+            <Price money={item.lineTotal} charged={charged} />
           </p>
         </li>
       ))}
+      {/* The delivery charge is part of the total; without its own line the
+          food did not add up to the amount owed. */}
+      {order.delivery && (
+        <li className="flex flex-wrap justify-between gap-3 py-3">
+          <p className="font-semibold text-ink-900">
+            {t("order.delivery")}
+            {order.delivery.zoneName && (
+              <span className="font-normal text-ink-500"> · {order.delivery.zoneName}</span>
+            )}
+          </p>
+          <p className="font-bold text-brand-900">
+            <Price money={deliveryMoney(order.delivery, charged)} charged={charged} />
+          </p>
+        </li>
+      )}
       <li className="flex justify-between py-3 text-base">
         <span className="font-bold text-brand-900">{t("checkout.totalDue")}</span>
         <span className="font-bold text-brand-900">
-          <Price money={order.total} />
+          <Price money={order.total} charged={charged} />
         </span>
       </li>
     </ul>
@@ -314,9 +411,14 @@ export function OrderDocuments({ order }: { order: Order }) {
   if (!order.documents.length) {
     return (
       <p className="text-sm text-ink-500">
-        {locale === "fr"
-          ? "Vos documents apparaîtront ici dès leur émission. Nous vous préviendrons."
-          : "Your documents will appear here once issued. We will let you know."}
+        {/* A ride issues no ticket (see orderSteps): no documents to wait for. */}
+        {order.items.some((i) => i.ride)
+          ? locale === "fr"
+            ? "Aucun document n'est émis pour une course."
+            : "No documents are issued for a ride."
+          : locale === "fr"
+            ? "Vos documents apparaîtront ici dès leur émission. Nous vous préviendrons."
+            : "Your documents will appear here once issued. We will let you know."}
       </p>
     );
   }

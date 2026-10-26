@@ -16,7 +16,8 @@ module.exports = {
   sitemapSize: 7000,
   changefreq: "daily",
   priority: 0.7,
-  exclude: ["/account", "/account/*", "/booking/*", "/login", "/404"],
+  // The driver portal is a work tool behind a sign-in, not a page to rank.
+  exclude: ["/account", "/account/*", "/booking/*", "/login", "/404", "/driver", "/driver/*"],
   alternateRefs: [
     { href: siteUrl, hreflang: "fr" },
     { href: siteUrl, hreflang: "en" },
@@ -41,7 +42,7 @@ module.exports = {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/account", "/booking", "/login", "/api"]
+        disallow: ["/account", "/booking", "/login", "/driver", "/api"]
       },
       // Scraper-only crawlers that send no traffic back.
       { userAgent: "SemrushBot", disallow: "/" },

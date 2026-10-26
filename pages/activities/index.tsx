@@ -19,7 +19,7 @@ const EMPTY_FACETS: Facets = {
 };
 
 const bounds = (facets: Facets, key: string): [number, number] =>
-  facets.priceBounds[key] ?? [0, 100000];
+  facets.priceBounds[key] ?? [0, 3_000_000]; // francs (about 1 000 $)
 
 export default function ActivitiesPage({ facets }: Props) {
   const { t, locale } = usePrefs();

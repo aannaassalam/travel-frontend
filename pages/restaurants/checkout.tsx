@@ -8,7 +8,7 @@ import { ApiError, createOrder, getRestaurant, startPayment } from "@/lib/api";
 import { useCart } from "@/lib/cart";
 import { useOnlinePayment } from "@/lib/payments";
 import { Country, DEFAULT_COUNTRY, toE164 } from "@/lib/countries";
-import { price } from "@/lib/money";
+import { baseMinor, price, resolve } from "@/lib/money";
 import { usePrefs } from "@/lib/prefs";
 import { cn } from "@/lib/utils";
 import { Money, PaymentMethod } from "@/typescript/interface/domain.interface";
@@ -64,11 +64,6 @@ export default function RestaurantCheckoutPage() {
   const agreed = Boolean(policy.shown && agreedTo === policy.shown);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Cash on delivery unless the customer says otherwise — and whatever they
-  // said, only what the server offers now for this currency.
-  const online = useOnlinePayment(currency);
-  const [chosen, setChosen] = useState<PaymentMethod>("CASH");
-  const method: PaymentMethod = online.available && chosen === "ONLINE" ? "ONLINE" : "CASH";
   /** The server's reason code, for the one failure that needs a button. */
   const [code, setCode] = useState<string | undefined>();
 
@@ -104,7 +99,16 @@ export default function RestaurantCheckoutPage() {
   }, [subtotal, zone]);
 
   const belowMinimum =
-    zone?.minOrder && (subtotal.USD ?? 0) < (zone.minOrder.USD ?? 0) ? zone.minOrder : null;
+    zone?.minOrder && baseMinor(subtotal) < baseMinor(zone.minOrder) ? zone.minOrder : null;
+
+  // Charged in the currency the total is shown in: the visitor's, or francs when
+  // a line has no price in theirs — never a currency the customer was not shown.
+  const charged = resolve(total, currency).currency;
+  // Cash on delivery unless the customer says otherwise — and whatever they
+  // said, only what the server offers now for this currency.
+  const online = useOnlinePayment(charged);
+  const [chosen, setChosen] = useState<PaymentMethod>("CASH");
+  const method: PaymentMethod = online.available && chosen === "ONLINE" ? "ONLINE" : "CASH";
 
   const phone = toE164(country, form.national);
   const blocked =
@@ -134,7 +138,7 @@ export default function RestaurantCheckoutPage() {
       restaurantSlug,
       lines.map((l) => [l.menuItemId, l.quantity]),
       zone?.id,
-      currency
+      charged
     ]);
     const mint = () =>
       (idem.current = {
@@ -161,7 +165,7 @@ export default function RestaurantCheckoutPage() {
       // A press replayed with another method gets its first order back: how
       // THAT order is paid is settled just below.
       paymentMethod: method,
-      currency,
+      currency: charged,
       locale,
       policyVersionId: policy.versionId
     };

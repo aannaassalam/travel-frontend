@@ -1,6 +1,6 @@
 import SearchResults from "@/components/catalog/SearchResults";
 import { Facets, getFacets, safely } from "@/lib/api";
-import { facetLabel } from "@/lib/i18n";
+import { CAR_TYPES, carTypeLabel } from "@/lib/catalog";
 import { usePrefs } from "@/lib/prefs";
 import { GetStaticProps } from "next";
 
@@ -20,7 +20,7 @@ const EMPTY_FACETS: Facets = {
 };
 
 const bounds = (facets: Facets, key: string): [number, number] =>
-  facets.priceBounds[key] ?? [0, 100000];
+  facets.priceBounds[key] ?? [0, 3_000_000]; // francs (about 1 000 $)
 
 export default function CarsPage({ facets }: Props) {
   const { t, locale } = usePrefs();
@@ -36,11 +36,19 @@ export default function CarsPage({ facets }: Props) {
       }
       priceRange={bounds(facets, "CAR")}
       filters={[
+        // The office's fixed list, not what happens to be on sale: the type is
+        // picked from it in the panel.
         {
           key: "category",
           label: t("results.category"),
           type: "radio",
-          options: facets.categories.map((c) => ({ value: c, label: facetLabel(locale, c) }))
+          options: CAR_TYPES.map((c) => ({ value: c, label: carTypeLabel(locale, c) }))
+        },
+        {
+          key: "make",
+          label: t("car.make"),
+          type: "radio",
+          options: (facets.makes ?? []).map((m) => ({ value: m, label: m }))
         },
         {
           key: "transmission",

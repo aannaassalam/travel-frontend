@@ -6,10 +6,11 @@ import {
   OrderStatusBadges,
   StatusTimeline
 } from "@/components/account/order";
-import { SettlementNote } from "@/components/site/bits";
+import RidePanel from "@/components/transfers/RidePanel";
 import { fmtDateTime } from "@/lib/format";
 import { dial, useSiteContact, waLink } from "@/lib/contact";
 import { usePrefs } from "@/lib/prefs";
+import { usePolicyTitle } from "@/lib/siteContent";
 import { useOrder } from "@/lib/orders";
 import { Order } from "@/typescript/interface/domain.interface";
 import { Banknote, Headphones, ShieldCheck } from "lucide-react";
@@ -18,6 +19,7 @@ import { useRouter } from "next/router";
 
 /** §11.2 booking detail — status timeline, documents, support. No cancel button. */
 export default function BookingDetail() {
+  const policyTitle = usePolicyTitle();
   const contact = useSiteContact();
   const { t, locale } = usePrefs();
   const router = useRouter();
@@ -57,15 +59,22 @@ export default function BookingDetail() {
                 <OrderStatusBadges order={order} />
               </div>
 
+              {/* Its total says what was charged, the francs beside it. */}
               <div className="mt-4 border-t border-ink-100/70 pt-4">
                 <OrderItems order={order} />
-                <SettlementNote money={order.total} />
               </div>
             </div>
 
+            {/* A transfer: the map, the status, the driver, the alert, the rating. */}
+            <RidePanel order={order} />
+
             {/* Not for a delivery order: food is paid to the driver, and an
-                office deadline here contradicts the confirmation page. */}
-            {order.paymentMethod === "CASH" && order.cashDeadline && !order.delivery && (
+                office deadline here contradicts the confirmation page. Nor for
+                a ride: its cash goes to the driver too (the ride block says so). */}
+            {order.paymentMethod === "CASH" &&
+              order.cashDeadline &&
+              !order.delivery &&
+              !order.items.some((i) => i.ride) && (
               <div className="rounded-card bg-warn-100 p-6 ring-2 ring-warn-600/30 ring-inset">
                 <h3 className="flex items-center gap-2 font-bold text-brand-900">
                   <Banknote className="size-5 text-warn-600" />
@@ -119,7 +128,7 @@ export default function BookingDetail() {
               <div className="rounded-card bg-ink-50 p-6 ring-1 ring-ink-100 ring-inset">
                 <h3 className="flex items-center gap-2 font-bold text-brand-900">
                   <ShieldCheck className="size-5 text-brand-500" />
-                  {t("policy.title")}
+                  {policyTitle}
                 </h3>
                 <p className="mt-2 text-sm text-ink-900">« {order.consent.textShown} »</p>
                 <p className="mt-2 text-xs text-ink-500">

@@ -1,5 +1,5 @@
 import AccountLayout from "@/components/account/AccountLayout";
-import { OrderStatusBadges } from "@/components/account/order";
+import { OrderStatusBadges, rentalSpan } from "@/components/account/order";
 import { Price } from "@/components/site/bits";
 import { fmtDate } from "@/lib/format";
 import { usePrefs } from "@/lib/prefs";
@@ -109,13 +109,15 @@ export default function AccountDashboard() {
                       <p className="font-mono text-xs text-ink-500">{order.reference}</p>
                       {order.travelDate && (
                         <p className="text-sm text-ink-500">
-                          {fmtDate(order.travelDate, locale)}
+                          {order.items[0]?.rentalHours
+                            ? rentalSpan(order.items[0], locale)
+                            : fmtDate(`${order.travelDate.slice(0, 10)}T12:00:00`, locale)}
                         </p>
                       )}
                     </div>
                     <OrderStatusBadges order={order} />
                     <p className="font-bold text-brand-900">
-                      <Price money={order.total} />
+                      <Price money={order.total} charged={order.chargedCurrency} />
                     </p>
                   </li>
                 ))}

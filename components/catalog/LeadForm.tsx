@@ -1,5 +1,6 @@
-import { TextAreaField, TextField } from "@/components/ui/field";
+import { DateField, SelectField, TextAreaField, TextField } from "@/components/ui/field";
 import { isEmail } from "@/lib/format";
+import { addDays, bookableTimesOn, passengerMax, todayIso } from "@/lib/routes";
 import { DEFAULT_COUNTRY, toE164 } from "@/lib/countries";
 import { PhoneField } from "@/components/ui/PhoneField";
 import { usePrefs } from "@/lib/prefs";
@@ -7,7 +8,12 @@ import { createEnquiry } from "@/lib/api";
 import { dial, useSiteContact, waLink } from "@/lib/contact";
 import { saveEnquiry } from "@/lib/store";
 import { toast } from "sonner";
-import { EnquiryKind, Vertical } from "@/typescript/interface/domain.interface";
+import {
+  EnquiryKind,
+  ListingAttributes,
+  Passengers,
+  Vertical
+} from "@/typescript/interface/domain.interface";
 import { CheckCircle2, Loader2, MessageCircle, Phone } from "lucide-react";
 import { useState } from "react";
 
@@ -23,13 +29,19 @@ export default function LeadForm({
   vertical,
   listingLabel,
   defaultMessage = "",
-  compact
+  compact,
+  route
 }: {
   kind: EnquiryKind;
   vertical: Vertical;
   listingLabel?: string;
   defaultMessage?: string;
   compact?: boolean;
+  /**
+   * A bus or flight: its timetable. The form then also asks for the day, the
+   * time and who travels, so the office can look without calling back first.
+   */
+  route?: ListingAttributes;
 }) {
   const { t, locale } = usePrefs();
   const contact = useSiteContact();
@@ -38,8 +50,14 @@ export default function LeadForm({
     name: "",
     phone: "",
     email: "",
-    message: defaultMessage
+    message: defaultMessage,
+    date: "",
+    time: ""
   });
+  const [pax, setPax] = useState<Passengers>({ adults: 1, children: 0, infants: 0 });
+  // That day's departures still to come; on a day the route does not run, any time.
+  const times = route && values.date ? bookableTimesOn(route, values.date) : [];
+  const time = times.length && !times.includes(values.time) ? "" : values.time;
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [country, setCountry] = useState(DEFAULT_COUNTRY);
@@ -57,6 +75,15 @@ export default function LeadForm({
     if (!toE164(country, values.phone)) next.phone = t("err.phone");
     if (values.email && !isEmail(values.email)) next.email = t("err.email");
     if (!values.message.trim()) next.message = t("err.required");
+    if (route) {
+      if (!values.date) next.date = t("err.required");
+      else if (!time) next.time = t("route.pickTime");
+      // A typed time on today's date must still be to come — this device's
+      // clock, as for the timetable's times.
+      else if (!bookableTimesOn({ dailyTimes: [time] }, values.date).length) {
+        next.time = t("route.errDeparture");
+      }
+    }
     setErrors(next);
     return Object.keys(next).length === 0;
   }
@@ -89,7 +116,8 @@ export default function LeadForm({
       phone: toE164(country, values.phone)!,
       email: values.email.trim() || undefined,
       message: values.message.trim(),
-      listingLabel
+      listingLabel,
+      trip: route ? { date: values.date, time, ...pax } : undefined
     };
     try {
       // The server owns the reference and the idempotency window (§4.6).
@@ -148,6 +176,67 @@ export default function LeadForm({
 
   return (
     <form onSubmit={submit} className="space-y-4" noValidate>
+      {route ? (
+        <>
+          <div className={compact ? "space-y-4" : "grid gap-4 sm:grid-cols-2"}>
+            <DateField
+              label={t("route.date")}
+              locale={locale}
+              value={values.date}
+              onChange={(v) => set("date", v)}
+              min={todayIso()}
+              max={addDays(todayIso(), 365)}
+              error={errors.date}
+            />
+            {times.length ? (
+              <SelectField
+                label={t("route.time")}
+                options={times.map((x) => ({ value: x, label: x }))}
+                value={time}
+                onValueChange={(v) => set("time", v)}
+                error={errors.time}
+              />
+            ) : (
+              <TextField
+                label={t("route.time")}
+                type="time"
+                value={values.time}
+                onChange={(e) => set("time", e.target.value)}
+                error={errors.time}
+              />
+            )}
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            {(
+              [
+                ["adults", "route.adults", "route.adultsHint", 1, passengerMax(pax, "adults")],
+                ["children", "route.children", "route.childrenHint", 0, passengerMax(pax, "children")],
+                ["infants", "route.infants", "route.infantsHint", 0, passengerMax(pax, "infants")]
+              ] as const
+            ).map(([key, label, hint, min, max]) => (
+              <SelectField
+                key={key}
+                label={t(label)}
+                helper={t(hint)}
+                options={Array.from({ length: max - min + 1 }, (_, i) => ({
+                  value: String(min + i),
+                  label: String(min + i)
+                }))}
+                value={String(pax[key])}
+                onValueChange={(v) =>
+                  setPax((p) =>
+                    // A baby travels on an adult's lap: never more babies than adults.
+                    key === "adults"
+                      ? { ...p, adults: Number(v), infants: Math.min(p.infants, Number(v)) }
+                      : { ...p, [key]: Number(v) }
+                  )
+                }
+              />
+            ))}
+          </div>
+        </>
+      ) : null}
+
       <div className={compact ? "space-y-4" : "grid gap-4 sm:grid-cols-2"}>
         <TextField
           label={t("rtb.name")}

@@ -1,11 +1,13 @@
 import { Price, SettlementNote } from "@/components/site/bits";
 import { ApiError, getPolicy, type Policy } from "@/lib/api";
 import { useCheckout, useCountdown } from "@/lib/checkout";
-import { fmtDate } from "@/lib/format";
+import { fmtDate, formatMinutes } from "@/lib/format";
 import { mediaUrl } from "@/lib/media";
 import { multiply } from "@/lib/money";
 import { usePrefs } from "@/lib/prefs";
-import { usePolicyNotice } from "@/lib/siteContent";
+import { durationLabel } from "@/lib/rental";
+import { fmtKm } from "@/lib/transfers";
+import { usePolicyNotice, usePolicyTitle } from "@/lib/siteContent";
 import { cn } from "@/lib/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Check, Clock, ShieldCheck } from "lucide-react";
@@ -97,6 +99,7 @@ export function HoldBanner() {
 export function Summary({ children }: { children?: React.ReactNode }) {
   const { t, locale } = usePrefs();
   const notice = usePolicyNotice();
+  const policyTitle = usePolicyTitle();
   const { selection, subtotal, total } = useCheckout();
   if (!selection) return null;
 
@@ -131,6 +134,17 @@ export function Summary({ children }: { children?: React.ReactNode }) {
                 {fmtDate(`${selection.startDate.slice(0, 10)}T12:00:00`, locale)} ·{" "}
                 <strong className="font-semibold text-ink-700">{selection.startDate.slice(11, 16)}</strong>
               </p>
+            ) : selection.rentalHours && selection.startDate && selection.endDate ? (
+              // A car by the hour: pick-up and return, as written — no zone.
+              <p className="mt-1 text-sm text-ink-500">
+                {fmtDate(`${selection.startDate.slice(0, 10)}T12:00:00`, locale)} ·{" "}
+                <strong className="font-semibold text-ink-700">{selection.startDate.slice(11, 16)}</strong> →{" "}
+                {fmtDate(`${selection.endDate.slice(0, 10)}T12:00:00`, locale)} ·{" "}
+                <strong className="font-semibold text-ink-700">{selection.endDate.slice(11, 16)}</strong>
+              </p>
+            ) : selection.transfer ? (
+              // A ride: its label is the route and its sublabel the date and time.
+              null
             ) : selection.startDate ? (
               <p className="mt-1 text-sm text-ink-500">
                 {fmtDate(selection.startDate, locale)}
@@ -167,6 +181,57 @@ export function Summary({ children }: { children?: React.ReactNode }) {
                   </dd>
                 </div>
               ))
+          ) : selection.rentalHours && selection.rentalBlocks ? (
+            // A car: the length, then what it costs — the cheapest mix of its rates.
+            <>
+              <div className="flex justify-between gap-4">
+                <dt className="text-ink-500">{t("listing.duration")}</dt>
+                <dd className="font-medium">{durationLabel(selection.rentalHours, t)}</dd>
+              </div>
+              {selection.rentalBlocks.map((b) => (
+                <div key={b.hours} className="flex justify-between gap-4">
+                  <dt className="text-ink-500">
+                    {b.count} × {b.hours} h
+                  </dt>
+                  <dd className="font-medium">
+                    <Price money={b.price} />
+                  </dd>
+                </div>
+              ))}
+            </>
+          ) : selection.transfer ? (
+            // A ride: the category, the distance (or the hours), then who travels.
+            <>
+              <div className="flex justify-between gap-4">
+                <dt className="text-ink-500">{t("results.category")}</dt>
+                <dd className="font-medium">{selection.transferInfo?.category}</dd>
+              </div>
+              {selection.transferInfo?.distanceKm != null ? (
+                <div className="flex justify-between gap-4">
+                  <dt className="text-ink-500">{t("transfer.distance")}</dt>
+                  <dd className="font-medium">
+                    {fmtKm(selection.transferInfo.distanceKm, locale)}
+                    {selection.transferInfo.durationMinutes
+                      ? ` · ${formatMinutes(selection.transferInfo.durationMinutes, locale)}`
+                      : ""}
+                  </dd>
+                </div>
+              ) : selection.transfer.hours ? (
+                <div className="flex justify-between gap-4">
+                  <dt className="text-ink-500">{t("transfer.hours")}</dt>
+                  <dd className="font-medium">{selection.transfer.hours} h</dd>
+                </div>
+              ) : null}
+              <div className="flex justify-between gap-4">
+                <dt className="text-ink-500">
+                  {selection.transfer.passengers}{" "}
+                  {t(selection.transfer.passengers > 1 ? "common.people" : "common.person")}
+                </dt>
+                <dd className="font-medium">
+                  <Price money={subtotal} />
+                </dd>
+              </div>
+            </>
           ) : (
             <div className="flex justify-between gap-4">
               <dt className="text-ink-500">
@@ -195,7 +260,7 @@ export function Summary({ children }: { children?: React.ReactNode }) {
           <p className="flex gap-2 text-sm text-ink-700">
             <ShieldCheck className="mt-0.5 size-4 shrink-0 text-brand-500" />
             <span>
-              <strong className="font-semibold">{t("policy.title")}</strong> —{" "}
+              <strong className="font-semibold">{policyTitle}</strong> —{" "}
               {notice}
             </span>
           </p>

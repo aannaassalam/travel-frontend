@@ -110,7 +110,7 @@ export const POLICY_SECTIONS: Record<
     },
     {
       heading: "5. Prix et devises",
-      body: "Les prix sont établis en dollars américains. L'affichage en francs congolais ou en euros est une conversion au taux fixé par nos soins, verrouillé au moment de la commande. Le montant réellement débité vous est indiqué dans la devise de règlement avant validation du paiement."
+      body: "Les prix sont établis en francs congolais. L'affichage en dollars américains ou en euros est une conversion au taux fixé par nos soins, verrouillé au moment de la commande. Le montant réellement débité vous est indiqué dans la devise de règlement avant validation du paiement."
     },
     {
       heading: "6. Documents de voyage et identité",
@@ -140,7 +140,7 @@ export const POLICY_SECTIONS: Record<
     },
     {
       heading: "5. Prices and currencies",
-      body: "Prices are set in US dollars. Display in Congolese francs or euros is a conversion at our own rate, locked at the moment you order. The amount actually charged is shown to you in the settlement currency before you confirm payment."
+      body: "Prices are set in Congolese francs. Display in US dollars or euros is a conversion at our own rate, locked at the moment you order. The amount actually charged is shown to you in the settlement currency before you confirm payment."
     },
     {
       heading: "6. Travel documents and identity",

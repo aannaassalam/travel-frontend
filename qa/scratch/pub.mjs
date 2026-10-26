@@ -1,7 +1,7 @@
 const AD = "http://localhost:3001/admin/v1";
 const tok = (await (await fetch(`${AD}/auth/login`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: "admin@yopmail.com", password: "12345678" }) })).json()).token;
 const h = { Authorization: `Bearer ${tok}`, "content-type": "application/json" };
-const l = (await (await fetch(`${AD}/listings`, { method: "POST", headers: h, body: JSON.stringify({ vertical: "CAR", title: { fr: "qa_test_pub", en: "qa_test_pub" }, city: "Lubumbashi", quantityTotal: 50, sellPrice: { USD: 10 }, costPrice: { USD: 5 }, attributes: { vehicleClass: "SUV", transmission: "AUTOMATIC", withDriver: true } }) })).json()).listing;
+const l = (await (await fetch(`${AD}/listings`, { method: "POST", headers: h, body: JSON.stringify({ vertical: "CAR", title: { fr: "qa_test_pub", en: "qa_test_pub" }, city: "Lubumbashi", quantityTotal: 50, sellPrice: { CDF: 300 }, costPrice: { CDF: 200 }, attributes: { vehicleClass: "SUV", transmission: "AUTOMATIC", withDriver: true } }) })).json()).listing;
 const p = await fetch(`${AD}/listings/${l.id}/publish`, { method: "POST", headers: h });
 const pb = await p.json();
 console.log("publish:", p.status, "| message:", pb.message, "| blockers:", JSON.stringify(pb.blockers ?? pb.details ?? pb.code ?? ""));

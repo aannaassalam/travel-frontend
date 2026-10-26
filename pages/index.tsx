@@ -9,11 +9,14 @@ import RecentlyViewed from "@/components/catalog/RecentlyViewed";
 import SearchWidget from "@/components/search/SearchWidget";
 import { SectionHeading } from "@/components/site/bits";
 import Layout, { SITE } from "@/components/site/Layout";
+import Partners from "@/components/site/Partners";
 import {
   getHomeFeed,
   getLocations,
+  getPartners,
   getSiteContent,
   safely,
+  type Partner,
   type ServiceLocation,
   type SiteContent
 } from "@/lib/api";
@@ -48,6 +51,8 @@ interface Props {
   hero: SiteContent["home"] | null;
   /** Serviced places, owned by the admin — not a constant in this bundle. */
   destinations: ServiceLocation[];
+  /** Logos from the admin's Partners screen; none hides the section. */
+  partners: Partner[];
 }
 
 /**
@@ -110,7 +115,15 @@ const INSPIRATION = [
   }
 ];
 
-export default function Home({ deals, hotels, properties, heroImage, hero, destinations }: Props) {
+export default function Home({
+  deals,
+  hotels,
+  properties,
+  heroImage,
+  hero,
+  destinations,
+  partners
+}: Props) {
   const contact = useSiteContact();
   const { t, locale } = usePrefs();
   const heroTitle = siteText(hero?.heroTitle, locale, t("home.heroTitle"));
@@ -403,6 +416,9 @@ export default function Home({ deals, hotels, properties, heroImage, hero, desti
         </ul>
       </section>
 
+      {/* --------------------------------------------------------- partners */}
+      <Partners partners={partners} />
+
       {/* ------------------------------------------------------- office CTA */}
       <section className="container-site pb-20">
         <div className="wash-dark grid overflow-hidden rounded-xl2 shadow-xl lg:grid-cols-2">
@@ -493,6 +509,9 @@ export const getStaticProps: GetStaticProps<Props> = async () => {
   // The banner's picture and wording, as edited in the admin.
   const site = await safely(() => getSiteContent(), null);
 
+  // Unreachable is "no partners": the section hides, the page still builds.
+  const partners = await safely(() => getPartners(), []);
+
   const dropped = HERO_CANDIDATES.find((name) =>
     existsSync(join(process.cwd(), "public", "img", name))
   );
@@ -502,7 +521,7 @@ export const getStaticProps: GetStaticProps<Props> = async () => {
     (dropped ? `/img/${dropped}` : HERO_FALLBACK);
 
   return {
-    props: { ...feed, heroImage, hero: site?.home ?? null, destinations },
+    props: { ...feed, heroImage, hero: site?.home ?? null, destinations, partners },
     revalidate: 120
   };
 };

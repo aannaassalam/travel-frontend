@@ -2,6 +2,7 @@ import CartBar from "@/components/restaurant/CartBar";
 import Gallery, { PhotoGrid } from "@/components/catalog/Gallery";
 import ListingVideo from "@/components/catalog/ListingVideo";
 import LocationMap from "@/components/catalog/LocationMap";
+import Reviews from "@/components/catalog/Reviews";
 import { Breadcrumbs } from "@/components/site/bits";
 import Layout from "@/components/site/Layout";
 import { getRestaurant } from "@/lib/api";
@@ -188,6 +189,8 @@ export default function RestaurantPage() {
                 </p>
               </div>
           </section>
+
+          <Reviews targetType="RESTAURANT" target={r.id} />
         </div>
       </div>
 

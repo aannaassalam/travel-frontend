@@ -1,16 +1,20 @@
 import { NoImageSpot } from "@/components/art/spots";
 import { Price, PolicyChip, RatingBadge, Scarcity, Stars, hasPrice } from "@/components/site/bits";
-import { detailHref, hotelHref } from "@/lib/catalog";
+import { carTypeLabel, detailHref, hotelHref, propertySizes, sqm } from "@/lib/catalog";
 import { mediaUrl } from "@/lib/media";
 import { fmtDateLong, formatMinutes } from "@/lib/format";
 import { facetLabel } from "@/lib/i18n";
+import { price } from "@/lib/money";
 import { usePrefs } from "@/lib/prefs";
-import { arrivalOf, bookableTimesOn, timetableSummary } from "@/lib/routes";
+import { ratesOf } from "@/lib/rental";
+import { usePolicyShort } from "@/lib/siteContent";
+import { arrivalOf, bookableTimesOn, timetableLines } from "@/lib/routes";
 import { cn } from "@/lib/utils";
-import { Hotel, Listing, Money } from "@/typescript/interface/domain.interface";
+import { Hotel, Listing, ListingAttributes, Money } from "@/typescript/interface/domain.interface";
 import {
   ArrowRight,
   Bed,
+  Building2,
   Clock,
   Gauge,
   MapPin,
@@ -44,6 +48,8 @@ export function VerticalChip({
   label: string;
   Icon?: typeof Plane;
 }) {
+  // A route with no agency, a car with no type: no chip rather than a blank pill.
+  if (!label) return null;
   return (
     <span className="chip" style={{ ["--chip-color" as string]: VERTICAL_COLOR[vertical] }}>
       {Icon && <Icon className="size-3" />}
@@ -123,10 +129,13 @@ function PriceRail({
   cta,
   available,
   noun,
-  soldOutCta
+  soldOutCta,
+  note
 }: {
   money: Money | number | undefined;
   suffix?: string;
+  /** A second small line under the suffix. */
+  note?: React.ReactNode;
   href: string;
   cta: string;
   /** Absent when the stock is not counted: never sold out. */
@@ -146,6 +155,7 @@ function PriceRail({
             className="display block text-[28px] leading-none text-brand-900"
           />
           {suffix && <p className="mt-1 text-xs text-ink-500">{suffix}</p>}
+          {note}
         </div>
         <Scarcity available={available} noun={noun} />
       </div>
@@ -162,6 +172,38 @@ function PriceRail({
 
 /* ------------------------------------------------------- bus and flight row */
 
+/** The searched day if the search had one, its departures still to come, and a link that carries the day on. */
+function useSearchedDay(listing: Listing) {
+  const router = useRouter();
+  const raw = router.query.from;
+  const day = typeof raw === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : undefined;
+  return {
+    day,
+    times: day ? bookableTimesOn(listing.attributes, day) : [],
+    href: `${detailHref(listing)}${day ? `?date=${day}` : ""}`
+  };
+}
+
+/**
+ * A route's week on a card, a line a day, Monday first — "Lun 07:30 · 08:00" —
+ * or one "Tous les jours" line for a bus. Compact: the detail page has the table.
+ */
+function Timetable({ a }: { a: ListingAttributes }) {
+  const { t, locale } = usePrefs();
+  const lines = timetableLines(a, locale);
+  if (!lines.length) return null;
+  return (
+    <div className="flex gap-1.5 text-sm text-ink-700">
+      <span className="shrink-0 font-semibold">{t("route.times")} :</span>
+      <ul>
+        {lines.map((line) => (
+          <li key={line}>{line}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 /**
  * A bus or flight route: the agency, the two ends, and its departures — the
  * searched day's when the search had a date (the link carries the day on to
@@ -169,12 +211,8 @@ function PriceRail({
  */
 export function RouteRow({ listing }: { listing: Listing }) {
   const { t, locale, lz } = usePrefs();
-  const router = useRouter();
   const a = listing.attributes;
-  const raw = router.query.from;
-  const day = typeof raw === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : undefined;
-  const times = day ? bookableTimesOn(a, day) : [];
-  const href = `${detailHref(listing)}${day ? `?date=${day}` : ""}`;
+  const { day, times, href } = useSearchedDay(listing);
   const isFlight = listing.vertical === "FLIGHT";
 
   return (
@@ -227,14 +265,13 @@ export function RouteRow({ listing }: { listing: Listing }) {
               </ul>
             </div>
           ) : (
-            <p className="text-sm text-ink-500">
-              {t("route.noDeparture")} {timetableSummary(a, locale)}
-            </p>
+            <>
+              <p className="text-sm text-ink-500">{t("route.noDeparture")}</p>
+              <Timetable a={a} />
+            </>
           )
         ) : (
-          <p className="text-sm text-ink-700">
-            <span className="font-semibold">{t("route.times")} :</span> {timetableSummary(a, locale)}
-          </p>
+          <Timetable a={a} />
         )}
         {a.routeStops?.length ? (
           <p className="line-clamp-1 text-sm text-ink-500">
@@ -264,10 +301,10 @@ export function CarRow({ listing }: { listing: Listing }) {
       <Thumb src={mediaUrl(listing.images[0])} alt={lz(listing.title)} className="h-44 sm:h-auto sm:w-60" />
       <div className="flex min-w-0 flex-1 flex-col gap-2 p-4">
         <div className="flex flex-wrap items-center gap-2">
-          <VerticalChip vertical="CAR" label={a.category ?? ""} />
+          <VerticalChip vertical="CAR" label={a.category ? carTypeLabel(locale, a.category) : ""} />
           {a.withDriver && (
             <span className="chip" style={{ ["--chip-color" as string]: "var(--color-teal-600)" }}>
-              {locale === "fr" ? "Chauffeur inclus" : "Driver included"}
+              {t("car.driverIncluded")}
             </span>
           )}
           <PolicyChip />
@@ -277,32 +314,73 @@ export function CarRow({ listing }: { listing: Listing }) {
             {lz(listing.title)}
           </Link>
         </h3>
+        <CarCompany a={a} />
+        {/* Only what the office filled in: an empty line, or "Manual" for a
+            gearbox nobody gave, says something untrue. */}
         <ul className="flex flex-wrap gap-x-5 gap-y-1.5 text-sm text-ink-700">
-          <li className="flex items-center gap-1.5">
-            <Settings2 className="size-4 text-ink-500" />
-            {a.transmission === "AUTOMATIC"
-              ? locale === "fr" ? "Automatique" : "Automatic"
-              : locale === "fr" ? "Manuelle" : "Manual"}
-          </li>
-          <li className="flex items-center gap-1.5">
-            <Gauge className="size-4 text-ink-500" />
-            {a.mileageLimit}
-          </li>
-          <li className="flex items-center gap-1.5">
-            <MapPin className="size-4 text-ink-500" />
-            {a.pickupLocations?.[0]}
-          </li>
+          {a.transmission && (
+            <li className="flex items-center gap-1.5">
+              <Settings2 className="size-4 text-ink-500" />
+              {a.transmission === "AUTOMATIC"
+                ? locale === "fr" ? "Automatique" : "Automatic"
+                : locale === "fr" ? "Manuelle" : "Manual"}
+            </li>
+          )}
+          {a.mileageLimit && (
+            <li className="flex items-center gap-1.5">
+              <Gauge className="size-4 text-ink-500" />
+              {a.mileageLimit}
+            </li>
+          )}
+          {a.pickupLocations?.[0] && (
+            <li className="flex items-center gap-1.5">
+              <MapPin className="size-4 text-ink-500" />
+              {a.pickupLocations[0]}
+            </li>
+          )}
         </ul>
         <RatingBadge rating={listing.rating} count={listing.reviewCount} size="sm" />
       </div>
       <PriceRail
         money={listing.sellPrice}
-        suffix={t("listing.perDay")}
+        suffix={t("listing.per24h")}
+        note={<ShortRate listing={listing} />}
         href={detailHref(listing)}
         cta={t("listing.select")}
         available={listing.available}
       />
     </article>
+  );
+}
+
+/** A car's rental company — its supplier, named as a route names its agency. */
+function CarCompany({ a }: { a: ListingAttributes }) {
+  const { t } = usePrefs();
+  if (!a.operator) return null;
+  return (
+    <p className="flex items-center gap-1.5 text-sm text-brand-500">
+      <Building2 className="size-3.5 shrink-0" aria-hidden />
+      <span className="sr-only">{t("car.company")} : </span>
+      {a.operator}
+    </p>
+  );
+}
+
+/**
+ * Under a car's 24-hour price: "ou 15 $ / heure" — its hourly price, else its
+ * shortest one ("ou 60 $ / 6 h"). Nothing for a car rented by the 24 h only.
+ */
+function ShortRate({ listing }: { listing: Listing }) {
+  const { t, currency, locale } = usePrefs();
+  const rate = ratesOf(listing).find((r) => r.hours < 24);
+  if (!rate) return null;
+  const amount = price(rate.price, currency, locale);
+  return (
+    <p className="mt-0.5 text-xs text-ink-500">
+      {rate.hours === 1
+        ? t("rental.orPerHour", { price: amount })
+        : t("rental.orPer", { price: amount, n: rate.hours })}
+    </p>
   );
 }
 
@@ -411,11 +489,7 @@ export function PropertyRow({ listing }: { listing: Listing }) {
             vertical="PROPERTY"
             label={PROPERTY_LABEL[a.propertyType ?? "HOUSE_SALE"][locale === "en" ? "en" : "fr"]}
           />
-          {a.availabilityStatus === "UNDER_OFFER" && (
-            <span className="rounded bg-warn-100 px-2 py-1 text-xs font-semibold text-warn-600">
-              {locale === "fr" ? "Sous offre" : "Under offer"}
-            </span>
-          )}
+          {a.availabilityStatus === "UNDER_OFFER" && <UnderOffer />}
         </div>
         <h3 className="text-lg font-bold text-brand-900">
           <Link href={detailHref(listing)} className="after:absolute after:inset-0 hover:underline">
@@ -434,18 +508,16 @@ export function PropertyRow({ listing }: { listing: Listing }) {
               {a.bedrooms} {t("results.bedrooms").toLowerCase()}
             </li>
           ) : null}
-          {a.areaSqm ? (
-            <li className="flex items-center gap-1.5">
-              <Maximize className="size-4 text-ink-500" />
-              {a.areaSqm} m²
+          {propertySizes(a).map((s) => (
+            <li key={s.kind} className="flex items-center gap-1.5">
+              {s.kind === "plot" ? (
+                <Ruler className="size-4 text-ink-500" />
+              ) : (
+                <Maximize className="size-4 text-ink-500" />
+              )}
+              {sizeText(s, t)}
             </li>
-          ) : null}
-          {a.plotSizeSqm ? (
-            <li className="flex items-center gap-1.5">
-              <Ruler className="size-4 text-ink-500" />
-              {locale === "fr" ? "Parcelle" : "Plot"} {a.plotSizeSqm.toLocaleString("fr-FR")} m²
-            </li>
-          ) : null}
+          ))}
         </ul>
       </div>
       <div className="flex shrink-0 flex-col justify-end gap-3 bg-ink-50/60 p-5 sm:w-60 sm:text-right">
@@ -468,6 +540,22 @@ export function PropertyRow({ listing }: { listing: Listing }) {
   );
 }
 
+/** "320 m²", or "Parcelle 900 m²" for a plot — the one size land has. */
+const sizeText = (
+  s: ReturnType<typeof propertySizes>[number],
+  t: (key: string) => string
+) => (s.kind === "plot" ? `${t("property.plot")} ${sqm(s.sqm)}` : sqm(s.sqm));
+
+/** A property with an offer on it: still listed, and said so plainly. */
+function UnderOffer({ className }: { className?: string }) {
+  const { locale } = usePrefs();
+  return (
+    <span className={cn("rounded bg-warn-100 px-2 py-1 text-xs font-semibold text-warn-600", className)}>
+      {locale === "fr" ? "Sous offre" : "Under offer"}
+    </span>
+  );
+}
+
 export const PROPERTY_LABEL: Record<string, { fr: string; en: string }> = {
   HOUSE_SALE: { fr: "Maison à vendre", en: "House for sale" },
   LAND_SALE: { fr: "Terrain à vendre", en: "Land for sale" },
@@ -478,25 +566,33 @@ export const PROPERTY_LABEL: Record<string, { fr: string; en: string }> = {
 
 /* ------------------------------------------------------------- grid tiles */
 
-/** Homepage / cross-sell tile. */
+/*
+ * The tiles draw their image with `Thumb`, like the rows: in the results grid
+ * too, low-data mode loads no photos and a photo that fails is not a blank box.
+ */
+
+/**
+ * The §2.2 reminder a tile has room for: the office's short wording, the same
+ * as the rows' badge. Right-aligned, as it may wrap beside a wide price.
+ */
+function NonRefundable() {
+  const short = usePolicyShort();
+  return <span className="text-right text-[11px] text-ink-300">{short}</span>;
+}
+
+/** Homepage / cross-sell tile, and a car or activity in the results grid. */
 export function DealTile({ listing }: { listing: Listing }) {
-  const { t, locale, lz } = usePrefs();
-  const suffix =
-    listing.vertical === "CAR"
-      ? t("listing.perDay")
-      : listing.vertical === "HOTEL"
-        ? t("listing.perNight")
-        : t("listing.perPerson");
+  const { t, lz } = usePrefs();
+  const isCar = listing.vertical === "CAR";
+  const suffix = isCar
+    ? t("listing.per24h")
+    : listing.vertical === "HOTEL"
+      ? t("listing.perNight")
+      : t("listing.perPerson");
   return (
     <article className={TILE}>
       <div className="relative aspect-[4/3] overflow-hidden bg-ink-50">
-        <Image
-          src={mediaUrl(listing.images[0])}
-          alt={lz(listing.title)}
-          fill
-          sizes="(max-width: 768px) 100vw, 340px"
-          className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-        />
+        <Thumb src={mediaUrl(listing.images[0])} alt={lz(listing.title)} className="absolute inset-0" />
         <div
           className="absolute inset-0 bg-linear-to-t from-brand-900/55 via-brand-900/5 to-transparent"
           aria-hidden
@@ -517,6 +613,7 @@ export function DealTile({ listing }: { listing: Listing }) {
             {lz(listing.title)}
           </Link>
         </h3>
+        {isCar && <CarCompany a={listing.attributes} />}
         <RatingBadge rating={listing.rating} count={listing.reviewCount} size="sm" />
         <div className="mt-auto flex items-end justify-between gap-2 pt-3">
           <div>
@@ -526,10 +623,71 @@ export function DealTile({ listing }: { listing: Listing }) {
               className="display block text-[24px] leading-none text-brand-900"
             />
             <p className="mt-1 text-xs text-ink-500">{suffix}</p>
+            {isCar && <ShortRate listing={listing} />}
           </div>
-          <span className="text-[11px] text-ink-300">
-            {locale === "fr" ? "Non remboursable" : "Non-refundable"}
-          </span>
+          <NonRefundable />
+        </div>
+      </div>
+    </article>
+  );
+}
+
+/** The grid twin of `RouteRow`: agency, the two ends, the day's departures or the timetable, the adult fare. */
+export function RouteTile({ listing }: { listing: Listing }) {
+  const { t, locale, lz } = usePrefs();
+  const a = listing.attributes;
+  const { day, times, href } = useSearchedDay(listing);
+  return (
+    <article className={TILE}>
+      <div className="relative">
+        <Thumb src={mediaUrl(listing.images[0])} alt={lz(listing.title)} className="aspect-4/3" />
+        <span className="absolute left-4 top-4 shadow-xs backdrop-blur-sm">
+          <VerticalChip
+            vertical={listing.vertical}
+            label={a.operator ?? ""}
+            Icon={listing.vertical === "FLIGHT" ? Plane : undefined}
+          />
+        </span>
+      </div>
+      <div className="flex flex-1 flex-col gap-2.5 p-5">
+        <h3 className="text-[17px] font-bold leading-snug text-brand-900">
+          <Link href={href} className="after:absolute after:inset-0">
+            {listing.city} → {a.destination}
+          </Link>
+        </h3>
+        {day && times.length ? (
+          <div>
+            <p className="mb-1.5 text-xs text-ink-500">{fmtDateLong(`${day}T12:00:00`, locale)}</p>
+            <ul className="flex flex-wrap gap-1.5">
+              {times.map((time) => (
+                <li
+                  key={time}
+                  className="rounded-md bg-brand-50 px-2 py-0.5 font-mono text-sm font-bold text-brand-900"
+                >
+                  {time}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <>
+            {day ? <p className="text-sm text-ink-500">{t("route.noDeparture")}</p> : null}
+            <Timetable a={a} />
+          </>
+        )}
+        <RatingBadge rating={listing.rating} count={listing.reviewCount} size="sm" />
+        <div className="mt-auto flex items-end justify-between gap-2 pt-3">
+          <div>
+            <p className="eyebrow text-ink-300">{t("listing.from")}</p>
+            <Price
+              money={listing.sellPrice}
+              className="display block text-[24px] leading-none text-brand-900"
+            />
+            <p className="mt-1 text-xs text-ink-500">
+              {t("listing.perPerson")} · {t("route.adult").toLowerCase()}
+            </p>
+          </div>
+          <NonRefundable />
         </div>
       </div>
     </article>
@@ -541,13 +699,7 @@ export function HotelTile({ hotel }: { hotel: Hotel }) {
   return (
     <article className={TILE}>
       <div className="relative aspect-4/3 overflow-hidden bg-ink-50">
-        <Image
-          src={mediaUrl(hotel.images[0])}
-          alt={lz(hotel.name)}
-          fill
-          sizes="(max-width: 768px) 100vw, 340px"
-          className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-        />
+        <Thumb src={mediaUrl(hotel.images[0])} alt={lz(hotel.name)} className="absolute inset-0" />
         <div
           className="absolute inset-0 bg-linear-to-t from-brand-900/55 via-brand-900/5 to-transparent"
           aria-hidden
@@ -567,7 +719,7 @@ export function HotelTile({ hotel }: { hotel: Hotel }) {
           {hotel.city}
         </p>
         <RatingBadge rating={hotel.rating} count={hotel.reviewCount} size="sm" />
-        <div className="mt-auto pt-3">
+        <div className="mt-auto flex items-end justify-between gap-2 pt-3">
           {/*
             No price rather than a wrong one. The related-hotels projection can
             return 0 where no room has been priced for the dates, and "from $0"
@@ -575,19 +727,20 @@ export function HotelTile({ hotel }: { hotel: Hotel }) {
             card is selling.
           */}
           {hasPrice(hotel.fromPrice) ? (
-            <>
+            <div>
               <p className="eyebrow text-ink-300">{t("listing.from")}</p>
               <Price
                 money={hotel.fromPrice}
                 className="display block text-[24px] leading-none text-brand-900"
               />
               <p className="mt-1 text-xs text-ink-500">{t("listing.perNight")}</p>
-            </>
+            </div>
           ) : (
             <p className="text-sm font-semibold text-brand-600">
               {t("listing.details")}
             </p>
           )}
+          <NonRefundable />
         </div>
       </div>
     </article>
@@ -600,13 +753,7 @@ export function PropertyTile({ listing }: { listing: Listing }) {
   return (
     <article className={TILE}>
       <div className="relative aspect-4/3 overflow-hidden bg-ink-50">
-        <Image
-          src={mediaUrl(listing.images[0])}
-          alt={lz(listing.title)}
-          fill
-          sizes="(max-width: 768px) 100vw, 340px"
-          className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-        />
+        <Thumb src={mediaUrl(listing.images[0])} alt={lz(listing.title)} className="absolute inset-0" />
         <div
           className="absolute inset-0 bg-linear-to-t from-brand-900/55 via-brand-900/5 to-transparent"
           aria-hidden
@@ -614,6 +761,9 @@ export function PropertyTile({ listing }: { listing: Listing }) {
         <span className="eyebrow absolute left-4 top-4 rounded-md bg-white/95 px-2 py-1 text-brand-700 shadow-xs backdrop-blur-sm">
           {PROPERTY_LABEL[a.propertyType ?? "HOUSE_SALE"][locale === "en" ? "en" : "fr"]}
         </span>
+        {a.availabilityStatus === "UNDER_OFFER" && (
+          <UnderOffer className="absolute bottom-3 right-3 shadow-xs" />
+        )}
       </div>
       <div className="flex flex-1 flex-col gap-2 p-5">
         <h3 className="line-clamp-2 text-[17px] font-bold leading-snug text-brand-900">
@@ -625,6 +775,13 @@ export function PropertyTile({ listing }: { listing: Listing }) {
           <MapPin className="size-3.5 text-ink-300" />
           {listing.city}
         </p>
+        {propertySizes(a).length ? (
+          <p className="text-sm text-ink-700">
+            {propertySizes(a)
+              .map((s) => sizeText(s, t))
+              .join(" · ")}
+          </p>
+        ) : null}
         <div className="mt-auto pt-3">
           <Price
             money={listing.sellPrice}
@@ -666,6 +823,22 @@ export function DestinationTile({
       </div>
     </Link>
   );
+}
+
+/** The grid's tile for a listing, as `ResultRow` is the list's row. */
+export function ResultTile({ listing }: { listing: Listing }) {
+  switch (listing.vertical) {
+    case "FLIGHT":
+    case "BUS":
+      return <RouteTile listing={listing} />;
+    case "CAR":
+    case "ACTIVITY":
+      return <DealTile listing={listing} />;
+    case "PROPERTY":
+      return <PropertyTile listing={listing} />;
+    default:
+      return null;
+  }
 }
 
 /** One row component to pick from, so pages do not each grow a switch. */

@@ -1,13 +1,15 @@
-import { PropertyRow } from "@/components/catalog/cards";
+import { PropertyRow, PropertyTile } from "@/components/catalog/cards";
 import EmptyState from "@/components/catalog/EmptyState";
 import LeadForm from "@/components/catalog/LeadForm";
 import ResultsSearch from "@/components/catalog/ResultsSearch";
+import ViewToggle from "@/components/catalog/ViewToggle";
 import { Breadcrumbs } from "@/components/site/bits";
 import Layout from "@/components/site/Layout";
-import { Skeleton } from "@/components/ui/field";
+import { CardSkeleton, Skeleton } from "@/components/ui/field";
 import { AlertTriangle, RotateCw } from "lucide-react";
 import { safely, searchListings } from "@/lib/api";
 import { usePrefs } from "@/lib/prefs";
+import { cn } from "@/lib/utils";
 import { Listing } from "@/typescript/interface/domain.interface";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { GetStaticPaths, GetStaticProps } from "next";
@@ -76,7 +78,8 @@ export default function PropertyCategory({
   kind,
   propertyType
 }: Props) {
-  const { t, locale } = usePrefs();
+  const { t, locale, view = "list" } = usePrefs();
+  const grid = view === "grid";
   const c = locale === "en" ? copy.en : copy.fr;
   const router = useRouter();
   const q = typeof router.query.q === "string" ? router.query.q : "";
@@ -117,12 +120,13 @@ export default function PropertyCategory({
 
         {/* A div, not a p: the skeleton is a div and a div inside a p is
             invalid HTML — see the same note in SearchResults. */}
-        <div className="mb-4 text-sm text-ink-500">
+        <div className="mb-4 flex items-center justify-between gap-3 text-sm text-ink-500">
           {pending ? (
             <Skeleton className="h-4 w-16" />
           ) : (
-            `${items.length} ${locale === "fr" ? "biens" : "listings"}`
+            <span>{`${items.length} ${locale === "fr" ? "biens" : "listings"}`}</span>
           )}
+          <ViewToggle value={view} />
         </div>
 
         {q && isError ? (
@@ -135,10 +139,10 @@ export default function PropertyCategory({
             </button>
           </div>
         ) : pending ? (
-          <div className="space-y-4">
-            {Array.from({ length: 3 }, (_, i) => (
-              <Skeleton key={i} className="h-44 w-full" />
-            ))}
+          <div className={grid ? GRID : "space-y-4"}>
+            {Array.from({ length: 3 }, (_, i) =>
+              grid ? <CardSkeleton key={i} /> : <Skeleton key={i} className="h-44 w-full" />
+            )}
           </div>
         ) : items.length === 0 ? (
           <div className="space-y-6">
@@ -151,13 +155,15 @@ export default function PropertyCategory({
           </div>
         ) : (
           <div
-            className={`space-y-4 transition-opacity duration-200 ${
+            className={cn(
+              "transition-opacity duration-200",
+              grid ? GRID : "space-y-4",
               isFetching ? "opacity-55" : "opacity-100"
-            }`}
+            )}
           >
-            {items.map((l) => (
-              <PropertyRow key={l.id} listing={l} />
-            ))}
+            {items.map((l) =>
+              grid ? <PropertyTile key={l.id} listing={l} /> : <PropertyRow key={l.id} listing={l} />
+            )}
           </div>
         )}
 
@@ -180,6 +186,9 @@ export default function PropertyCategory({
     </Layout>
   );
 }
+
+/** No filter sidebar on these pages: three tiles a row from a laptop up. */
+const GRID = "grid gap-5 sm:grid-cols-2 lg:grid-cols-3";
 
 export const getStaticPaths: GetStaticPaths = async () => ({
   paths: ROUTES.map((r) => ({

@@ -143,7 +143,10 @@ const nextConfig: NextConfig = {
       { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
       {
         key: "Permissions-Policy",
-        value: "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+        // Geolocation stays ours alone: the security alert on a ride page
+        // sends the position when the visitor allows it. `()` would have
+        // silenced that prompt and sent every alert without one.
+        value: "camera=(), microphone=(), geolocation=(self), interest-cohort=()"
       },
       {
         key: "Strict-Transport-Security",
@@ -185,7 +188,8 @@ const nextConfig: NextConfig = {
         // serving one customer's booking to another is catastrophic and
         // entirely preventable — so the header is set at the framework level
         // rather than trusted to each page.
-        source: "/:path(account|booking)/:rest*",
+        // The driver portal too: a driver's ride list is as private as a booking.
+        source: "/:path(account|booking|driver)/:rest*",
         headers: [
           ...security,
           { key: "Cache-Control", value: "private, no-store, max-age=0" },

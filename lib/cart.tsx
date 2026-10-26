@@ -83,8 +83,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   // and a first paint that disagrees with the server's is a hydration error.
   useEffect(() => {
     try {
-      const raw = sessionStorage.getItem(KEY);
-      if (raw) setState({ ...EMPTY, ...JSON.parse(raw) });
+      const saved: CartState | null = JSON.parse(sessionStorage.getItem(KEY) || "null");
+      // A basket kept from before prices were in francs has no franc price: it
+      // would total "0 FC" and never clear a zone's minimum, so it is dropped.
+      if (saved?.lines?.every((l) => typeof l.unitPrice?.CDF === "number")) {
+        setState({ ...EMPTY, ...saved });
+      }
     } catch {
       /* corrupt or unavailable storage just means an empty cart */
     }
@@ -195,12 +199,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   /**
    * Subtotal per currency, kept only for the currencies every line has a real
-   * typed price in. Summing a line that has no CDF price into a CDF subtotal
+   * typed price in. Summing a line that has no USD price into a USD subtotal
    * would invent a total the customer can never actually be charged, which is
    * the same rule the server applies when it decides what to settle in.
    */
   const subtotal = useMemo<Money>(() => {
-    if (!state.lines.length) return { USD: 0 };
+    if (!state.lines.length) return { CDF: 0 };
     const currencies = (Object.keys(state.lines[0].unitPrice) as (keyof Money)[]).filter((c) =>
       state.lines.every((l) => typeof l.unitPrice[c] === "number")
     );
@@ -208,7 +212,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     for (const c of currencies) {
       out[c] = state.lines.reduce((sum, l) => sum + (l.unitPrice[c] ?? 0) * l.quantity, 0);
     }
-    return Object.keys(out).length ? out : { USD: 0 };
+    return Object.keys(out).length ? out : { CDF: 0 };
   }, [state.lines]);
 
   const value = useMemo<Ctx>(

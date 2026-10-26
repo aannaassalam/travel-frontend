@@ -1,13 +1,15 @@
 import { PolicyLine, RatingBadge, Breadcrumbs } from "@/components/site/bits";
 import Layout from "@/components/site/Layout";
-import { detailHref, VERTICAL_SLUGS } from "@/lib/catalog";
+import { carTypeLabel, detailHref, VERTICAL_SLUGS } from "@/lib/catalog";
 import { mediaUrl, mediaUrls } from "@/lib/media";
-import { baseMinor } from "@/lib/money";
+import { baseMinor, fromBase, price } from "@/lib/money";
 import { formatMinutes } from "@/lib/format";
 import { usePrefs } from "@/lib/prefs";
 import { dayName, isRoute, WEEK_ORDER } from "@/lib/routes";
-import { Listing } from "@/typescript/interface/domain.interface";
+import { BASE_CURRENCY, Listing } from "@/typescript/interface/domain.interface";
 import {
+  Building2,
+  Car,
   Check,
   Clock,
   Gauge,
@@ -25,6 +27,7 @@ import { DealTile } from "./cards";
 import Gallery, { PhotoGrid } from "./Gallery";
 import LeadForm from "./LeadForm";
 import ListingVideo from "./ListingVideo";
+import Reviews from "./Reviews";
 import SaveButton from "./SaveButton";
 
 /**
@@ -42,7 +45,7 @@ export default function ListingDetail({
   listing: Listing;
   related: Listing[];
 }) {
-  const { t, locale, lz } = usePrefs();
+  const { t, locale, lz, currency, rates } = usePrefs();
   useRecordView(listing.slug);
   const a = listing.attributes;
   const verticalLabel = {
@@ -52,7 +55,9 @@ export default function ListingDetail({
     ACTIVITY: t("nav.activities"),
     RESTAURANT: t("nav.restaurants"),
     HOTEL: t("nav.hotels"),
-    PROPERTY: t("nav.property")
+    PROPERTY: t("nav.property"),
+    // Never a listing's vertical; named so the map stays total over `Vertical`.
+    TRANSFER: t("nav.transfers")
   }[listing.vertical];
   // The nearest thing a listing has to an address: an activity's meeting
   // point, a car's first pick-up point, otherwise the city alone.
@@ -73,8 +78,8 @@ export default function ListingDetail({
         image: mediaUrls(listing.images),
         offers: {
           "@type": "Offer",
-          price: (baseMinor(listing.sellPrice) / 100).toFixed(2),
-          priceCurrency: "USD",
+          price: baseMinor(listing.sellPrice),
+          priceCurrency: BASE_CURRENCY,
           availability:
             (listing.available ?? 1) > 0
               ? "https://schema.org/InStock"
@@ -232,11 +237,20 @@ export default function ListingDetail({
                     Icon={Settings2}
                   />
                   <Spec
+                    label={t("results.category")}
+                    value={a.category ? carTypeLabel(locale, a.category) : undefined}
+                    Icon={Car}
+                  />
+                  <Spec label={t("car.company")} value={a.operator} Icon={Building2} />
+                  {/* Each only when the office said: unset is not "Manual". */}
+                  <Spec
                     label={t("results.transmission")}
                     value={
-                      a.transmission === "AUTOMATIC"
-                        ? locale === "fr" ? "Automatique" : "Automatic"
-                        : locale === "fr" ? "Manuelle" : "Manual"
+                      a.transmission
+                        ? a.transmission === "AUTOMATIC"
+                          ? locale === "fr" ? "Automatique" : "Automatic"
+                          : locale === "fr" ? "Manuelle" : "Manual"
+                        : undefined
                     }
                     Icon={Settings2}
                   />
@@ -248,22 +262,22 @@ export default function ListingDetail({
                   <Spec
                     label={locale === "fr" ? "Chauffeur" : "Driver"}
                     value={
-                      a.withDriver
-                        ? locale === "fr" ? "Inclus" : "Included"
-                        : locale === "fr" ? "Non inclus" : "Not included"
+                      typeof a.withDriver === "boolean"
+                        ? t(a.withDriver ? "car.driverIncluded" : "car.selfDrive")
+                        : undefined
                     }
                     Icon={Users}
                   />
                   <Spec
                     label={locale === "fr" ? "Caution" : "Deposit"}
-                    value={a.deposit ? `${(a.deposit / 100).toFixed(0)} $` : undefined}
+                    value={a.deposit ? price(fromBase(a.deposit, rates), currency, locale) : undefined}
                   />
                   <Spec
                     label={locale === "fr" ? "Assurance" : "Insurance"}
                     value={a.insuranceTerms}
                   />
                 </dl>
-                {a.pickupLocations && (
+                {a.pickupLocations?.length ? (
                   <div className="mt-5">
                     <h3 className="mb-2 font-bold text-brand-900">
                       {locale === "fr" ? "Points de retrait" : "Pick-up points"}
@@ -280,7 +294,7 @@ export default function ListingDetail({
                       ))}
                     </ul>
                   </div>
-                )}
+                ) : null}
               </section>
             )}
 
@@ -376,6 +390,11 @@ export default function ListingDetail({
               <PolicyLine />
             </section>
 
+            {/* A property is sold by conversation: nothing booked, nothing to review. */}
+            {listing.vertical === "PROPERTY" ? null : (
+              <Reviews targetType="LISTING" target={listing.id} />
+            )}
+
             {/* §1.1 archetype B, always reachable — the sold-out CTA links here. */}
             <section id="request" className="rounded-card bg-brand-50 p-6 ring-1 ring-brand-100 ring-inset lg:p-8">
               <h2 className="text-lg font-bold text-brand-900">{t("rtb.title")}</h2>
@@ -387,6 +406,7 @@ export default function ListingDetail({
                   listingLabel={lz(listing.title)}
                   compact
                   defaultMessage={`${lz(listing.title)} — `}
+                  route={isRoute(listing) ? listing.attributes : undefined}
                 />
               </div>
             </section>

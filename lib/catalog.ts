@@ -1,4 +1,11 @@
-import { Hotel, Listing, Vertical } from "@/typescript/interface/domain.interface";
+import { facetLabel, translate } from "@/lib/i18n";
+import {
+  Hotel,
+  Listing,
+  ListingAttributes,
+  Locale,
+  Vertical
+} from "@/typescript/interface/domain.interface";
 
 /**
  * Presentation helpers for the catalogue.
@@ -34,7 +41,8 @@ export const VERTICAL_SLUGS: Record<Vertical, string> = {
   HOTEL: "hotels",
   ACTIVITY: "activities",
   PROPERTY: "property",
-  RESTAURANT: "restaurants"
+  RESTAURANT: "restaurants",
+  TRANSFER: "transfers"
 };
 
 /** The detail-page segment for each vertical, per the §11.1 architecture. */
@@ -47,7 +55,9 @@ const DETAIL_SEGMENT: Record<Vertical, string> = {
   HOTEL: "hotel",
   // Restaurants are reached at /restaurants/<slug> directly: there is one
   // page per restaurant and no intermediate listing to disambiguate.
-  RESTAURANT: ""
+  RESTAURANT: "",
+  // A transfer has no listing at all: /transfers is the one booking page.
+  TRANSFER: ""
 };
 
 export function detailHref(l: Pick<Listing, "vertical" | "slug">): string {
@@ -68,3 +78,36 @@ export const cityGeo = (name?: string) =>
     : undefined;
 
 export const restaurantHref = (r: { slug: string }) => `/restaurants/${r.slug}`;
+
+/**
+ * The car types the office picks from, stored as these codes in a car's
+ * `attributes.category`. A car saved before the list keeps its own text,
+ * which is shown as it was typed.
+ */
+export const CAR_TYPES = ["SUV", "BERLINE", "BUS", "PICKUP", "MINIBUS", "TRUCK", "LUXE"];
+
+export const carTypeLabel = (locale: Locale, value: string) =>
+  CAR_TYPES.includes(value) ? translate(locale, `carType.${value}`) : facetLabel(locale, value);
+
+/**
+ * The sizes a property shows, as the office enters them per type: land one,
+ * its plot (`areaSqm`, or a plot size copied in before that rule); a house
+ * its built area and its plot; an apartment its area.
+ */
+export function propertySizes(a: ListingAttributes): { kind: "area" | "builtArea" | "plot"; sqm: number }[] {
+  const type = a.propertyType;
+  if (type === "LAND_SALE" || type === "LAND_RENT") {
+    const plot = a.areaSqm || a.plotSizeSqm;
+    return plot ? [{ kind: "plot", sqm: plot }] : [];
+  }
+  if (type === "HOUSE_SALE" || type === "HOUSE_RENT") {
+    return [
+      ...(a.areaSqm ? [{ kind: "builtArea" as const, sqm: a.areaSqm }] : []),
+      ...(a.plotSizeSqm ? [{ kind: "plot" as const, sqm: a.plotSizeSqm }] : [])
+    ];
+  }
+  return a.areaSqm ? [{ kind: "area", sqm: a.areaSqm }] : [];
+}
+
+/** "1 800 m²", grouped the DRC way. */
+export const sqm = (n: number) => `${n.toLocaleString("fr-FR")} m²`;

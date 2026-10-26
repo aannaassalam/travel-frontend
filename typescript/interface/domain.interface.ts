@@ -14,7 +14,9 @@ export const VERTICALS = {
   HOTEL: "HOTEL",
   ACTIVITY: "ACTIVITY",
   PROPERTY: "PROPERTY",
-  RESTAURANT: "RESTAURANT"
+  RESTAURANT: "RESTAURANT",
+  // A ride with a driver: no listing behind it, one Ride document per order.
+  TRANSFER: "TRANSFER"
 } as const;
 export type Vertical = (typeof VERTICALS)[keyof typeof VERTICALS];
 
@@ -30,8 +32,8 @@ export const LISTING_STATUS = {
 export type ListingStatus =
   (typeof LISTING_STATUS)[keyof typeof LISTING_STATUS];
 
-export const BASE_CURRENCY = "USD";
-export const CURRENCIES = ["USD", "CDF", "EUR"] as const;
+export const BASE_CURRENCY = "CDF";
+export const CURRENCIES = ["CDF", "USD", "EUR"] as const;
 export type Currency = (typeof CURRENCIES)[number];
 
 export const ORDER_STATUS = {
@@ -118,16 +120,18 @@ export const ARCHETYPE: Record<Vertical, "INSTANT" | "REQUEST" | "ENQUIRY"> = {
   ACTIVITY: "INSTANT",
   PROPERTY: "ENQUIRY",
   // Food is bought outright like a seat, not requested like a property.
-  RESTAURANT: "INSTANT"
+  RESTAURANT: "INSTANT",
+  TRANSFER: "INSTANT"
 };
 
 export type Localized = Partial<Record<Locale, string>>;
 
 /**
  * Prices, per currency, in integer minor units — mirroring the backend Money
- * field. The office enters USD only; the API works out CDF and EUR from its
- * exchange rates and sends all three, so what is shown is what is charged.
- * A currency with no rate set is simply absent.
+ * field. The office enters francs only (CDF has no minor unit: the number is
+ * francs); the API works out USD and EUR, in cents, from its exchange rates and
+ * sends each one, so what is shown is what is charged. A currency with no rate
+ * set is simply absent.
  */
 export type Money = Partial<Record<Currency, number>>;
 
@@ -159,6 +163,7 @@ export interface ListingAttributes {
   category?: string;
   transmission?: "MANUAL" | "AUTOMATIC";
   withDriver?: boolean;
+  /** Whole francs. */
   deposit?: number;
   mileageLimit?: string;
   pickupLocations?: string[];
@@ -217,6 +222,11 @@ export interface Listing {
   childPrice?: Money;
   infantPrice?: Money;
   /**
+   * A car: the lengths it rents for (1, 6, 12, 24 hours) and their prices,
+   * offered ones only, shortest first. 24 hours is `sellPrice`.
+   */
+  rentalRates?: RentalRate[];
+  /**
    * quantityTotal − sold − held, computed server-side. Absent for a bus or
    * flight route: its seats are not counted.
    */
@@ -226,6 +236,12 @@ export interface Listing {
   attributes: ListingAttributes;
   rating?: number;
   reviewCount?: number;
+}
+
+/** One length a car rents for, in hours, and its price. */
+export interface RentalRate {
+  hours: number;
+  price: Money;
 }
 
 export interface Hotel {
@@ -290,6 +306,14 @@ export interface OrderItem {
   endDate?: string;
   /** A bus or flight: the time of the departure chosen, "HH:MM". */
   departureTime?: string;
+  /**
+   * A car hired by the hour: the hours paid for, and the pick-up and return
+   * times "HH:MM" as written (on `startDate` / `endDate`). Absent on a car
+   * booked by the day before hourly hire, which shows its dates only.
+   */
+  rentalHours?: number;
+  pickupTime?: string;
+  returnTime?: string;
   origin?: string;
   destination?: string;
   passengers?: Passengers;
@@ -297,6 +321,64 @@ export interface OrderItem {
   quantity: number;
   unitSellPrice: Money;
   lineTotal: Money;
+  /** A transfer: the ride behind the line. */
+  ride?: Ride;
+}
+
+/* --------------------------------------------------------------- transfers */
+
+/** A→B priced per kilometre, or a driver at disposal priced per hour. */
+export type TransferMode = "DISTANCE" | "HOURLY";
+
+export const RIDE_STATUS = {
+  PENDING: "PENDING",
+  ASSIGNED: "ASSIGNED",
+  STARTED: "STARTED",
+  COMPLETED: "COMPLETED",
+  CANCELLED: "CANCELLED"
+} as const;
+export type RideStatus = (typeof RIDE_STATUS)[keyof typeof RIDE_STATUS];
+
+export interface TransferPoint {
+  label: string;
+  lat: number;
+  lng: number;
+  /** One of the office's saved places, when it was picked from the list. */
+  placeId?: string;
+}
+
+/**
+ * Public view of a ride, on its TRANSFER order item. The driver's phone appears
+ * only from ASSIGNED on; the office's cost and the driver's credentials never.
+ */
+export interface Ride {
+  status: RideStatus;
+  mode: TransferMode;
+  pickup: TransferPoint;
+  dropoff?: TransferPoint;
+  /** Wall-clock, as written. */
+  at: string;
+  hours?: number;
+  passengers: number;
+  distanceKm: number;
+  durationMinutes: number;
+  routeSource?: "ROUTING" | "ESTIMATE";
+  /** GeoJSON order, [lng, lat]. */
+  route?: [number, number][];
+  category: Localized | string;
+  driver?: { name: string; phone?: string; photo?: string; rating?: number; count?: number };
+  vehicle?: { make?: string; model?: string; color?: string; plate?: string };
+  startedAt?: string;
+  endedAt?: string;
+  rating?: { score: number; comment?: string; at: string };
+  /** COMPLETED and not yet rated. */
+  canRate: boolean;
+  /** The server's alert window: ASSIGNED to two hours after the end. */
+  canAlert?: boolean;
+  alertsCount: number;
+  city?: string;
+  /** The customer's own note (flight number, luggage…). */
+  notes?: string;
 }
 
 export interface Traveller {
@@ -326,7 +408,7 @@ export interface OrderTimelineEntry {
 export interface OrderDelivery {
   address: string;
   zoneName?: string;
-  /** Minor units, USD base — and in the currency actually charged. */
+  /** Francs (the base) — and in the currency actually charged. */
   fee: number;
   feeCharged: number;
   etaMinutes?: number;
@@ -349,6 +431,7 @@ export interface Order {
   total: Money;
   chargedCurrency: Currency;
   chargedTotal: number;
+  /** Francs per 1 unit of `chargedCurrency` (1 for CDF). */
   fxRate: number;
   paymentMethod: PaymentMethod;
   /** Back from MaxiCash's page by its "paid" address, its confirmation awaited. */

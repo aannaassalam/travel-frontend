@@ -44,3 +44,17 @@ export function usePolicyNotice(): string {
   const { t, locale } = usePrefs();
   return siteText(footer?.notice, locale, t("policy.body"));
 }
+
+/** The bold words in front of that sentence ("Réservation définitive"), edited beside it. */
+export function usePolicyTitle(): string {
+  const footer = useSiteFooter();
+  const { t, locale } = usePrefs();
+  return siteText(footer?.noticeTitle, locale, t("policy.title"));
+}
+
+/** The same reminder where the sentence does not fit: the badge on offer cards. */
+export function usePolicyShort(): string {
+  const footer = useSiteFooter();
+  const { t, locale } = usePrefs();
+  return siteText(footer?.noticeShort, locale, t("policy.short"));
+}

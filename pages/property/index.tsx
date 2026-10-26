@@ -19,7 +19,7 @@ const EMPTY_FACETS: Facets = {
 };
 
 const bounds = (facets: Facets, key: string): [number, number] =>
-  facets.priceBounds[key] ?? [0, 100000];
+  facets.priceBounds[key] ?? [0, 3_000_000]; // francs (about 1 000 $)
 
 export const PROPERTY_OPTIONS = [
   { value: "HOUSE_SALE", fr: "Maison à vendre", en: "House for sale" },

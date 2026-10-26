@@ -1,7 +1,7 @@
-import { isApproximate, price as fmtPrice, settlementNote } from "@/lib/money";
-import { Money } from "@/typescript/interface/domain.interface";
+import { baseMinor, formatMoney, resolve, settlementNote } from "@/lib/money";
+import { BASE_CURRENCY, Currency, Money } from "@/typescript/interface/domain.interface";
 import { usePrefs } from "@/lib/prefs";
-import { usePolicyNotice } from "@/lib/siteContent";
+import { usePolicyNotice, usePolicyShort, usePolicyTitle } from "@/lib/siteContent";
 import { cn } from "@/lib/utils";
 import { ChevronRight, Info, ShieldCheck, Star } from "lucide-react";
 import Link from "next/link";
@@ -9,30 +9,37 @@ import Link from "next/link";
 /** Small shared pieces. One file so they are one import, not seven. */
 
 /**
- * A price in the visitor's currency.
+ * A price in the visitor's currency, exactly as the API sent it — or in francs,
+ * the currency it was entered in, when the API sent none in theirs. Never a
+ * conversion made here: presenting a derived number as if it were the charge
+ * is precisely the ambiguity §5 warns generates disputes.
  *
- * When the administrator has typed a price in that currency it is shown
- * exactly. When they have not, the figure is converted from the USD base and
- * prefixed with ≈ — because presenting a derived number as if it were the
- * charge is precisely the ambiguity §5 warns generates disputes.
+ * `charged`: an order's figure, in the currency the order was charged in and
+ * not the one picked since — with the francs beside it when that is another
+ * currency: "60 $US (171 000 FC)".
  */
 export function Price({
   money,
   className,
-  suffix
+  suffix,
+  charged
 }: {
   money: Money | number | undefined;
   className?: string;
   suffix?: string;
+  charged?: Currency;
 }) {
   const { currency, locale } = usePrefs();
-  const approx = isApproximate(money, currency);
+  const shown = resolve(money, charged ?? currency);
   return (
-    <span
-      className={cn("tnum", className)}
-      title={approx ? (locale === "fr" ? "Prix converti, à titre indicatif" : "Converted price, indicative") : undefined}
-    >
-      {fmtPrice(money, currency, locale)}
+    <span className={cn("tnum", className)}>
+      {formatMoney(shown.minor, shown.currency, locale)}
+      {charged && shown.currency !== BASE_CURRENCY ? (
+        <span className="text-sm font-normal text-ink-500">
+          {" "}
+          ({formatMoney(baseMinor(money), BASE_CURRENCY, locale)})
+        </span>
+      ) : null}
       {suffix ? <span className="text-sm font-normal text-ink-500"> {suffix}</span> : null}
     </span>
   );
@@ -88,12 +95,16 @@ export function RatingBadge({
   if (!rating) {
     return <span className="text-xs text-ink-500">{t("listing.noReviews")}</span>;
   }
+  // Customers' own ratings now, which can be low: below 3.5 the number speaks
+  // for itself rather than being called "Good".
   const label =
     rating >= 4.5
       ? locale === "fr" ? "Exceptionnel" : "Exceptional"
       : rating >= 4.2
         ? locale === "fr" ? "Très bien" : "Very good"
-        : locale === "fr" ? "Bien" : "Good";
+        : rating >= 3.5
+          ? locale === "fr" ? "Bien" : "Good"
+          : "";
   return (
     <span className="inline-flex items-center gap-2">
       <span
@@ -105,8 +116,8 @@ export function RatingBadge({
         {rating.toFixed(1)}
       </span>
       <span className="text-xs leading-tight text-ink-500">
-        <strong className="block font-semibold text-ink-900">{label}</strong>
-        {count ? t("listing.reviews", { n: count }) : ""}
+        {label ? <strong className="block font-semibold text-ink-900">{label}</strong> : null}
+        {count ? t(count === 1 ? "listing.reviewOne" : "listing.reviews", { n: count }) : ""}
       </span>
     </span>
   );
@@ -161,11 +172,12 @@ export function Scarcity({
 export function PolicyLine({ className }: { className?: string }) {
   const { t } = usePrefs();
   const notice = usePolicyNotice();
+  const title = usePolicyTitle();
   return (
     <p className={cn("flex items-start gap-2 text-sm text-ink-700", className)}>
       <ShieldCheck className="mt-0.5 size-4 shrink-0 text-brand-500" />
       <span>
-        <strong className="font-semibold">{t("policy.title")}</strong> — {notice}{" "}
+        <strong className="font-semibold">{title}</strong> — {notice}{" "}
         <Link href="/terms#no-refund" className="font-medium text-brand-500 underline">
           {t("policy.readFull")}
         </Link>
@@ -175,11 +187,11 @@ export function PolicyLine({ className }: { className?: string }) {
 }
 
 export function PolicyChip() {
-  const { t } = usePrefs();
+  const short = usePolicyShort();
   return (
     <span className="inline-flex items-center gap-1.5 rounded-md bg-ink-50 px-2 py-1 text-[11px] font-semibold text-ink-500 ring-1 ring-ink-100 ring-inset">
       <Info className="size-3 text-brand-500" />
-      {t("policy.short")}
+      {short}
     </span>
   );
 }

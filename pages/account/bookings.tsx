@@ -1,5 +1,5 @@
 import AccountLayout from "@/components/account/AccountLayout";
-import { OrderStatusBadges } from "@/components/account/order";
+import { OrderStatusBadges, rentalSpan } from "@/components/account/order";
 import { Price } from "@/components/site/bits";
 import { fmtDate } from "@/lib/format";
 import { usePrefs } from "@/lib/prefs";
@@ -75,16 +75,22 @@ export default function BookingsPage() {
                       <p className="font-mono text-xs text-ink-500">{order.reference}</p>
                       {order.travelDate && (
                         <p className="mt-1 text-sm text-ink-500">
-                          {fmtDate(order.travelDate, locale)}
-                          {order.items[0]?.endDate
-                            ? ` → ${fmtDate(order.items[0].endDate, locale)}`
-                            : ""}
+                          {order.items[0]?.rentalHours ? (
+                            rentalSpan(order.items[0], locale)
+                          ) : (
+                            <>
+                              {fmtDate(`${order.travelDate.slice(0, 10)}T12:00:00`, locale)}
+                              {order.items[0]?.endDate
+                                ? ` → ${fmtDate(`${order.items[0].endDate}T12:00:00`, locale)}`
+                                : ""}
+                            </>
+                          )}
                         </p>
                       )}
                     </div>
                     <div className="text-right">
                       <p className="text-lg font-bold text-brand-900">
-                        <Price money={order.total} />
+                        <Price money={order.total} charged={order.chargedCurrency} />
                       </p>
                       <Link
                         href={`/account/bookings/${order.reference}`}

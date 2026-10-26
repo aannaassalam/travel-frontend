@@ -5,7 +5,6 @@ import { InlineSelect } from "@/components/ui/InlineSelect";
 import type { CustomerSession } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import {
-  CURRENCIES,
   Currency,
   ENABLED_LOCALES,
   Locale
@@ -41,7 +40,7 @@ export default function AccountLayout({
   children: (user: CustomerSession) => React.ReactNode;
   title: string;
 }) {
-  const { t, locale, setLocale, currency, setCurrency } = usePrefs();
+  const { t, locale, setLocale, currency, currencies, setCurrency } = usePrefs();
   const router = useRouter();
   /**
    * The session lives in an httpOnly cookie the browser cannot read, so only
@@ -130,7 +129,7 @@ export default function AccountLayout({
                 ariaLabel={t("common.currency")}
                 value={currency}
                 onValueChange={(v) => setCurrency(v as Currency)}
-                options={CURRENCIES.map((c) => ({ value: c, label: c }))}
+                options={currencies.map((c) => ({ value: c, label: c }))}
                 triggerClassName="w-full justify-between"
               />
             </div>

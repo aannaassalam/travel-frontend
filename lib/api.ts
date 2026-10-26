@@ -4,9 +4,11 @@ import {
   Locale,
   Localized,
   Order,
+  Passengers,
   Restaurant,
   Vertical
 } from "@/typescript/interface/domain.interface";
+import type { TransferRequest } from "./transfers";
 
 /**
  * The public catalogue client.
@@ -41,7 +43,7 @@ export class ApiError extends Error {
   }
 }
 
-async function get<T>(path: string, init?: RequestInit): Promise<T> {
+export async function get<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     ...init,
     // The session is an httpOnly cookie (§7.3 forbids localStorage for tokens),
@@ -81,10 +83,13 @@ export interface SearchQuery {
   propertyType?: string;
   operator?: string;
   category?: string;
+  /** A car's make, one of the facets' `makes`, matched whole in any case. */
+  make?: string;
   transmission?: string;
   withDriver?: string;
   stars?: string;
   amenities?: string;
+  /** Francs, like `priceBounds`. */
   minPrice?: number;
   maxPrice?: number;
   bedrooms?: number;
@@ -130,6 +135,9 @@ export interface Facets {
   categories: string[];
   vehicleClasses: string[];
   hotelAmenities: string[];
+  /** The makes of the cars on sale. Absent from an API older than the filter. */
+  makes?: string[];
+  /** Per vertical: the lowest and highest price on sale, in francs. */
   priceBounds: Record<string, [number, number]>;
 }
 
@@ -187,6 +195,8 @@ export interface OrderDraft {
     passengers?: { adults: number; children: number; infants: number };
     /** Flights: the weights declared, in kg. */
     baggage?: { cabinKg: number; checkedKg: number };
+    /** A transfer: the two points, when, who, which category. The server prices it. */
+    transfer?: TransferRequest;
   }[];
   contact: { firstName: string; lastName: string; phone: string; email?: string };
   /** Restaurant orders only. The server re-reads the zone and its fee — this
@@ -259,6 +269,16 @@ export const getOrderDocumentLink = (reference: string, documentId: string) =>
  */
 export const getPaymentOptions = (init?: RequestInit) =>
   get<{ online: boolean; currencies: string[] }>("/payments/options", init);
+
+/**
+ * GET /site/currencies — the currencies prices can be shown in: francs, and
+ * each one the office has set a rate for (`rates`: francs per 1 unit of it).
+ */
+export const getSiteCurrencies = (init?: RequestInit) =>
+  get<{ base: "CDF"; offered: string[]; rates: Partial<Record<string, number>> }>(
+    "/site/currencies",
+    init
+  );
 
 /** What `startPayment` can come back with. */
 export type StartPaymentResult =
@@ -399,7 +419,7 @@ export interface CustomerSession {
   hasAccount: boolean;
 }
 
-async function post<T>(path: string, body: unknown): Promise<T> {
+export async function post<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     method: "POST",
     credentials: "include",
@@ -511,6 +531,8 @@ export async function createEnquiry(body: {
   email?: string;
   message: string;
   listingLabel?: string;
+  /** A bus or flight request: the day ("YYYY-MM-DD") and time ("HH:MM") asked for, and who travels. */
+  trip?: Passengers & { date: string; time: string };
 }): Promise<{ reference: string }> {
   const res = await fetch(`${API_BASE}/enquiries`, {
     method: "POST",
@@ -608,7 +630,14 @@ export interface SiteContent {
     contactTitle: Localized;
     contactText: Localized;
   };
-  footer: { tagline: Localized; notice: Localized; copyright: Localized };
+  footer: {
+    tagline: Localized;
+    notice: Localized;
+    /** Absent from an API older than these two fields; the built-in words stand in. */
+    noticeTitle?: Localized;
+    noticeShort?: Localized;
+    copyright: Localized;
+  };
 }
 
 /** GET /site/content — home banner, About, Contact, Help and footer text (§15). */
@@ -624,3 +653,16 @@ export const getSiteFooter = (init?: RequestInit) =>
     "/site/content?section=footer",
     init
   ).then((r) => r.content.footer);
+
+/** A partner's logo, as the admin's Partners screen saves it. */
+export interface Partner {
+  id: string;
+  name: string;
+  logo: string;
+  /** http(s); absent when the logo is not a link. */
+  website?: string;
+}
+
+/** GET /partners — the switched-on ones, in the office's order. */
+export const getPartners = (init?: RequestInit) =>
+  get<{ items: Partner[] }>("/partners", init).then((r) => r.items);

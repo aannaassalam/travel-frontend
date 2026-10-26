@@ -22,10 +22,10 @@ import { useCheckout } from "@/lib/checkout";
 import { cn } from "@/lib/utils";
 import { fmtDate } from "@/lib/format";
 import { mediaUrl, mediaUrls } from "@/lib/media";
-import { multiply, nightsBetween } from "@/lib/money";
+import { baseMinor, multiply, nightsBetween } from "@/lib/money";
 import { facetLabel } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
-import { usePolicyNotice } from "@/lib/siteContent";
+import { usePolicyNotice, usePolicyTitle } from "@/lib/siteContent";
 import { Hotel, RoomType } from "@/typescript/interface/domain.interface";
 import { BedDouble, Check, Clock, MapPin, Maximize, Users } from "lucide-react";
 import { GetStaticPaths, GetStaticProps } from "next";
@@ -53,6 +53,7 @@ const MEAL_LABEL: Record<string, { fr: string; en: string }> = {
 export default function HotelDetail({ hotel: initialHotel, others }: Props) {
   const { t, locale, lz } = usePrefs();
   const notice = usePolicyNotice();
+  const policyTitle = usePolicyTitle();
   const router = useRouter();
   const { start } = useCheckout();
   useRecordView(initialHotel.slug);
@@ -99,7 +100,7 @@ export default function HotelDetail({ hotel: initialHotel, others }: Props) {
    * Re-read the rooms once the customer has picked dates.
    *
    * A room costs the same every night, but the page is statically generated
-   * and may be minutes old: this is the live price — and the live CDF and EUR,
+   * and may be minutes old: this is the live price — and the live USD and EUR,
    * which follow the office's exchange rates — before anyone books on it.
    *
    * `placeholderData` keeps the previous rooms on screen while the new ones
@@ -324,7 +325,7 @@ export default function HotelDetail({ hotel: initialHotel, others }: Props) {
                   const total = multiply(room.sellPrice, nights * rooms);
                   // Rooms are not counted: one without a price is the only one
                   // that cannot be booked.
-                  const soldOut = !(room.sellPrice?.USD && room.sellPrice.USD > 0);
+                  const soldOut = !(baseMinor(room.sellPrice) > 0);
                   return (
                     <li
                       key={room.id}
@@ -445,7 +446,7 @@ export default function HotelDetail({ hotel: initialHotel, others }: Props) {
               <PolicyLine />
             </section>
 
-            <Reviews rating={hotel.rating} reviewCount={hotel.reviewCount} title={lz(hotel.name)} />
+            <Reviews targetType="HOTEL" target={hotel.id} />
 
             <section id="request" className="rounded-card bg-brand-50 p-6 ring-1 ring-brand-100 ring-inset lg:p-8">
               <h2 className="text-lg font-bold text-brand-900">{t("rtb.title")}</h2>
@@ -477,7 +478,7 @@ export default function HotelDetail({ hotel: initialHotel, others }: Props) {
                 {t("listing.rooms")}
               </a>
               <p className="mt-3 text-xs leading-relaxed text-ink-700">
-                <strong className="font-semibold">{t("policy.title")}</strong> —{" "}
+                <strong className="font-semibold">{policyTitle}</strong> —{" "}
                 {notice}
               </p>
             </div>

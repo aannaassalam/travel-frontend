@@ -1,4 +1,4 @@
-import { price as fmtPrice } from "@/lib/money";
+import { fromBase, price as fmtPrice } from "@/lib/money";
 import { usePrefs } from "@/lib/prefs";
 import { SlidersHorizontal } from "lucide-react";
 import { useRouter } from "next/router";
@@ -25,7 +25,7 @@ export default function Filters({
   className?: string;
 }) {
   const router = useRouter();
-  const { t, currency, locale } = usePrefs();
+  const { t, currency, locale, rates } = usePrefs();
   const q = router.query as Record<string, string | string[] | undefined>;
 
   const current = (key: string): string[] => {
@@ -58,6 +58,14 @@ export default function Filters({
   const activeCount = sections.reduce((n, s) => n + current(s.key).length, 0) +
     (q.maxPrice ? 1 : 0);
 
+  // From 5 $, not from the cheapest listing: with one bus on sale both ends
+  // read its fare. Prices are francs, so the floor is 5 $ at the office's rate,
+  // up to the franc — not the next 100 FC, which read "5,02 $" (0 without a
+  // dollar rate). The top stays the dearest listing, never below the floor.
+  const floor = rates?.USD ? Math.ceil(Number((5 * rates.USD).toFixed(6))) : 0;
+  const [low, high] = [floor, Math.max(floor, priceBounds?.[1] ?? 0)];
+  const step = Math.max(100, Math.round((high - low) / 40));
+
   const body = (
     <div className="space-y-6">
       {priceBounds && (
@@ -67,24 +75,30 @@ export default function Filters({
           </legend>
           <input
             type="range"
-            min={priceBounds[0]}
-            max={priceBounds[1]}
-            step={Math.max(100, Math.round((priceBounds[1] - priceBounds[0]) / 40))}
-            value={Number(q.maxPrice ?? priceBounds[1])}
-            onChange={(e) => apply({ maxPrice: e.target.value })}
+            min={low}
+            max={high}
+            step={step}
+            value={Number(q.maxPrice ?? high)}
+            // The last notch is "any price": when the step does not divide the
+            // span it stops short of the top, and would leave the dearest out.
+            onChange={(e) => {
+              const v = Number(e.target.value);
+              apply({ maxPrice: v + step > high ? undefined : String(v) });
+            }}
             className="w-full accent-brand-500"
             aria-label={t("results.priceRange")}
           />
           <p className="mt-1 flex justify-between text-xs text-ink-500">
-            <span>{fmtPrice(priceBounds[0], currency, locale)}</span>
+            <span>{fmtPrice(fromBase(low, rates), currency, locale)}</span>
             <strong className="font-semibold text-ink-700">
-              {fmtPrice(Number(q.maxPrice ?? priceBounds[1]), currency, locale)}
+              {fmtPrice(fromBase(Number(q.maxPrice ?? high), rates), currency, locale)}
             </strong>
           </p>
         </fieldset>
       )}
 
-      {sections.map((section) => (
+      {/* A filter with nothing to choose (no makes on sale yet) is not shown. */}
+      {sections.filter((section) => section.options.length).map((section) => (
         <fieldset key={section.key} className="border-t border-ink-100/70 pt-5">
           <legend className="mb-3 text-sm font-bold text-brand-900">{section.label}</legend>
           <ul className="space-y-2">
