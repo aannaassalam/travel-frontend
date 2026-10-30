@@ -1,5 +1,5 @@
 import ListingDetail from "@/components/catalog/ListingDetail";
-import { getListing, getSlugs, safely } from "@/lib/api";
+import { getListing, getSlugs, notFoundOrKeep, safely } from "@/lib/api";
 import { Listing } from "@/typescript/interface/domain.interface";
 import { GetStaticPaths, GetStaticProps } from "next";
 
@@ -34,9 +34,10 @@ export const getStaticProps: GetStaticProps<Props> = async ({ params }) => {
     // A slug resolves whatever route asks for it, so a listing of another
     // vertical would otherwise render under this one. Serve only its own.
     if (listing.vertical !== "BUS") return { notFound: true, revalidate: 60 };
-    return { props: { listing, related }, revalidate: 300 };
-  } catch {
-    // Unknown slug, or the API is down mid-build. Either way ISR retries.
-    return { notFound: true, revalidate: 60 };
+    return { props: { listing, related }, revalidate: 60 };
+  } catch (err) {
+    // Unknown slug: not found (ISR retries). The API down while the live
+    // server rebuilds the page: the last good page stays.
+    return notFoundOrKeep(err);
   }
 };

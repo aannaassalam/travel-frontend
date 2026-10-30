@@ -1,25 +1,19 @@
 import Pager, { PageGone } from "@/components/catalog/Pager";
 import ResultsSearch from "@/components/catalog/ResultsSearch";
 import ViewToggle from "@/components/catalog/ViewToggle";
-import { CardKind } from "@/components/catalog/cards";
+import { RestaurantCard } from "@/components/catalog/cards";
 import { Breadcrumbs } from "@/components/site/bits";
 import Layout from "@/components/site/Layout";
 import Partners from "@/components/site/Partners";
 import { Skeleton } from "@/components/ui/field";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { searchRestaurants } from "@/lib/api";
-import { restaurantHref } from "@/lib/catalog";
-import { mediaUrl } from "@/lib/media";
-import { baseMinor, price } from "@/lib/money";
 import { PAGE_SIZE, pageParam } from "@/lib/paging";
 import { pushQuery } from "@/lib/query";
 import { usePrefs } from "@/lib/prefs";
 import { cn } from "@/lib/utils";
-import { Restaurant } from "@/typescript/interface/domain.interface";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { AlertTriangle, Bike, Clock, RotateCw, Star, UtensilsCrossed } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
+import { AlertTriangle, RotateCw, UtensilsCrossed } from "lucide-react";
 import { useRouter } from "next/router";
 import { useMemo } from "react";
 
@@ -43,7 +37,7 @@ const fromSelect = (v: string) => (v === ANY ? "" : v);
  * can have it for the rest of the visit.
  */
 export default function RestaurantsPage() {
-  const { t, locale, currency, view = "list" } = usePrefs();
+  const { t, locale, view = "list" } = usePrefs();
   const router = useRouter();
   const grid = view === "grid";
 
@@ -70,7 +64,9 @@ export default function RestaurantsPage() {
     queryKey: ["restaurants", params],
     queryFn: ({ signal }) => searchRestaurants(params, { signal }),
     placeholderData: keepPreviousData,
-    staleTime: 60_000
+    // Re-read when the page opens again: prices and promotions change in the admin.
+    refetchOnMount: true,
+    staleTime: 30_000
   });
 
   const items = data?.items ?? [];
@@ -149,7 +145,8 @@ export default function RestaurantsPage() {
 
         <ResultsSearch className="mb-6 max-w-xl" />
 
-        {isError ? (
+        {/* A failed re-read keeps the list: the panel is for when there is nothing to show. */}
+        {isError && !data ? (
           <div className="rounded-card bg-bad-100 p-8 text-center ring-1 ring-bad-600/20 ring-inset">
             <AlertTriangle className="mx-auto mb-3 size-8 text-bad-600" />
             <p className="font-bold text-brand-900">{t("common.error")}</p>
@@ -216,7 +213,7 @@ export default function RestaurantsPage() {
             )}
           >
             {items.map((r) => (
-              <RestaurantCard key={r.id} restaurant={r} currency={currency} locale={locale} row={!grid} />
+              <RestaurantCard key={r.id} restaurant={r} row={!grid} />
             ))}
             <Pager page={params.page} pages={pages} total={total} />
           </div>
@@ -229,74 +226,3 @@ export default function RestaurantsPage() {
 }
 
 const GRID = "grid gap-6 sm:grid-cols-2 lg:grid-cols-3";
-
-/** A tile in the grid; with `row`, the same card laid out image-left for the list. */
-function RestaurantCard({
-  restaurant: r,
-  currency,
-  locale,
-  row
-}: {
-  restaurant: Restaurant;
-  currency: Parameters<typeof price>[1];
-  locale: string;
-  row?: boolean;
-}) {
-  // Cheapest active zone: the number a customer weighs before tapping in.
-  const cheapestFee = r.deliveryZones.length
-    ? r.deliveryZones.reduce((a, b) => (baseMinor(a.fee) <= baseMinor(b.fee) ? a : b))
-    : null;
-
-  return (
-    <Link
-      href={restaurantHref(r)}
-      className={cn(
-        "surface motion-rise group flex flex-col overflow-hidden transition-shadow hover:shadow-lg",
-        // Image-left on a phone too: stacked, a row is the grid's tile again and
-        // the toggle would change nothing on the screen most visitors use.
-        row && "flex-row"
-      )}
-    >
-      <div className={cn("relative h-44 overflow-hidden bg-ink-50", row && "h-auto w-28 shrink-0 sm:w-64")}>
-        <Image
-          src={mediaUrl(r.images[0])}
-          alt=""
-          fill
-          sizes={row ? "(max-width: 640px) 112px, 256px" : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"}
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
-        />
-      </div>
-      <div className="flex min-w-0 flex-1 flex-col gap-2 p-5">
-        <CardKind kind="RESTAURANT" />
-        <div className="flex items-start justify-between gap-3">
-          <h2 className="text-lg font-bold text-brand-900">{r.name.fr || r.name.en}</h2>
-          {r.rating ? (
-            <span className="flex shrink-0 items-center gap-1 text-sm font-semibold text-ink-700">
-              <Star className="size-4 fill-accent-500 text-accent-500" />
-              {r.rating.toFixed(1)}
-            </span>
-          ) : null}
-        </div>
-        <p className="text-sm text-ink-500">
-          {r.cuisines.join(" · ")}
-          {r.cuisines.length ? " · " : ""}
-          {r.city}
-        </p>
-        <p className="line-clamp-2 text-sm text-ink-500">{r.description.fr || r.description.en}</p>
-
-        <div className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-1 pt-3 text-sm text-ink-700">
-          {cheapestFee && (
-            <span className="flex items-center gap-1.5">
-              <Bike className="size-4 text-brand-500" />
-              {locale === "fr" ? "dès" : "from"} {price(cheapestFee.fee, currency, locale)}
-            </span>
-          )}
-          <span className="flex items-center gap-1.5">
-            <Clock className="size-4 text-brand-500" />
-            {r.prepTimeMinutes + (cheapestFee?.etaMinutes ?? 0)} min
-          </span>
-        </div>
-      </div>
-    </Link>
-  );
-}

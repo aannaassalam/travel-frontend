@@ -1,5 +1,5 @@
 import { SectionHeading } from "@/components/site/bits";
-import { getHotel, getListing } from "@/lib/api";
+import { ApiError, getHotel, getListing } from "@/lib/api";
 import { usePrefs } from "@/lib/prefs";
 import { getRecentlyViewed } from "@/lib/store";
 import { Hotel, Listing } from "@/typescript/interface/domain.interface";
@@ -31,18 +31,26 @@ export default function RecentlyViewed({ excludeSlug }: { excludeSlug?: string }
   const { data } = useQuery({
     queryKey: ["recently-viewed", slugs],
     enabled: slugs.length > 0,
-    staleTime: 300_000,
+    // Re-read when the home opens again: a price or promotion may have changed.
+    refetchOnMount: true,
+    staleTime: 30_000,
     queryFn: async () => {
       const results = await Promise.all(
         slugs.map(async (slug) => {
           // A slug is either a listing or a hotel; try one, fall back to the
-          // other, and drop anything that has since been unpublished.
+          // other, and drop anything that has since been unpublished (404).
+          // Any other failure fails the read, so the cards already shown stay.
+          const gone = (err: unknown) => {
+            if (!(err instanceof ApiError && err.status === 404)) throw err;
+          };
           try {
             return (await getListing(slug)).listing as Listing | Hotel;
-          } catch {
+          } catch (err) {
+            gone(err);
             try {
               return (await getHotel(slug)).hotel as Listing | Hotel;
-            } catch {
+            } catch (err2) {
+              gone(err2);
               return null;
             }
           }

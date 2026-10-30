@@ -3,7 +3,7 @@ import Gallery, { PhotoGrid } from "@/components/catalog/Gallery";
 import ListingVideo from "@/components/catalog/ListingVideo";
 import LocationMap from "@/components/catalog/LocationMap";
 import Reviews from "@/components/catalog/Reviews";
-import { Breadcrumbs } from "@/components/site/bits";
+import { Breadcrumbs, PromoEnds, PromoWas } from "@/components/site/bits";
 import Layout from "@/components/site/Layout";
 import { getRestaurant } from "@/lib/api";
 import { useCart } from "@/lib/cart";
@@ -39,7 +39,9 @@ export default function RestaurantPage() {
     queryKey: ["restaurant", slug],
     queryFn: ({ signal }) => getRestaurant(slug, { signal }),
     enabled: Boolean(slug),
-    staleTime: 60_000
+    // Re-read when the page opens again: dishes and their promotions change in the admin.
+    refetchOnMount: true,
+    staleTime: 30_000
   });
 
   const r = data?.restaurant;
@@ -225,9 +227,13 @@ function MenuRow({ item, restaurant }: { item: MenuItem; restaurant: Restaurant 
           {item.description.fr || item.description.en}
         </p>
         <div className="mt-3 flex items-center justify-between gap-3">
-          <span className="font-bold text-brand-900">
-            {price(item.sellPrice, currency, locale)}
-          </span>
+          <div>
+            <span className="font-bold text-brand-900">
+              {price(item.sellPrice, currency, locale)}
+            </span>
+            <PromoWas promotion={item.promotion} className="ml-1.5" />
+            <PromoEnds promotion={item.promotion} className="mt-0.5" />
+          </div>
 
           {soldOut ? (
             <span className="rounded-md bg-ink-100 px-2.5 py-1 text-xs font-semibold text-ink-500">

@@ -4,6 +4,7 @@ import {
   DestinationTile,
   HotelTile,
   PropertyTile,
+  RestaurantCard,
   ResultTile
 } from "@/components/catalog/cards";
 import RecentlyViewed from "@/components/catalog/RecentlyViewed";
@@ -27,7 +28,8 @@ import { dial, useSiteContact } from "@/lib/contact";
 import { useOnlinePayment } from "@/lib/payments";
 import { usePrefs } from "@/lib/prefs";
 import { siteText } from "@/lib/siteContent";
-import { Hotel, Listing } from "@/typescript/interface/domain.interface";
+import { Hotel, Listing, Restaurant } from "@/typescript/interface/domain.interface";
+import { useQuery } from "@tanstack/react-query";
 import {
   BadgeCheck,
   Banknote,
@@ -47,6 +49,9 @@ interface Props {
   deals: Listing[];
   /** Running promotions, biggest discount first; none hides the rail. */
   promotions: Listing[];
+  /** Hotels with a room on promotion, and restaurants with a dish on promotion. */
+  promoHotels: Hotel[];
+  promoRestaurants: Restaurant[];
   hotels: Hotel[];
   properties: Listing[];
   heroImage: string;
@@ -128,17 +133,49 @@ const BUILT_IN_IDEAS: NonNullable<SiteContent["home"]["ideas"]> = [
   }
 ];
 
-export default function Home({
-  deals,
-  promotions,
-  hotels,
-  properties,
-  heroImage,
-  hero,
-  destinations,
-  partners
-}: Props) {
+/** Every catalogue rail, in one call: read by `getStaticProps`, and again in the browser. */
+const homeRails = async (init?: RequestInit) => {
+  const feed = await getHomeFeed(init);
+  // Absent from an API older than promotions; undefined cannot be a prop.
+  return {
+    ...feed,
+    promotions: feed.promotions ?? [],
+    promoHotels: feed.promoHotels ?? [],
+    promoRestaurants: feed.promoRestaurants ?? []
+  };
+};
+
+/** A listing's biggest running discount, on any of its prices. */
+const bestOff = (l: Listing) =>
+  Math.max(
+    l.promotion?.discountPercent ?? 0,
+    l.otherPromotion?.discountPercent ?? 0,
+    ...(l.rentalRates ?? []).map((r) => r.promotion?.discountPercent ?? 0)
+  );
+
+export default function Home({ heroImage, hero, destinations, partners, ...built }: Props) {
+  /*
+   * The rails as built are only the first paint: re-read on load, so what the
+   * office just changed (a promotion, a price) shows at once rather than at
+   * the next rebuild. Built ones stay if the API does not answer.
+   */
+  const { data: live } = useQuery({
+    queryKey: ["home", "rails"],
+    queryFn: ({ signal }) => homeRails({ signal }),
+    refetchOnMount: true,
+    staleTime: 30_000
+  });
+  const { deals, promotions, promoHotels, promoRestaurants, hotels, properties } = live ?? built;
   const contact = useSiteContact();
+  // Offers, hotels and restaurants on promotion in one rail, the biggest discount first.
+  const promoTiles = [
+    ...promotions.map((l) => ({ off: bestOff(l), tile: <ResultTile key={l.id} listing={l} /> })),
+    ...promoHotels.map((h) => ({ off: h.promotion?.discountPercent ?? 0, tile: <HotelTile key={h.id} hotel={h} /> })),
+    ...promoRestaurants.map((r) => ({
+      off: r.promotion?.discountPercent ?? 0,
+      tile: <RestaurantCard key={r.id} restaurant={r} />
+    }))
+  ].sort((a, b) => b.off - a.off);
   const { t, locale, lz } = usePrefs();
   const heroTitle = siteText(hero?.heroTitle, locale, t("home.heroTitle"));
   const heroSubtitle = siteText(hero?.heroSubtitle, locale, t("home.heroSubtitle"));
@@ -301,7 +338,7 @@ export default function Home({
       </section>
 
       {/* ------------------------------------------------------- promotions */}
-      {promotions.length > 0 && (
+      {promoTiles.length > 0 && (
         <section className="container-site pb-16">
           <Carousel
             label={t("home.promotions")}
@@ -312,9 +349,7 @@ export default function Home({
             autoplay
           >
             {/* Any vertical, each in its own tile: a property is not priced per person. */}
-            {promotions.map((l) => (
-              <ResultTile key={l.id} listing={l} />
-            ))}
+            {promoTiles.map((p) => p.tile)}
           </Carousel>
         </section>
       )}
@@ -539,10 +574,13 @@ export default function Home({
  * produces a page rather than failing the build.
  */
 export const getStaticProps: GetStaticProps<Props> = async () => {
-  const feed = await safely(() => getHomeFeed(), {
+  const feed = await safely(() => homeRails(), {
     deals: [],
     properties: [],
-    hotels: []
+    hotels: [],
+    promotions: [],
+    promoHotels: [],
+    promoRestaurants: []
   });
 
   // ISR (revalidate below) keeps this in step with the admin without a deploy.
@@ -569,13 +607,11 @@ export const getStaticProps: GetStaticProps<Props> = async () => {
   return {
     props: {
       ...feed,
-      // Absent from an API older than promotions; undefined cannot be a prop.
-      promotions: feed.promotions ?? [],
       heroImage,
       hero: site?.home ?? null,
       destinations,
       partners
     },
-    revalidate: 120
+    revalidate: 30
   };
 };

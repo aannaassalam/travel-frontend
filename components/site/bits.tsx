@@ -1,6 +1,6 @@
 import { fmtDayMonth } from "@/lib/format";
 import { baseMinor, formatMoney, resolve, settlementNote } from "@/lib/money";
-import { BASE_CURRENCY, Currency, Money, Promotion } from "@/typescript/interface/domain.interface";
+import { BASE_CURRENCY, Currency, Money, PromotedItem, Promotion } from "@/typescript/interface/domain.interface";
 import { usePrefs } from "@/lib/prefs";
 import { usePolicyNotice, usePolicyShort, usePolicyTitle } from "@/lib/siteContent";
 import { cn } from "@/lib/utils";
@@ -52,14 +52,15 @@ export function Price({
  * the sold-out look, where the price itself is struck out. Inline, so it
  * follows the text alignment of the price block it sits in. Grey at ink-500,
  * not lighter: 4.5:1 on the price rail, as small text needs (WCAG AA).
+ * The old price is text-sm; a `text-xs` className sets it beside a small price.
  */
 export function PromoWas({ promotion, className }: { promotion?: Promotion; className?: string }) {
   const { t } = usePrefs();
   if (!promotion) return null;
   return (
-    <span className={cn("inline-flex flex-wrap items-center gap-1.5", className)}>
+    <span className={cn("inline-flex flex-wrap items-center gap-1.5 text-sm", className)}>
       <span className="sr-only">{t("promo.was")}</span>
-      <Price money={promotion.compareAtPrice} className="text-sm text-ink-500 line-through" />
+      <Price money={promotion.compareAtPrice} className="text-ink-500 line-through" />
       <span className="rounded bg-bad-600 px-1.5 py-0.5 text-[11px] font-bold leading-none text-white">
         {t("promo.off", { n: promotion.discountPercent })}
       </span>
@@ -68,7 +69,7 @@ export function PromoWas({ promotion, className }: { promotion?: Promotion; clas
 }
 
 /** "Jusqu'au 30 nov.": a promotion's last day, when it has one. */
-export function PromoEnds({ promotion, className }: { promotion?: Promotion; className?: string }) {
+export function PromoEnds({ promotion, className }: { promotion?: Pick<Promotion, "endsAt">; className?: string }) {
   const { t, locale } = usePrefs();
   const day = promotion?.endsAt ? fmtDayMonth(promotion.endsAt, locale) : "";
   if (!day) return null;
@@ -76,6 +77,25 @@ export function PromoEnds({ promotion, className }: { promotion?: Promotion; cla
     <p className={cn("mt-1 text-xs font-semibold text-bad-600", className)}>
       {t("promo.until", { date: day })}
     </p>
+  );
+}
+
+/**
+ * A hotel's or restaurant's card: its best promotion, on which room or dish —
+ * "Suite 120 000 FC 150 000 FC −20 %", and its last day.
+ */
+export function PromoItem({ promotion, className }: { promotion?: PromotedItem; className?: string }) {
+  const { lz } = usePrefs();
+  if (!promotion) return null;
+  return (
+    <div className={cn("text-sm", className)}>
+      <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+        <span className="font-semibold text-ink-900">{lz(promotion.name)}</span>
+        <Price money={promotion.price} className="font-bold text-brand-900" />
+        <PromoWas promotion={promotion} />
+      </p>
+      <PromoEnds promotion={promotion} className="mt-0.5" />
+    </div>
   );
 }
 

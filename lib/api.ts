@@ -160,6 +160,9 @@ export const getHomeFeed = (init?: RequestInit) =>
     hotels: Hotel[];
     /** Running promotions, biggest discount first. Absent from an older API. */
     promotions?: Listing[];
+    /** Hotels with a room on promotion, restaurants with a dish on promotion. Absent from an older API. */
+    promoHotels?: Hotel[];
+    promoRestaurants?: Restaurant[];
   }>("/catalogue/home", init);
 
 /** GET /catalogue/slugs — drives getStaticPaths. */
@@ -562,14 +565,35 @@ export async function createEnquiry(body: {
 }
 
 /**
+ * The production server re-running getStaticProps (ISR), as opposed to
+ * `next build` or dev. There a throw keeps the last good page on screen;
+ * a fallback would be cached in its place until the next rebuild.
+ */
+const rebuilding = () =>
+  typeof window === "undefined" &&
+  process.env.NODE_ENV === "production" &&
+  process.env.NEXT_PHASE !== "phase-production-build";
+
+/**
+ * A detail page's getStaticProps failed: a 404 is "not found"; anything else
+ * (API down, rate limit) while rebuilding keeps the last good page.
+ */
+export const notFoundOrKeep = (err: unknown) => {
+  if (rebuilding() && !(err instanceof ApiError && err.status === 404)) throw err;
+  return { notFound: true as const, revalidate: 60 };
+};
+
+/**
  * Build-time helper. If the API is unreachable while `next build` runs, the
  * page still generates and ISR fills it in on the first request — a dev machine
- * without the API up should not be able to break a production build.
+ * without the API up should not be able to break a production build. While the
+ * live server rebuilds a page it throws instead, keeping the last good one.
  */
 export async function safely<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
   try {
     return await fn();
   } catch (err) {
+    if (rebuilding()) throw err;
     console.warn(
       `[api] ${API_BASE} unreachable during build, falling back:`,
       (err as Error).message
@@ -580,7 +604,16 @@ export async function safely<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
 
 /** GET /restaurants */
 export const searchRestaurants = (
-  q: { q?: string; city?: string; cuisine?: string; sort?: string; limit?: number; page?: number },
+  q: {
+    q?: string;
+    city?: string;
+    cuisine?: string;
+    sort?: string;
+    limit?: number;
+    page?: number;
+    /** Only restaurants with a dish on promotion, the biggest discount first. */
+    promo?: boolean;
+  },
   init?: RequestInit
 ) =>
   get<

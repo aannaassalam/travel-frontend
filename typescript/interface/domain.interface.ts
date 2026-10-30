@@ -236,8 +236,20 @@ export interface Listing {
   attributes: ListingAttributes;
   rating?: number;
   reviewCount?: number;
-  /** Sent only while one runs. */
+  /** Sent only while one runs. For a bus or flight, the adult fare's; for a car, the 24-hour rate's. */
   promotion?: Promotion;
+  /** A bus or flight: the child and baby fares' own, while one runs. */
+  childPromotion?: Promotion;
+  infantPromotion?: Promotion;
+  /**
+   * The biggest discount running on one of its other prices (a child or baby
+   * fare, a 1-, 6- or 12-hour rate): a hint for a card that shows the main
+   * price alone. Absent when none runs, and from an older API.
+   */
+  otherPromotion?: Pick<Promotion, "discountPercent" | "endsAt"> & {
+    fare?: "CHILD" | "INFANT";
+    hours?: number;
+  };
 }
 
 /**
@@ -252,10 +264,18 @@ export interface Promotion {
   endsAt?: string;
 }
 
+/** A hotel's or restaurant's best running promotion: on which room or dish, at what price. */
+export interface PromotedItem extends Promotion {
+  name: Localized;
+  price: Money;
+}
+
 /** One length a car rents for, in hours, and its price. */
 export interface RentalRate {
   hours: number;
   price: Money;
+  /** This rate's own promotion, while one runs. */
+  promotion?: Promotion;
 }
 
 export interface Hotel {
@@ -279,6 +299,8 @@ export interface Hotel {
   reviewCount?: number;
   /** Cheapest nightly price across room types, per currency. */
   fromPrice: Money;
+  /** The room with the biggest running promotion. Absent from an older API. */
+  promotion?: PromotedItem;
   roomTypes: RoomType[];
 }
 
@@ -295,6 +317,7 @@ export interface RoomType {
   mealPlan: MealPlan;
   /** Nightly price, per currency — the same every night. Rooms are not counted. */
   sellPrice: Money;
+  promotion?: Promotion;
   sizeSqm?: number;
 }
 
@@ -509,6 +532,7 @@ export interface MenuItem {
   name: Localized;
   description: Localized;
   sellPrice: Money;
+  promotion?: Promotion;
   images: string[];
   /** False means 86'd today: shown, greyed, not orderable. */
   isAvailable: boolean;
@@ -537,6 +561,8 @@ export interface Restaurant {
   deliveryZones: DeliveryZone[];
   /** Cheapest available dish, per currency. */
   fromPrice: Money;
+  /** The available dish with the biggest running promotion. Absent from an older API. */
+  promotion?: PromotedItem;
   /** Present on the detail endpoint only. */
   menu?: MenuItem[];
 }

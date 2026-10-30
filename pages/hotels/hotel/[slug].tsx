@@ -11,13 +11,15 @@ import {
   Breadcrumbs,
   PolicyLine,
   Price,
+  PromoEnds,
+  PromoWas,
   RatingBadge,
   SettlementNote,
   Stars
 } from "@/components/site/bits";
 import LocationMap from "@/components/catalog/LocationMap";
 import Layout from "@/components/site/Layout";
-import { getHotel, getSlugs, safely } from "@/lib/api";
+import { getHotel, getSlugs, notFoundOrKeep, safely } from "@/lib/api";
 import { useCheckout } from "@/lib/checkout";
 import { cn } from "@/lib/utils";
 import { fmtDate } from "@/lib/format";
@@ -100,11 +102,12 @@ export default function HotelDetail({ hotel: initialHotel, others }: Props) {
   const nights = nightsBetween(from, to);
 
   /**
-   * Re-read the rooms once the customer has picked dates.
+   * Re-read the rooms on load, and again for the dates the customer picks.
    *
    * A room costs the same every night, but the page is statically generated
-   * and may be minutes old: this is the live price — and the live USD and EUR,
-   * which follow the office's exchange rates — before anyone books on it.
+   * and may be minutes old: this is the live price and promotion — and the
+   * live USD and EUR, which follow the office's exchange rates — before anyone
+   * books on it. On a return visit too, once the last read is a minute old.
    *
    * `placeholderData` keeps the previous rooms on screen while the new ones
    * load, so the list does not collapse to a spinner on every date tweak.
@@ -114,6 +117,7 @@ export default function HotelDetail({ hotel: initialHotel, others }: Props) {
     queryFn: () => getHotel(initialHotel.slug, from, to),
     enabled: Boolean(from && to && nights > 0),
     placeholderData: (prev) => prev,
+    refetchOnMount: true,
     staleTime: 60_000
   });
 
@@ -361,11 +365,13 @@ export default function HotelDetail({ hotel: initialHotel, others }: Props) {
 
                       <div className="flex shrink-0 flex-col justify-end gap-2 border-t border-ink-100/70 pt-3 sm:w-56 sm:border-l sm:border-ink-100/70 sm:border-t-0 sm:pl-4 sm:pt-0 sm:text-right">
                         <div>
+                          <PromoWas promotion={room.promotion} />
                           <Price
                             money={room.sellPrice}
-                            className="text-xl font-bold text-brand-900"
+                            className="block text-xl font-bold text-brand-900"
                           />
                           <p className="text-xs text-ink-500">{t("listing.perNight")}</p>
+                          <PromoEnds promotion={room.promotion} />
                           {!soldOut && (
                             <>
                               <p className="mt-1 text-sm font-semibold text-ink-700">
@@ -520,8 +526,10 @@ export const getStaticProps: GetStaticProps<Props> = async ({ params }) => {
     // No dates at build time: the page shows the cheapest rate on record and
     // refetches for the visitor's actual nights once they pick them.
     const { hotel, others } = await getHotel(String(params?.slug));
-    return { props: { hotel, others }, revalidate: 300 };
-  } catch {
-    return { notFound: true, revalidate: 60 };
+    return { props: { hotel, others }, revalidate: 60 };
+  } catch (err) {
+    // Unknown slug: not found (ISR retries). The API down while the live
+    // server rebuilds the page: the last good page stays.
+    return notFoundOrKeep(err);
   }
 };

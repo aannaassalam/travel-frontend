@@ -32,7 +32,7 @@ import {
 import { fmtDateLong } from "@/lib/format";
 import { usePolicyNotice, usePolicyTitle } from "@/lib/siteContent";
 import { cn } from "@/lib/utils";
-import { Listing, Money, Passengers } from "@/typescript/interface/domain.interface";
+import { Listing, Money, Passengers, Promotion } from "@/typescript/interface/domain.interface";
 import { Clock, Minus, Plus, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/router";
 import Link from "next/link";
@@ -162,14 +162,14 @@ function StockBookingBox({ listing }: { listing: Listing }) {
               <div key={r.hours} className="flex flex-wrap items-baseline justify-between gap-x-4">
                 <dt className="text-sm text-ink-700">{rateLabel(r.hours, t)}</dt>
                 <dd className="ml-auto text-right">
-                  {/* The 24-hour rate is the sell price: the promotion's line. */}
-                  {r.hours === 24 && <PromoWas promotion={listing.promotion} className="mr-2" />}
+                  <PromoWas promotion={r.promotion} className="mr-2" />
                   <Price money={r.price} className="text-lg font-bold text-brand-900" />
                 </dd>
               </div>
             ))}
           </dl>
-          <PromoEnds promotion={listing.promotion} />
+          {/* One last day for all of a car's rates. */}
+          <PromoEnds promotion={rates.find((r) => r.promotion)?.promotion} />
           {rates.length > 1 && <p className="mt-2 text-xs text-ink-500">{t("rental.cheapest")}</p>}
         </>
       ) : (
@@ -487,6 +487,7 @@ function RouteBookingBox({ listing }: { listing: Listing }) {
               label={t("route.adults")}
               hint={t("route.adultsHint")}
               price={fareText(fares.adult)}
+              promotion={listing.promotion}
               value={p.adults}
               min={1}
               max={passengerMax(p, "adults")}
@@ -496,6 +497,7 @@ function RouteBookingBox({ listing }: { listing: Listing }) {
               label={t("route.children")}
               hint={t("route.childrenHint")}
               price={fareText(fares.child)}
+              promotion={listing.childPromotion}
               value={p.children}
               min={0}
               max={passengerMax(p, "children")}
@@ -505,12 +507,17 @@ function RouteBookingBox({ listing }: { listing: Listing }) {
               label={t("route.infants")}
               hint={t("route.infantsHint")}
               price={fareText(fares.infant)}
+              promotion={listing.infantPromotion}
               value={p.infants}
               min={0}
               max={passengerMax(p, "infants")}
               onChange={(infants) => setP((x) => ({ ...x, infants }))}
             />
           </div>
+          {/* The fares' one last day: above with the adult fare's, else here. */}
+          {listing.promotion ? null : (
+            <PromoEnds promotion={listing.childPromotion ?? listing.infantPromotion} />
+          )}
           {p.infants >= p.adults ? (
             <p className="mt-1.5 text-xs text-ink-500">{t("route.infantsLimit")}</p>
           ) : null}
@@ -594,11 +601,12 @@ function RouteBookingBox({ listing }: { listing: Listing }) {
   );
 }
 
-/** One fare's passengers: a label, its price, and − / +. */
+/** One fare's passengers: a label, its price and that fare's promotion, and − / +. */
 function Counter({
   label,
   hint,
   price,
+  promotion,
   value,
   min,
   max,
@@ -607,6 +615,7 @@ function Counter({
   label: string;
   hint: string;
   price: React.ReactNode;
+  promotion?: Promotion;
   value: number;
   min: number;
   max: number;
@@ -618,7 +627,7 @@ function Counter({
       <div className="min-w-0">
         <p className="text-[15px] font-semibold text-ink-900">{label}</p>
         <p className="text-xs text-ink-500">
-          {hint} · {price}
+          {hint} · {price} <PromoWas promotion={promotion} className="text-xs" />
         </p>
       </div>
       <div className="flex shrink-0 items-center gap-2">

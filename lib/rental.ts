@@ -45,14 +45,16 @@ export function planBlocks(
 }
 
 /**
- * A car's offered rates, shortest first. A response from before hourly hire
- * (a cached page) has no `rentalRates`: it rents by the 24 hours alone.
+ * A car's offered rates, shortest first, each with its own promotion. A
+ * response from before hourly hire (a cached page) has no `rentalRates`: it
+ * rents by the 24 hours alone. In one from before a promotion per rate, the
+ * 24-hour rate's is the listing's `promotion`.
  */
-export const ratesOf = (l: Pick<Listing, "rentalRates" | "sellPrice">): RentalRate[] =>
+export const ratesOf = (l: Pick<Listing, "rentalRates" | "sellPrice" | "promotion">): RentalRate[] =>
   l.rentalRates?.length
-    ? l.rentalRates
+    ? l.rentalRates.map((r) => (r.hours === 24 && !r.promotion ? { ...r, promotion: l.promotion } : r))
     : (l.sellPrice?.CDF ?? 0) > 0
-      ? [{ hours: 24, price: l.sellPrice }]
+      ? [{ hours: 24, price: l.sellPrice, promotion: l.promotion }]
       : [];
 
 /** One part of a hire's price: `count` times the `hours` rate, `price` being the lot. */

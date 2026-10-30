@@ -102,6 +102,7 @@ const fr: Dict = {
   "home.promotionsSub": "Des prix réduits, pour un temps limité.",
   "home.seeAll": "Voir tout",
   "promotions.empty": "Aucune promotion en ce moment.",
+  "promotions.offers": "Offres",
 
   "results.title": "{n} résultats",
   "results.titleOne": "1 résultat",
@@ -242,6 +243,8 @@ const fr: Dict = {
   "promo.was": "Ancien prix",
   "promo.off": "−{n} %",
   "promo.until": "Jusqu'au {date}",
+  "promo.childFare": "Tarif enfant",
+  "promo.babyFare": "Tarif bébé",
   "listing.book": "Réserver",
   "listing.select": "Sélectionner",
   "listing.details": "Voir les détails",
@@ -876,6 +879,7 @@ const en: Dict = {
   "home.promotionsSub": "Reduced prices, for a limited time.",
   "home.seeAll": "See all",
   "promotions.empty": "No promotions right now.",
+  "promotions.offers": "Offers",
 
   "results.title": "{n} results",
   "results.titleOne": "1 result",
@@ -1016,6 +1020,8 @@ const en: Dict = {
   "promo.was": "Old price",
   "promo.off": "−{n}%",
   "promo.until": "Until {date}",
+  "promo.childFare": "Child fare",
+  "promo.babyFare": "Baby fare",
   "listing.book": "Book",
   "listing.select": "Select",
   "listing.details": "See details",

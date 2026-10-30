@@ -2,7 +2,7 @@ import { usePrefs } from "@/lib/prefs";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Children, useCallback, useEffect, useRef, useState } from "react";
 
 const AUTOPLAY_MS = 4500;
 
@@ -89,6 +89,11 @@ export default function Carousel({
       window.removeEventListener("resize", sync);
     };
   }, [sync]);
+
+  // Again when the cards change: the home page swaps in fresh rails after load,
+  // and a rail that now overflows needs its arrows.
+  const count = Children.count(children);
+  useEffect(() => sync(), [count, sync]);
 
   const scroll = (direction: -1 | 1) => {
     if (ref.current) page(ref.current, direction);

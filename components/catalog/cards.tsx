@@ -3,15 +3,16 @@ import {
   Price,
   PolicyChip,
   PromoEnds,
+  PromoItem,
   PromoWas,
   RatingBadge,
   Scarcity,
   Stars,
   hasPrice
 } from "@/components/site/bits";
-import { carTypeLabel, detailHref, hotelHref, propertySizes, sqm } from "@/lib/catalog";
+import { carTypeLabel, detailHref, hotelHref, propertySizes, restaurantHref, sqm } from "@/lib/catalog";
 import { mediaUrl } from "@/lib/media";
-import { formatMoney, resolve } from "@/lib/money";
+import { baseMinor, formatMoney, price, resolve } from "@/lib/money";
 import { fmtDateLong, formatMinutes } from "@/lib/format";
 import { facetLabel } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
@@ -25,11 +26,13 @@ import {
   ListingAttributes,
   Money,
   Promotion,
+  Restaurant,
   Vertical
 } from "@/typescript/interface/domain.interface";
 import {
   ArrowRight,
   Bed,
+  Bike,
   Building2,
   Clock,
   Gauge,
@@ -38,6 +41,7 @@ import {
   Plane,
   Ruler,
   Settings2,
+  Star,
   UserRound
 } from "lucide-react";
 import Image from "next/image";
@@ -173,6 +177,7 @@ function PriceRail({
   money,
   suffix,
   promotion,
+  hint,
   rates,
   href,
   cta,
@@ -183,6 +188,8 @@ function PriceRail({
   money?: Money | number;
   suffix?: string;
   promotion?: Promotion;
+  /** Under the price: a `PromoHint`. */
+  hint?: React.ReactNode;
   /** A car's rates, in place of the one "from" price. */
   rates?: React.ReactNode;
   href: string;
@@ -213,6 +220,7 @@ function PriceRail({
             />
             {suffix && <p className="mt-1 text-xs text-ink-500">{suffix}</p>}
             <PromoEnds promotion={promotion} />
+            {hint}
           </div>
         )}
         <Scarcity available={available} noun={noun} />
@@ -347,6 +355,7 @@ export function RouteRow({ listing }: { listing: Listing }) {
         money={listing.sellPrice}
         suffix={`${t("listing.perPerson")} · ${t("route.adult").toLowerCase()}`}
         promotion={listing.promotion}
+        hint={<PromoHint listing={listing} />}
         href={href}
         cta={t("listing.select")}
         noun="seat"
@@ -431,26 +440,57 @@ function CarCompany({ a }: { a: ListingAttributes }) {
 
 /**
  * Every rate a car is offered at, shortest first, label left and price right:
- * "Par heure", "Pour 6 heures"… The 24-hour one is its `sellPrice`, so that is
- * the line a promotion's old price goes on.
+ * "Par heure", "Pour 6 heures"… Each with its own promotion's old price, and
+ * their one last day below.
  */
 function CarRates({ listing, className }: { listing: Listing; className?: string }) {
   const { t } = usePrefs();
+  const rates = ratesOf(listing);
   return (
     <div className={className}>
       <dl className="space-y-1">
-        {ratesOf(listing).map((r) => (
+        {rates.map((r) => (
           <div key={r.hours} className="flex flex-wrap items-baseline justify-between gap-x-3">
             <dt className="text-sm text-ink-500">{rateLabel(r.hours, t)}</dt>
             <dd className="ml-auto text-right">
-              {r.hours === 24 && <PromoWas promotion={listing.promotion} className="mr-1.5" />}
+              <PromoWas promotion={r.promotion} className="mr-1.5" />
               <Price money={r.price} className="text-[15px] font-bold text-brand-900" />
             </dd>
           </div>
         ))}
       </dl>
-      <PromoEnds promotion={listing.promotion} className="text-right" />
+      <PromoEnds promotion={rates.find((r) => r.promotion)?.promotion} className="text-right" />
     </div>
+  );
+}
+
+/**
+ * A card that shows the main price alone, when only another of the listing's
+ * prices is on promotion: "−25 % Tarif enfant", and its last day. Never that
+ * price's old price beside the main one.
+ */
+function PromoHint({ listing }: { listing: Listing }) {
+  const { t } = usePrefs();
+  const o = listing.promotion ? undefined : listing.otherPromotion;
+  if (!o) return null;
+  const which =
+    o.fare === "CHILD"
+      ? t("promo.childFare")
+      : o.fare === "INFANT"
+        ? t("promo.babyFare")
+        : o.hours
+          ? rateLabel(o.hours, t)
+          : "";
+  return (
+    <>
+      <p className="mt-1 text-xs font-semibold text-bad-600">
+        <span className="mr-1.5 rounded bg-bad-600 px-1.5 py-0.5 text-[11px] font-bold leading-none text-white">
+          {t("promo.off", { n: o.discountPercent })}
+        </span>
+        {which}
+      </p>
+      <PromoEnds promotion={o} className="mt-0.5" />
+    </>
   );
 }
 
@@ -535,6 +575,7 @@ export function HotelRow({ hotel }: { hotel: Hotel }) {
           <RatingBadge rating={hotel.rating} count={hotel.reviewCount} size="sm" />
           <PolicyChip />
         </div>
+        <PromoItem promotion={hotel.promotion} />
       </div>
       <PriceRail
         money={hotel.fromPrice}
@@ -717,6 +758,7 @@ export function DealTile({ listing }: { listing: Listing }) {
               />
               <p className="mt-1 text-xs text-ink-500">{suffix}</p>
               <PromoEnds promotion={listing.promotion} />
+              <PromoHint listing={listing} />
             </div>
             <NonRefundable />
           </div>
@@ -783,6 +825,7 @@ export function RouteTile({ listing }: { listing: Listing }) {
               {t("listing.perPerson")} · {t("route.adult").toLowerCase()}
             </p>
             <PromoEnds promotion={listing.promotion} />
+            <PromoHint listing={listing} />
           </div>
           <NonRefundable />
         </div>
@@ -817,6 +860,7 @@ export function HotelTile({ hotel }: { hotel: Hotel }) {
           {hotel.city}
         </p>
         <RatingBadge rating={hotel.rating} count={hotel.reviewCount} size="sm" />
+        <PromoItem promotion={hotel.promotion} />
         <div className="mt-auto flex items-end justify-between gap-2 pt-3">
           {/*
             No price rather than a wrong one. The related-hotels projection can
@@ -957,4 +1001,69 @@ export function ResultRow({ listing }: { listing: Listing }) {
     default:
       return null;
   }
+}
+
+/* ----------------------------------------------------------- restaurant card */
+
+/** A tile in the grid; with `row`, the same card laid out image-left for the list. */
+export function RestaurantCard({ restaurant: r, row }: { restaurant: Restaurant; row?: boolean }) {
+  const { currency, locale } = usePrefs();
+  // Cheapest active zone: the number a customer weighs before tapping in.
+  const cheapestFee = r.deliveryZones.length
+    ? r.deliveryZones.reduce((a, b) => (baseMinor(a.fee) <= baseMinor(b.fee) ? a : b))
+    : null;
+
+  return (
+    <Link
+      href={restaurantHref(r)}
+      className={cn(
+        "surface motion-rise group flex flex-col overflow-hidden transition-shadow hover:shadow-lg",
+        // Image-left on a phone too: stacked, a row is the grid's tile again and
+        // the toggle would change nothing on the screen most visitors use.
+        row && "flex-row"
+      )}
+    >
+      <div className={cn("relative h-44 overflow-hidden bg-ink-50", row && "h-auto w-28 shrink-0 sm:w-64")}>
+        <Image
+          src={mediaUrl(r.images[0])}
+          alt=""
+          fill
+          sizes={row ? "(max-width: 640px) 112px, 256px" : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"}
+          className="object-cover transition-transform duration-500 group-hover:scale-105"
+        />
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col gap-2 p-5">
+        <CardKind kind="RESTAURANT" />
+        <div className="flex items-start justify-between gap-3">
+          <h2 className="text-lg font-bold text-brand-900">{r.name.fr || r.name.en}</h2>
+          {r.rating ? (
+            <span className="flex shrink-0 items-center gap-1 text-sm font-semibold text-ink-700">
+              <Star className="size-4 fill-accent-500 text-accent-500" />
+              {r.rating.toFixed(1)}
+            </span>
+          ) : null}
+        </div>
+        <p className="text-sm text-ink-500">
+          {r.cuisines.join(" · ")}
+          {r.cuisines.length ? " · " : ""}
+          {r.city}
+        </p>
+        <p className="line-clamp-2 text-sm text-ink-500">{r.description.fr || r.description.en}</p>
+        <PromoItem promotion={r.promotion} />
+
+        <div className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-1 pt-3 text-sm text-ink-700">
+          {cheapestFee && (
+            <span className="flex items-center gap-1.5">
+              <Bike className="size-4 text-brand-500" />
+              {locale === "fr" ? "dès" : "from"} {price(cheapestFee.fee, currency, locale)}
+            </span>
+          )}
+          <span className="flex items-center gap-1.5">
+            <Clock className="size-4 text-brand-500" />
+            {r.prepTimeMinutes + (cheapestFee?.etaMinutes ?? 0)} min
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
 }

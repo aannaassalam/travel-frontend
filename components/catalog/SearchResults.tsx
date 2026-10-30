@@ -94,7 +94,8 @@ export default function SearchResults({
   // Two queries rather than one returning a union: hotels and listings have
   // different shapes, and a union here would push a cast into every consumer.
   const isHotel = vertical === "HOTEL";
-  const shared = { placeholderData: keepPreviousData, staleTime: 60_000 };
+  // Re-read when the page opens again: prices and promotions change in the admin.
+  const shared = { placeholderData: keepPreviousData, refetchOnMount: true, staleTime: 30_000 };
 
   const hotelQuery = useQuery({
     queryKey: ["hotels", params],
@@ -110,7 +111,9 @@ export default function SearchResults({
   });
 
   const active = isHotel ? hotelQuery : listingQuery;
-  const { isFetching, isError, refetch } = active;
+  const { isFetching, refetch } = active;
+  // A failed re-read keeps the results on screen: the error panel is for when there is nothing to show.
+  const isError = active.isError && !active.data;
   const count = active.data?.total ?? 0;
   // A search that found nothing is not shown under the next one's words while
   // that one loads: skeletons, as for a first load.

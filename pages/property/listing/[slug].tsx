@@ -6,12 +6,13 @@ import LeadForm from "@/components/catalog/LeadForm";
 import { PROPERTY_LABEL, PropertyTile } from "@/components/catalog/cards";
 import { Breadcrumbs, Price, PromoEnds, PromoWas } from "@/components/site/bits";
 import Layout, { SITE } from "@/components/site/Layout";
-import { getListing, getSlugs, safely } from "@/lib/api";
+import { getListing, getSlugs, notFoundOrKeep, safely } from "@/lib/api";
 import { propertySizes, sqm } from "@/lib/catalog";
 import { dial, useSiteContact, waLink } from "@/lib/contact";
 import { mediaUrl, mediaUrls } from "@/lib/media";
 import { usePrefs } from "@/lib/prefs";
 import { Listing } from "@/typescript/interface/domain.interface";
+import { useQuery } from "@tanstack/react-query";
 import {
   Bed,
   Bath,
@@ -37,7 +38,16 @@ interface Props {
  * box, no quantity selector, no hold and no path into /booking from this
  * page. A qualified lead in the admin CRM is the entire outcome.
  */
-export default function PropertyDetail({ listing, related }: Props) {
+export default function PropertyDetail(built: Props) {
+  // As in ListingDetail: the page as built first, then re-read on load so a
+  // price or a promotion the office just changed shows at once.
+  const { data } = useQuery({
+    queryKey: ["listing", built.listing.slug],
+    queryFn: ({ signal }) => getListing(built.listing.slug, { signal }),
+    refetchOnMount: true,
+    staleTime: 30_000
+  });
+  const { listing, related } = data ?? built;
   const { t, locale, lz } = usePrefs();
   const contact = useSiteContact();
   useRecordView(listing.slug);
@@ -310,8 +320,10 @@ export const getStaticProps: GetStaticProps<Props> = async ({ params }) => {
     // A slug resolves whatever route asks for it, so a listing of another
     // vertical would otherwise render under this one. Serve only its own.
     if (listing.vertical !== "PROPERTY") return { notFound: true, revalidate: 60 };
-    return { props: { listing, related }, revalidate: 300 };
-  } catch {
-    return { notFound: true, revalidate: 60 };
+    return { props: { listing, related }, revalidate: 60 };
+  } catch (err) {
+    // Unknown slug: not found (ISR retries). The API down while the live
+    // server rebuilds the page: the last good page stays.
+    return notFoundOrKeep(err);
   }
 };

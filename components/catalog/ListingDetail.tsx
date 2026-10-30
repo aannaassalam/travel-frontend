@@ -1,5 +1,6 @@
 import { PolicyLine, RatingBadge, Breadcrumbs } from "@/components/site/bits";
 import Layout from "@/components/site/Layout";
+import { getListing } from "@/lib/api";
 import { carTypeLabel, detailHref, VERTICAL_SLUGS } from "@/lib/catalog";
 import { mediaUrl, mediaUrls } from "@/lib/media";
 import { baseMinor, fromBase, price } from "@/lib/money";
@@ -7,6 +8,7 @@ import { formatMinutes } from "@/lib/format";
 import { usePrefs } from "@/lib/prefs";
 import { dayName, isRoute, WEEK_ORDER } from "@/lib/routes";
 import { BASE_CURRENCY, Listing } from "@/typescript/interface/domain.interface";
+import { useQuery } from "@tanstack/react-query";
 import {
   Building2,
   Car,
@@ -38,13 +40,20 @@ import SaveButton from "./SaveButton";
  * "specification" block differs per vertical, which is genuinely different
  * content rather than a different layout.
  */
-export default function ListingDetail({
-  listing,
-  related
-}: {
-  listing: Listing;
-  related: Listing[];
-}) {
+export default function ListingDetail(built: { listing: Listing; related: Listing[] }) {
+  /*
+   * The page as built is only the first paint: re-read on load, so a price or
+   * a promotion the office just changed shows at once. Not `initialData`: the
+   * query cache is one for the whole server too, and would keep the first
+   * build's listing for every later one.
+   */
+  const { data } = useQuery({
+    queryKey: ["listing", built.listing.slug],
+    queryFn: ({ signal }) => getListing(built.listing.slug, { signal }),
+    refetchOnMount: true,
+    staleTime: 30_000
+  });
+  const { listing, related } = data ?? built;
   const { t, locale, lz, currency, rates } = usePrefs();
   useRecordView(listing.slug);
   const a = listing.attributes;
