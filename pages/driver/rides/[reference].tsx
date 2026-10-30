@@ -91,7 +91,7 @@ export default function DriverRidePage() {
               </span>
             </div>
 
-            <TransferMap pickup={ride.pickup} dropoff={ride.dropoff} route={ride.route} className="h-56 rounded-none" />
+            <TransferMap pickup={ride.pickup} dropoff={ride.dropoff} route={ride.route} estimated={ride.routeSource === "ESTIMATE"} className="h-56 rounded-none" />
 
             <dl className="space-y-3 p-5 text-sm">
               <div>

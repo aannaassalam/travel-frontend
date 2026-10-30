@@ -417,8 +417,8 @@ export function OrderDocuments({ order }: { order: Order }) {
             ? "Aucun document n'est émis pour une course."
             : "No documents are issued for a ride."
           : locale === "fr"
-            ? "Vos documents apparaîtront ici dès leur émission. Nous vous préviendrons."
-            : "Your documents will appear here once issued. We will let you know."}
+            ? "Vos documents apparaîtront ici dès leur émission."
+            : "Your documents will appear here once issued."}
       </p>
     );
   }

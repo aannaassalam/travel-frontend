@@ -108,6 +108,7 @@ function RideBlock({
         pickup={ride.pickup}
         dropoff={ride.dropoff}
         route={ride.route}
+        estimated={ride.routeSource === "ESTIMATE"}
         className="h-56 rounded-none"
       />
 

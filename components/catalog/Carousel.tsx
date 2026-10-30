@@ -4,6 +4,12 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+const AUTOPLAY_MS = 4500;
+
+/** A bit less than a full viewport, so the next card peeks in and the rail never looks like it has ended. */
+const page = (el: HTMLElement, direction: -1 | 1) =>
+  el.scrollBy({ left: direction * el.clientWidth * 0.82, behavior: "smooth" });
+
 /**
  * Horizontal rail with its own heading row.
  *
@@ -24,6 +30,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
  * already in package.json and would work, but this is ~60 lines, ships no extra
  * JavaScript, and keeps native touch scrolling — better than any JS emulation
  * of it on a phone.
+ *
+ * `autoplay`: a page on every 4.5 s, back to the start after the end. Held
+ * while a mouse is over it, a finger is on it (and for a whole turn after it
+ * lifts, past the fling), focus is inside it or the tab is hidden; never at
+ * all under reduced motion. The arrows still work.
  */
 export default function Carousel({
   children,
@@ -34,7 +45,8 @@ export default function Carousel({
   subtitle,
   href,
   cta,
-  tone = "light"
+  tone = "light",
+  autoplay = false
 }: {
   children: React.ReactNode;
   className?: string;
@@ -46,8 +58,11 @@ export default function Carousel({
   href?: string;
   cta?: string;
   tone?: "light" | "dark";
+  autoplay?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  // Refs, not state: read by the timer, and nothing on screen depends on them.
+  const hold = useRef({ pointer: false, focus: false, finger: false, lifted: 0 });
   const [atStart, setAtStart] = useState(true);
   const [atEnd, setAtEnd] = useState(true);
   const { locale } = usePrefs();
@@ -76,12 +91,28 @@ export default function Carousel({
   }, [sync]);
 
   const scroll = (direction: -1 | 1) => {
-    const el = ref.current;
-    if (!el) return;
-    // A bit less than a full viewport, so the next card peeks in and the rail
-    // never looks like it has ended.
-    el.scrollBy({ left: direction * el.clientWidth * 0.82, behavior: "smooth" });
+    if (ref.current) page(ref.current, direction);
   };
+
+  const lift = (e: React.TouchEvent) => {
+    hold.current.finger = e.touches.length > 0;
+    hold.current.lifted = Date.now();
+  };
+
+  useEffect(() => {
+    if (!autoplay) return;
+    // Read on every tick, so changing the setting mid-visit counts at once.
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const timer = window.setInterval(() => {
+      const el = ref.current;
+      const h = hold.current;
+      if (!el || reduce.matches || document.hidden || h.pointer || h.focus || h.finger) return;
+      if (Date.now() - h.lifted < AUTOPLAY_MS) return;
+      if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 4) el.scrollTo({ left: 0, behavior: "smooth" });
+      else page(el, 1);
+    }, AUTOPLAY_MS);
+    return () => window.clearInterval(timer);
+  }, [autoplay]);
 
   const dark = tone === "dark";
   const scrollable = !(atStart && atEnd);
@@ -96,7 +127,27 @@ export default function Carousel({
   );
 
   return (
-    <div className={className}>
+    <div
+      className={className}
+      onPointerEnter={() => {
+        hold.current.pointer = true;
+      }}
+      onPointerLeave={() => {
+        hold.current.pointer = false;
+      }}
+      // A swipe ends the pointer events (pointercancel), not the touch ones.
+      onTouchStart={() => {
+        hold.current.finger = true;
+      }}
+      onTouchEnd={lift}
+      onTouchCancel={lift}
+      onFocus={() => {
+        hold.current.focus = true;
+      }}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) hold.current.focus = false;
+      }}
+    >
       {(title || cta) && (
         <div className="mb-7 flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
           <div className="max-w-2xl">
@@ -165,13 +216,15 @@ export default function Carousel({
       )}
 
       {/* `-mx-4 px-4` lets cards run to the container edge while keeping the
-          first one aligned with the heading above it. */}
+          first one aligned with the heading above it. `relative`: anything
+          positioned inside a card (a link's screen-reader text) is clipped by
+          the rail, not left to widen the whole page on a phone. */}
       <div
         ref={ref}
         role="group"
         aria-label={label}
         tabIndex={0}
-        className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth px-4 py-2"
+        className="no-scrollbar relative -mx-4 flex snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth px-4 py-2"
       >
         {Array.isArray(children)
           ? children.map((child, i) => (

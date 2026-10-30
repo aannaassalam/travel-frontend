@@ -79,6 +79,7 @@ export default function EmptyState({
 
         <div className="rounded-lg bg-white p-5 shadow-sm">
           <LeadForm
+            key={query}
             kind="REQUEST_TO_BOOK"
             vertical={vertical}
             compact

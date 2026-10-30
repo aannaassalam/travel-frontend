@@ -92,6 +92,11 @@ export default function Footer() {
                 </Link>
               </li>
             ))}
+            <li>
+              <Link href="/promotions" className="text-white/75 transition-colors hover:text-white">
+                {t("home.promotions")}
+              </Link>
+            </li>
           </ul>
         </nav>
 
@@ -135,7 +140,7 @@ export default function Footer() {
             </li>
             <li>
               <Link
-                href="/terms#no-refund"
+                href="/terms#cancellation"
                 className="text-white/75 transition-colors hover:text-white"
               >
                 {t("footer.policy")}

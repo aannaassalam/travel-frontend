@@ -1,4 +1,4 @@
-import { Price, SettlementNote, Scarcity } from "@/components/site/bits";
+import { Price, PromoEnds, PromoWas, SettlementNote, Scarcity } from "@/components/site/bits";
 import { useCheckout } from "@/lib/checkout";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { InlineSelect } from "@/components/ui/InlineSelect";
@@ -159,14 +159,17 @@ function StockBookingBox({ listing }: { listing: Listing }) {
           </div>
           <dl className="mt-1.5 space-y-1">
             {rates.map((r) => (
-              <div key={r.hours} className="flex items-baseline justify-between gap-4">
+              <div key={r.hours} className="flex flex-wrap items-baseline justify-between gap-x-4">
                 <dt className="text-sm text-ink-700">{rateLabel(r.hours, t)}</dt>
-                <dd>
+                <dd className="ml-auto text-right">
+                  {/* The 24-hour rate is the sell price: the promotion's line. */}
+                  {r.hours === 24 && <PromoWas promotion={listing.promotion} className="mr-2" />}
                   <Price money={r.price} className="text-lg font-bold text-brand-900" />
                 </dd>
               </div>
             ))}
           </dl>
+          <PromoEnds promotion={listing.promotion} />
           {rates.length > 1 && <p className="mt-2 text-xs text-ink-500">{t("rental.cheapest")}</p>}
         </>
       ) : (
@@ -175,8 +178,10 @@ function StockBookingBox({ listing }: { listing: Listing }) {
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="text-sm text-ink-500">{t("listing.from")}</p>
-            <Price money={listing.sellPrice} className="text-3xl font-bold text-brand-900" />
+            <PromoWas promotion={listing.promotion} />
+            <Price money={listing.sellPrice} className="block text-3xl font-bold text-brand-900" />
             <p className="text-sm text-ink-500">{t("listing.perPerson")}</p>
+            <PromoEnds promotion={listing.promotion} />
           </div>
           <Scarcity
             available={listing.available}
@@ -315,7 +320,7 @@ function StockBookingBox({ listing }: { listing: Listing }) {
         <ShieldCheck className="mt-0.5 size-4 shrink-0 text-brand-500" />
         <span>
           <strong className="font-semibold">{policyTitle}</strong> — {notice}{" "}
-          <Link href="/terms#no-refund" className="text-brand-500 underline">
+          <Link href="/terms#cancellation" className="text-brand-500 underline">
             {t("policy.readFull")}
           </Link>
         </span>
@@ -400,10 +405,12 @@ function RouteBookingBox({ listing }: { listing: Listing }) {
   return (
     <div className="surface p-6">
       <p className="text-sm text-ink-500">{t("listing.from")}</p>
-      <Price money={listing.sellPrice} className="text-3xl font-bold text-brand-900" />
+      <PromoWas promotion={listing.promotion} />
+      <Price money={listing.sellPrice} className="block text-3xl font-bold text-brand-900" />
       <p className="text-sm text-ink-500">
         {t("listing.perPerson")} · {t("route.adult").toLowerCase()}
       </p>
+      <PromoEnds promotion={listing.promotion} />
 
       <div className="mt-4 space-y-4">
         <label className="block">
@@ -578,7 +585,7 @@ function RouteBookingBox({ listing }: { listing: Listing }) {
         <ShieldCheck className="mt-0.5 size-4 shrink-0 text-brand-500" />
         <span>
           <strong className="font-semibold">{policyTitle}</strong> — {notice}{" "}
-          <Link href="/terms#no-refund" className="text-brand-500 underline">
+          <Link href="/terms#cancellation" className="text-brand-500 underline">
             {t("policy.readFull")}
           </Link>
         </span>

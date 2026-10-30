@@ -1,10 +1,13 @@
 import { Breadcrumbs } from "@/components/site/bits";
 import Layout from "@/components/site/Layout";
+import Partners from "@/components/site/Partners";
 import SearchWidget from "@/components/search/SearchWidget";
 import { CardSkeleton, Skeleton } from "@/components/ui/field";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { searchHotels, searchListings } from "@/lib/api";
 import { resultsLabel } from "@/lib/i18n";
+import { PAGE_SIZE, pageParam } from "@/lib/paging";
+import { pushQuery } from "@/lib/query";
 import { usePrefs } from "@/lib/prefs";
 import { cn } from "@/lib/utils";
 import { Vertical } from "@/typescript/interface/domain.interface";
@@ -15,6 +18,7 @@ import { useMemo } from "react";
 import EmptyState from "./EmptyState";
 import Filters, { FilterSection } from "./Filters";
 import LeadForm from "./LeadForm";
+import Pager, { PageGone } from "./Pager";
 import ResultsSearch from "./ResultsSearch";
 import ViewToggle from "./ViewToggle";
 import { HotelRow, HotelTile, ResultRow, ResultTile } from "./cards";
@@ -74,13 +78,15 @@ export default function SearchResults({
       withDriver: q.withDriver,
       stars: q.stars,
       amenities: q.amenities,
+      minPrice: q.minPrice ? Number(q.minPrice) : undefined,
       maxPrice: q.maxPrice ? Number(q.maxPrice) : undefined,
       bedrooms: q.bedrooms ? Number(q.bedrooms) : undefined,
       adults: q.adults ? Number(q.adults) : undefined,
       sort: q.sort ?? "recommended",
       from: q.from,
       to: q.to,
-      limit: 40
+      page: pageParam(q.page),
+      limit: PAGE_SIZE
     }),
     [vertical, q]
   );
@@ -104,15 +110,27 @@ export default function SearchResults({
   });
 
   const active = isHotel ? hotelQuery : listingQuery;
-  const { isPending, isFetching, isError, refetch } = active;
+  const { isFetching, isError, refetch } = active;
   const count = active.data?.total ?? 0;
+  // A search that found nothing is not shown under the next one's words while
+  // that one loads: skeletons, as for a first load.
+  const isPending = active.isPending || (active.isPlaceholderData && count === 0);
+  const pages = active.data?.pages ?? Math.ceil(count / PAGE_SIZE);
+  // Results, yet none on this page: it is past the last one.
+  const pastEnd = count > 0 && !active.data?.items.length;
   const searchSummary = [q.origin, q.destination, q.from, q.to].filter(Boolean).join(" · ");
 
-  function setSort(value: string) {
-    router.push({ pathname: router.pathname, query: { ...q, sort: value } }, undefined, {
-      scroll: false
-    });
-  }
+  // A new order starts again at its first page.
+  const setSort = (value: string) => void pushQuery({ sort: value });
+  const priceLabel = t(
+    vertical === "HOTEL"
+      ? "results.priceRangeHotel"
+      : vertical === "CAR"
+        ? "results.priceRangeCar"
+        : vertical === "PROPERTY"
+          ? "results.priceRangeProperty"
+          : "results.priceRange"
+  );
 
   const sortOptions: [string, string][] = [
     ["recommended", "results.sortRecommended"],
@@ -126,7 +144,17 @@ export default function SearchResults({
 
   return (
     <Layout title={title} description={description}>
-      <SearchWidget vertical={vertical} variant="compact" initial={q as Record<string, string>} />
+      {/* Started again whenever the URL changes one of its own fields (a city
+          ticked in the sidebar, Back, "clear filters"), never on a filter,
+          sort or page: what is being typed in it stays. */}
+      <SearchWidget
+        // Not on `maxPrice`: the sidebar's price slider writes it, and the bar's
+        // budget follows it in place, keeping a place typed but not searched.
+        key={[q.origin, q.destination, q.from, q.to, q.adults, q.children, q.rooms, q.cabin, q.withDriver, q.propertyType].join("|")}
+        vertical={vertical}
+        variant="compact"
+        initial={q as Record<string, string>}
+      />
 
       <div className="container-site py-8">
         <Breadcrumbs items={[{ label: t("common.home"), href: "/" }, { label: heroLabel }]} />
@@ -171,7 +199,7 @@ export default function SearchResults({
         </div>
 
         <div className="flex flex-col gap-8 lg:flex-row">
-          <Filters sections={filters} priceBounds={priceRange} />
+          <Filters sections={filters} priceBounds={priceRange} priceLabel={priceLabel} />
 
           <div className="min-w-0 flex-1">
             <ResultsSearch className="mb-5" />
@@ -222,6 +250,8 @@ export default function SearchResults({
                   }
                 />
               </div>
+            ) : pastEnd ? (
+              <PageGone />
             ) : (
               <div
                 /*
@@ -248,6 +278,8 @@ export default function SearchResults({
                       grid ? <ResultTile key={l.id} listing={l} /> : <ResultRow key={l.id} listing={l} />
                     )}
 
+                <Pager page={params.page} pages={pages} total={count} />
+
                 {/* §1: stock is thin by design, so the lead capture belongs on
                     every results page — not only when the search returns none.
                     Full width in the grid too: it is a form, not a result. */}
@@ -263,6 +295,8 @@ export default function SearchResults({
                   <p className="mb-5 mt-1 max-w-2xl text-sm text-ink-700">{t("empty.body")}</p>
                   <div className="rounded-xl bg-white p-6">
                     <LeadForm
+                      // A new route or date starts it again, with its words.
+                      key={searchSummary}
                       kind="REQUEST_TO_BOOK"
                       vertical={vertical}
                       compact
@@ -275,12 +309,18 @@ export default function SearchResults({
           </div>
         </div>
       </div>
+
+      <Partners />
     </Layout>
   );
 }
 
-/** The results grid: two tiles a row beside the filters, three on a wide screen. */
-const GRID = "grid gap-5 sm:grid-cols-2 xl:grid-cols-3";
+/**
+ * The results grid: two tiles a row beside the filters, three on a wide screen.
+ * One column on a phone, sized to the screen: left implicit, it grew to the
+ * request form's 440px phone row and the page scrolled sideways at 360px.
+ */
+const GRID = "grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3";
 
 /** Shaped like a result row, so the layout does not jump when data lands. */
 function RowSkeleton() {
@@ -288,6 +328,7 @@ function RowSkeleton() {
     <div className="surface flex animate-fade-in flex-col overflow-hidden sm:flex-row">
       <Skeleton className="h-44 rounded-none sm:h-auto sm:w-64" />
       <div className="flex-1 space-y-3 p-5">
+        <Skeleton className="h-3 w-20" />
         <Skeleton className="h-3 w-24" />
         <Skeleton className="h-5 w-3/5" />
         <Skeleton className="h-3 w-4/5" />

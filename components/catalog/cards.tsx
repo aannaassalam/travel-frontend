@@ -1,16 +1,32 @@
 import { NoImageSpot } from "@/components/art/spots";
-import { Price, PolicyChip, RatingBadge, Scarcity, Stars, hasPrice } from "@/components/site/bits";
+import {
+  Price,
+  PolicyChip,
+  PromoEnds,
+  PromoWas,
+  RatingBadge,
+  Scarcity,
+  Stars,
+  hasPrice
+} from "@/components/site/bits";
 import { carTypeLabel, detailHref, hotelHref, propertySizes, sqm } from "@/lib/catalog";
 import { mediaUrl } from "@/lib/media";
+import { formatMoney, resolve } from "@/lib/money";
 import { fmtDateLong, formatMinutes } from "@/lib/format";
 import { facetLabel } from "@/lib/i18n";
-import { price } from "@/lib/money";
 import { usePrefs } from "@/lib/prefs";
-import { ratesOf } from "@/lib/rental";
+import { rateLabel, ratesOf } from "@/lib/rental";
 import { usePolicyShort } from "@/lib/siteContent";
 import { arrivalOf, bookableTimesOn, timetableLines } from "@/lib/routes";
 import { cn } from "@/lib/utils";
-import { Hotel, Listing, ListingAttributes, Money } from "@/typescript/interface/domain.interface";
+import {
+  Hotel,
+  Listing,
+  ListingAttributes,
+  Money,
+  Promotion,
+  Vertical
+} from "@/typescript/interface/domain.interface";
 import {
   ArrowRight,
   Bed,
@@ -58,13 +74,44 @@ export function VerticalChip({
   );
 }
 
+/** The `card.kind.*` keys: a typo fails to compile instead of showing the raw key. */
+type Kind = Exclude<Vertical, "PROPERTY"> | "PROPERTY_SALE" | "PROPERTY_RENT";
+
+/**
+ * What the card sells ("Billet d'avion"), the first line of its text. In the
+ * chip's own text colour: the raw car tint is under 4.5:1 at 11px on white.
+ */
+export function CardKind({ kind }: { kind: Kind }) {
+  const { t } = usePrefs();
+  // PROPERTY_SALE/_RENT take the property tint; no tint (restaurant) = brand.
+  const tint = VERTICAL_COLOR[kind.split("_")[0]] ?? "var(--color-brand-500)";
+  return (
+    <p
+      className="eyebrow"
+      style={{ color: `color-mix(in oklab, ${tint} 88%, black)` }}
+    >
+      {t(`card.kind.${kind}`)}
+    </p>
+  );
+}
+
+/** A listing's `card.kind.*`: property is a sale or a rental. */
+function cardKind(listing: Listing): Kind {
+  if (listing.vertical !== "PROPERTY") return listing.vertical;
+  const a = listing.attributes;
+  return a.priceBasis === "PER_MONTH" || a.propertyType?.endsWith("_RENT")
+    ? "PROPERTY_RENT"
+    : "PROPERTY_SALE";
+}
+
 /**
  * Result cards.
  *
  * The dense, scannable row — image left, detail centre, price rail right — is
  * the pattern Booking.com and Expedia trained the market on. §11.6: take the
  * layout, leave the manipulation. No "booked 8 times today", no fake struck
- * -through prices, no countdown that resets on reload.
+ * -through prices (a promotion's is the old price the office typed), no
+ * countdown that resets on reload.
  */
 
 const SHELL =
@@ -125,17 +172,19 @@ function Thumb({
 function PriceRail({
   money,
   suffix,
+  promotion,
+  rates,
   href,
   cta,
   available,
   noun,
-  soldOutCta,
-  note
+  soldOutCta
 }: {
-  money: Money | number | undefined;
+  money?: Money | number;
   suffix?: string;
-  /** A second small line under the suffix. */
-  note?: React.ReactNode;
+  promotion?: Promotion;
+  /** A car's rates, in place of the one "from" price. */
+  rates?: React.ReactNode;
   href: string;
   cta: string;
   /** Absent when the stock is not counted: never sold out. */
@@ -147,16 +196,25 @@ function PriceRail({
   const soldOut = available !== undefined && available <= 0;
   return (
     <div className="flex shrink-0 flex-col justify-end gap-3 bg-ink-50/60 p-5 sm:w-60 sm:text-right">
-      <div className="flex items-center justify-between gap-2 sm:flex-col sm:items-end">
-        <div>
-          <p className="eyebrow text-ink-300">{t("listing.from")}</p>
-          <Price
-            money={money}
-            className="display block text-[28px] leading-none text-brand-900"
-          />
-          {suffix && <p className="mt-1 text-xs text-ink-500">{suffix}</p>}
-          {note}
-        </div>
+      {/* A car's rate list takes the row on a phone, its stock badge below. */}
+      <div
+        className={cn(
+          "flex gap-2 sm:flex-col sm:items-end",
+          rates ? "flex-col items-start" : "items-center justify-between"
+        )}
+      >
+        {rates ?? (
+          <div>
+            <p className="eyebrow text-ink-300">{t("listing.from")}</p>
+            <PromoWas promotion={promotion} />
+            <Price
+              money={money}
+              className="display block text-[28px] leading-none text-brand-900"
+            />
+            {suffix && <p className="mt-1 text-xs text-ink-500">{suffix}</p>}
+            <PromoEnds promotion={promotion} />
+          </div>
+        )}
         <Scarcity available={available} noun={noun} />
       </div>
       <Link
@@ -187,6 +245,7 @@ function useSearchedDay(listing: Listing) {
 /**
  * A route's week on a card, a line a day, Monday first — "Lun 07:30 · 08:00" —
  * or one "Tous les jours" line for a bus. Compact: the detail page has the table.
+ * A row a line, white and grey in turn, so a long week reads across.
  */
 function Timetable({ a }: { a: ListingAttributes }) {
   const { t, locale } = usePrefs();
@@ -194,10 +253,13 @@ function Timetable({ a }: { a: ListingAttributes }) {
   if (!lines.length) return null;
   return (
     <div className="flex gap-1.5 text-sm text-ink-700">
-      <span className="shrink-0 font-semibold">{t("route.times")} :</span>
-      <ul>
+      <span className="shrink-0 py-1 font-semibold">{t("route.times")} :</span>
+      {/* An outer ring: an inset one would be painted over by the rows. */}
+      <ul className="min-w-0 flex-1 overflow-hidden rounded-md ring-1 ring-ink-100">
         {lines.map((line) => (
-          <li key={line}>{line}</li>
+          <li key={line} className="px-2 py-1 odd:bg-white even:bg-ink-50">
+            {line}
+          </li>
         ))}
       </ul>
     </div>
@@ -219,6 +281,7 @@ export function RouteRow({ listing }: { listing: Listing }) {
     <article className={SHELL}>
       <Thumb src={mediaUrl(listing.images[0])} alt={lz(listing.title)} className="h-44 sm:h-auto sm:w-60" />
       <div className="flex min-w-0 flex-1 flex-col gap-2 p-4">
+        <CardKind kind={cardKind(listing)} />
         <div className="flex flex-wrap items-center gap-2">
           <VerticalChip
             vertical={listing.vertical}
@@ -283,6 +346,7 @@ export function RouteRow({ listing }: { listing: Listing }) {
       <PriceRail
         money={listing.sellPrice}
         suffix={`${t("listing.perPerson")} · ${t("route.adult").toLowerCase()}`}
+        promotion={listing.promotion}
         href={href}
         cta={t("listing.select")}
         noun="seat"
@@ -300,6 +364,7 @@ export function CarRow({ listing }: { listing: Listing }) {
     <article className={SHELL}>
       <Thumb src={mediaUrl(listing.images[0])} alt={lz(listing.title)} className="h-44 sm:h-auto sm:w-60" />
       <div className="flex min-w-0 flex-1 flex-col gap-2 p-4">
+        <CardKind kind={cardKind(listing)} />
         <div className="flex flex-wrap items-center gap-2">
           <VerticalChip vertical="CAR" label={a.category ? carTypeLabel(locale, a.category) : ""} />
           {a.withDriver && (
@@ -342,9 +407,7 @@ export function CarRow({ listing }: { listing: Listing }) {
         <RatingBadge rating={listing.rating} count={listing.reviewCount} size="sm" />
       </div>
       <PriceRail
-        money={listing.sellPrice}
-        suffix={t("listing.per24h")}
-        note={<ShortRate listing={listing} />}
+        rates={<CarRates listing={listing} className="w-full min-w-0" />}
         href={detailHref(listing)}
         cta={t("listing.select")}
         available={listing.available}
@@ -367,20 +430,27 @@ function CarCompany({ a }: { a: ListingAttributes }) {
 }
 
 /**
- * Under a car's 24-hour price: "ou 15 $ / heure" — its hourly price, else its
- * shortest one ("ou 60 $ / 6 h"). Nothing for a car rented by the 24 h only.
+ * Every rate a car is offered at, shortest first, label left and price right:
+ * "Par heure", "Pour 6 heures"… The 24-hour one is its `sellPrice`, so that is
+ * the line a promotion's old price goes on.
  */
-function ShortRate({ listing }: { listing: Listing }) {
-  const { t, currency, locale } = usePrefs();
-  const rate = ratesOf(listing).find((r) => r.hours < 24);
-  if (!rate) return null;
-  const amount = price(rate.price, currency, locale);
+function CarRates({ listing, className }: { listing: Listing; className?: string }) {
+  const { t } = usePrefs();
   return (
-    <p className="mt-0.5 text-xs text-ink-500">
-      {rate.hours === 1
-        ? t("rental.orPerHour", { price: amount })
-        : t("rental.orPer", { price: amount, n: rate.hours })}
-    </p>
+    <div className={className}>
+      <dl className="space-y-1">
+        {ratesOf(listing).map((r) => (
+          <div key={r.hours} className="flex flex-wrap items-baseline justify-between gap-x-3">
+            <dt className="text-sm text-ink-500">{rateLabel(r.hours, t)}</dt>
+            <dd className="ml-auto text-right">
+              {r.hours === 24 && <PromoWas promotion={listing.promotion} className="mr-1.5" />}
+              <Price money={r.price} className="text-[15px] font-bold text-brand-900" />
+            </dd>
+          </div>
+        ))}
+      </dl>
+      <PromoEnds promotion={listing.promotion} className="text-right" />
+    </div>
   );
 }
 
@@ -393,6 +463,7 @@ export function ActivityRow({ listing }: { listing: Listing }) {
     <article className={SHELL}>
       <Thumb src={mediaUrl(listing.images[0])} alt={lz(listing.title)} className="h-52 sm:h-auto sm:w-64" />
       <div className="flex min-w-0 flex-1 flex-col gap-2 p-4">
+        <CardKind kind={cardKind(listing)} />
         <VerticalChip vertical="ACTIVITY" label={listing.city} Icon={MapPin} />
         <h3 className="text-lg font-bold text-brand-900">
           <Link href={detailHref(listing)} className="after:absolute after:inset-0 hover:underline">
@@ -422,6 +493,7 @@ export function ActivityRow({ listing }: { listing: Listing }) {
       <PriceRail
         money={listing.sellPrice}
         suffix={t("listing.perPerson")}
+        promotion={listing.promotion}
         href={detailHref(listing)}
         cta={t("listing.book")}
         available={listing.available}
@@ -438,6 +510,7 @@ export function HotelRow({ hotel }: { hotel: Hotel }) {
     <article className={SHELL}>
       <Thumb src={mediaUrl(hotel.images[0])} alt={lz(hotel.name)} className="h-52 sm:h-auto sm:w-64" />
       <div className="flex min-w-0 flex-1 flex-col gap-2 p-4">
+        <CardKind kind="HOTEL" />
         <div className="flex items-center gap-2">
           <h3 className="text-lg font-bold text-brand-900">
             <Link href={hotelHref(hotel)} className="after:absolute after:inset-0 hover:underline">
@@ -477,13 +550,17 @@ export function HotelRow({ hotel }: { hotel: Hotel }) {
 /* ------------------------------------------------------------- property row */
 
 export function PropertyRow({ listing }: { listing: Listing }) {
-  const { t, locale, lz } = usePrefs();
+  const { t, locale, lz, currency } = usePrefs();
   const a = listing.attributes;
+  // As <Price> shows it, in the visitor's currency.
+  const shown = resolve(listing.sellPrice, currency);
+  const shownPrice = formatMoney(shown.minor, shown.currency, locale);
   const isRent = a.priceBasis === "PER_MONTH";
   return (
     <article className={SHELL}>
       <Thumb src={mediaUrl(listing.images[0])} alt={lz(listing.title)} className="h-52 sm:h-auto sm:w-64" />
       <div className="flex min-w-0 flex-1 flex-col gap-2 p-4">
+        <CardKind kind={cardKind(listing)} />
         <div className="flex flex-wrap items-center gap-2">
           <VerticalChip
             vertical="PROPERTY"
@@ -522,18 +599,30 @@ export function PropertyRow({ listing }: { listing: Listing }) {
       </div>
       <div className="flex shrink-0 flex-col justify-end gap-3 bg-ink-50/60 p-5 sm:w-60 sm:text-right">
         <div>
+          <PromoWas promotion={listing.promotion} />
+          {/* Nine digits and up ("1 256 850 000 FC") are wider than the
+              column at 28 px, and the card's edge cut "FC": a size down. */}
           <Price
             money={listing.sellPrice}
-            className="display block text-[28px] leading-none text-brand-900"
+            className={cn(
+              "display block leading-none text-brand-900",
+              shownPrice.length >= 14 ? "text-[22px]" : "text-[28px]"
+            )}
           />
           <p className="mt-1 text-xs text-ink-500">
             {isRent ? t("listing.perMonth") : t("listing.total")}
           </p>
+          <PromoEnds promotion={listing.promotion} />
         </div>
         {/* §1.1 archetype C: no checkout for property, ever. */}
-        <Link href={detailHref(listing)} className="btn btn-md btn-dark w-full">
+        {/* Wraps rather than spill: "Demander des informations" is wider
+            than the column's button. */}
+        <Link
+          href={detailHref(listing)}
+          className="btn btn-md btn-dark w-full h-auto! min-h-11 whitespace-normal! py-2.5 text-center leading-tight"
+        >
           {t("listing.enquire")}
-          <ArrowRight className="size-4" />
+          <ArrowRight className="size-4 shrink-0" />
         </Link>
       </div>
     </article>
@@ -575,20 +664,16 @@ export const PROPERTY_LABEL: Record<string, { fr: string; en: string }> = {
  * The §2.2 reminder a tile has room for: the office's short wording, the same
  * as the rows' badge. Right-aligned, as it may wrap beside a wide price.
  */
-function NonRefundable() {
+function NonRefundable({ className }: { className?: string }) {
   const short = usePolicyShort();
-  return <span className="text-right text-[11px] text-ink-300">{short}</span>;
+  return <span className={cn("text-right text-[11px] text-ink-300", className)}>{short}</span>;
 }
 
 /** Homepage / cross-sell tile, and a car or activity in the results grid. */
 export function DealTile({ listing }: { listing: Listing }) {
   const { t, lz } = usePrefs();
   const isCar = listing.vertical === "CAR";
-  const suffix = isCar
-    ? t("listing.per24h")
-    : listing.vertical === "HOTEL"
-      ? t("listing.perNight")
-      : t("listing.perPerson");
+  const suffix = listing.vertical === "HOTEL" ? t("listing.perNight") : t("listing.perPerson");
   return (
     <article className={TILE}>
       <div className="relative aspect-[4/3] overflow-hidden bg-ink-50">
@@ -608,6 +693,7 @@ export function DealTile({ listing }: { listing: Listing }) {
         </div>
       </div>
       <div className="flex flex-1 flex-col gap-2.5 p-5">
+        <CardKind kind={cardKind(listing)} />
         <h3 className="line-clamp-2 text-[17px] font-bold leading-snug text-brand-900">
           <Link href={detailHref(listing)} className="after:absolute after:inset-0">
             {lz(listing.title)}
@@ -615,18 +701,26 @@ export function DealTile({ listing }: { listing: Listing }) {
         </h3>
         {isCar && <CarCompany a={listing.attributes} />}
         <RatingBadge rating={listing.rating} count={listing.reviewCount} size="sm" />
-        <div className="mt-auto flex items-end justify-between gap-2 pt-3">
-          <div>
-            <p className="eyebrow text-ink-300">{t("listing.from")}</p>
-            <Price
-              money={listing.sellPrice}
-              className="display block text-[24px] leading-none text-brand-900"
-            />
-            <p className="mt-1 text-xs text-ink-500">{suffix}</p>
-            {isCar && <ShortRate listing={listing} />}
+        {isCar ? (
+          <div className="mt-auto space-y-2 pt-3">
+            <CarRates listing={listing} />
+            <NonRefundable className="block" />
           </div>
-          <NonRefundable />
-        </div>
+        ) : (
+          <div className="mt-auto flex items-end justify-between gap-2 pt-3">
+            <div>
+              <p className="eyebrow text-ink-300">{t("listing.from")}</p>
+              <PromoWas promotion={listing.promotion} />
+              <Price
+                money={listing.sellPrice}
+                className="display block text-[24px] leading-none text-brand-900"
+              />
+              <p className="mt-1 text-xs text-ink-500">{suffix}</p>
+              <PromoEnds promotion={listing.promotion} />
+            </div>
+            <NonRefundable />
+          </div>
+        )}
       </div>
     </article>
   );
@@ -650,6 +744,7 @@ export function RouteTile({ listing }: { listing: Listing }) {
         </span>
       </div>
       <div className="flex flex-1 flex-col gap-2.5 p-5">
+        <CardKind kind={cardKind(listing)} />
         <h3 className="text-[17px] font-bold leading-snug text-brand-900">
           <Link href={href} className="after:absolute after:inset-0">
             {listing.city} → {a.destination}
@@ -679,6 +774,7 @@ export function RouteTile({ listing }: { listing: Listing }) {
         <div className="mt-auto flex items-end justify-between gap-2 pt-3">
           <div>
             <p className="eyebrow text-ink-300">{t("listing.from")}</p>
+            <PromoWas promotion={listing.promotion} />
             <Price
               money={listing.sellPrice}
               className="display block text-[24px] leading-none text-brand-900"
@@ -686,6 +782,7 @@ export function RouteTile({ listing }: { listing: Listing }) {
             <p className="mt-1 text-xs text-ink-500">
               {t("listing.perPerson")} · {t("route.adult").toLowerCase()}
             </p>
+            <PromoEnds promotion={listing.promotion} />
           </div>
           <NonRefundable />
         </div>
@@ -709,6 +806,7 @@ export function HotelTile({ hotel }: { hotel: Hotel }) {
         </span>
       </div>
       <div className="flex flex-1 flex-col gap-2.5 p-5">
+        <CardKind kind="HOTEL" />
         <h3 className="text-[17px] font-bold leading-snug text-brand-900">
           <Link href={hotelHref(hotel)} className="after:absolute after:inset-0">
             {lz(hotel.name)}
@@ -766,6 +864,7 @@ export function PropertyTile({ listing }: { listing: Listing }) {
         )}
       </div>
       <div className="flex flex-1 flex-col gap-2 p-5">
+        <CardKind kind={cardKind(listing)} />
         <h3 className="line-clamp-2 text-[17px] font-bold leading-snug text-brand-900">
           <Link href={detailHref(listing)} className="after:absolute after:inset-0">
             {lz(listing.title)}
@@ -783,6 +882,7 @@ export function PropertyTile({ listing }: { listing: Listing }) {
           </p>
         ) : null}
         <div className="mt-auto pt-3">
+          <PromoWas promotion={listing.promotion} />
           <Price
             money={listing.sellPrice}
             className="display block text-[24px] leading-none text-brand-900"
@@ -790,6 +890,7 @@ export function PropertyTile({ listing }: { listing: Listing }) {
           <p className="mt-1 text-xs text-ink-500">
             {a.priceBasis === "PER_MONTH" ? t("listing.perMonth") : t("listing.total")}
           </p>
+          <PromoEnds promotion={listing.promotion} />
         </div>
       </div>
     </article>

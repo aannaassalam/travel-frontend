@@ -304,8 +304,8 @@ export default function ConfirmationPage() {
               <li className="flex gap-3">
                 <MessageSquare className="mt-0.5 size-5 shrink-0 text-brand-500" />
                 {locale === "fr"
-                  ? "Une confirmation vous a été envoyée avec la référence et les conditions."
-                  : "A confirmation with the reference and conditions has been sent."}
+                  ? "Une confirmation avec la référence vous a été envoyée."
+                  : "A confirmation with the reference has been sent."}
               </li>
             )}
             {!isRide && (

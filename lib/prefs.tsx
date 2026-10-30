@@ -29,7 +29,7 @@ type Prefs = {
   /** The office's rates (francs per 1 unit of each), once /site/currencies has answered. */
   rates?: Partial<Record<Currency, number>>;
   lowData: boolean;
-  /** Undefined until the visitor chooses: each page then shows its own default. */
+  /** Undefined until the visitor chooses this visit: each page then shows its own default, a list. */
   view?: ResultsView;
   setLocale: (l: Locale) => void;
   setCurrency: (c: Currency) => void;
@@ -42,6 +42,8 @@ type Prefs = {
 export type ResultsView = "list" | "grid";
 
 const KEY = "ct.prefs";
+/** The list or grid choice, for this tab only: every new visit opens on a list. */
+const VIEW_KEY = "ct.view";
 const PrefsContext = createContext<Prefs | null>(null);
 
 export function PrefsProvider({ children }: { children: React.ReactNode }) {
@@ -64,9 +66,14 @@ export function PrefsProvider({ children }: { children: React.ReactNode }) {
       }
       if (CURRENCIES.includes(saved.currency)) setSavedCurrency(saved.currency);
       if (saved.lowData) setLowDataState(saved.lowData);
-      if (saved.view === "list" || saved.view === "grid") setViewState(saved.view);
     } catch {
       /* corrupt or unavailable storage just means defaults */
+    }
+    try {
+      const view = sessionStorage.getItem(VIEW_KEY);
+      if (view === "list" || view === "grid") setViewState(view);
+    } catch {
+      /* no session storage: the page's own default */
     }
   }, []);
 
@@ -118,13 +125,14 @@ export function PrefsProvider({ children }: { children: React.ReactNode }) {
     },
     [persist]
   );
-  const setView = useCallback(
-    (v: ResultsView) => {
-      setViewState(v);
-      persist({ view: v });
-    },
-    [persist]
-  );
+  const setView = useCallback((v: ResultsView) => {
+    setViewState(v);
+    try {
+      sessionStorage.setItem(VIEW_KEY, v);
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   const t = useCallback(
     (key: string, vars?: Record<string, string | number>) =>

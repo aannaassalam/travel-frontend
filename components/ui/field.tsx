@@ -282,7 +282,9 @@ export function SelectField({
       <Select
         value={value}
         defaultValue={defaultValue}
-        onValueChange={onValueChange}
+        // Never "" (see InlineSelect): Radix reports it for a value whose
+        // option is not drawn yet.
+        onValueChange={onValueChange && ((v) => v !== "" && onValueChange(v))}
         disabled={disabled}
         name={name}
       >
@@ -322,6 +324,7 @@ export function CardSkeleton() {
     <div className="surface overflow-hidden">
       <Skeleton className="aspect-4/3 rounded-none" />
       <div className="space-y-3 p-6">
+        <Skeleton className="h-3 w-20" />
         <Skeleton className="h-4 w-3/4" />
         <Skeleton className="h-3 w-1/2" />
         <Skeleton className="h-8 w-2/5" />

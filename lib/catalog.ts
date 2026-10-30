@@ -84,7 +84,10 @@ export const restaurantHref = (r: { slug: string }) => `/restaurants/${r.slug}`;
  * `attributes.category`. A car saved before the list keeps its own text,
  * which is shown as it was typed.
  */
-export const CAR_TYPES = ["SUV", "BERLINE", "BUS", "PICKUP", "MINIBUS", "TRUCK", "LUXE"];
+export const CAR_TYPES = [
+  "SUV", "BERLINE", "BUS", "PICKUP", "MINIBUS", "TRUCK", "LUXE",
+  "MINIVAN", "VAN", "COUPE", "ROADSTER", "LIMOUSINE", "MICROCAR"
+];
 
 export const carTypeLabel = (locale: Locale, value: string) =>
   CAR_TYPES.includes(value) ? translate(locale, `carType.${value}`) : facetLabel(locale, value);

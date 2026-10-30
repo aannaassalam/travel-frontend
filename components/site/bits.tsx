@@ -1,5 +1,6 @@
+import { fmtDayMonth } from "@/lib/format";
 import { baseMinor, formatMoney, resolve, settlementNote } from "@/lib/money";
-import { BASE_CURRENCY, Currency, Money } from "@/typescript/interface/domain.interface";
+import { BASE_CURRENCY, Currency, Money, Promotion } from "@/typescript/interface/domain.interface";
 import { usePrefs } from "@/lib/prefs";
 import { usePolicyNotice, usePolicyShort, usePolicyTitle } from "@/lib/siteContent";
 import { cn } from "@/lib/utils";
@@ -42,6 +43,39 @@ export function Price({
       ) : null}
       {suffix ? <span className="text-sm font-normal text-ink-500"> {suffix}</span> : null}
     </span>
+  );
+}
+
+/**
+ * A promotion's old price, struck through, and its discount: "300 000 FC −20 %",
+ * set beside the price that is charged. Small and grey with a red badge — not
+ * the sold-out look, where the price itself is struck out. Inline, so it
+ * follows the text alignment of the price block it sits in. Grey at ink-500,
+ * not lighter: 4.5:1 on the price rail, as small text needs (WCAG AA).
+ */
+export function PromoWas({ promotion, className }: { promotion?: Promotion; className?: string }) {
+  const { t } = usePrefs();
+  if (!promotion) return null;
+  return (
+    <span className={cn("inline-flex flex-wrap items-center gap-1.5", className)}>
+      <span className="sr-only">{t("promo.was")}</span>
+      <Price money={promotion.compareAtPrice} className="text-sm text-ink-500 line-through" />
+      <span className="rounded bg-bad-600 px-1.5 py-0.5 text-[11px] font-bold leading-none text-white">
+        {t("promo.off", { n: promotion.discountPercent })}
+      </span>
+    </span>
+  );
+}
+
+/** "Jusqu'au 30 nov.": a promotion's last day, when it has one. */
+export function PromoEnds({ promotion, className }: { promotion?: Promotion; className?: string }) {
+  const { t, locale } = usePrefs();
+  const day = promotion?.endsAt ? fmtDayMonth(promotion.endsAt, locale) : "";
+  if (!day) return null;
+  return (
+    <p className={cn("mt-1 text-xs font-semibold text-bad-600", className)}>
+      {t("promo.until", { date: day })}
+    </p>
   );
 }
 
@@ -178,7 +212,7 @@ export function PolicyLine({ className }: { className?: string }) {
       <ShieldCheck className="mt-0.5 size-4 shrink-0 text-brand-500" />
       <span>
         <strong className="font-semibold">{title}</strong> — {notice}{" "}
-        <Link href="/terms#no-refund" className="font-medium text-brand-500 underline">
+        <Link href="/terms#cancellation" className="font-medium text-brand-500 underline">
           {t("policy.readFull")}
         </Link>
       </span>

@@ -183,14 +183,16 @@ export default function ListingDetail({
                   {a.weeklyTimes?.length ? (
                     <div className="mt-4">
                       <p className="mb-2 text-sm font-semibold text-ink-700">{t("route.weekly")}</p>
-                      <dl className="divide-y divide-ink-100/70 rounded-md ring-1 ring-ink-100 ring-inset">
+                      {/* A row a day, white and grey in turn; the ring outside,
+                          where the rows' colour cannot cover it. */}
+                      <dl className="overflow-hidden rounded-md ring-1 ring-ink-100">
                         {WEEK_ORDER.map((d) => {
                           const times = a
                             .weeklyTimes!.filter((w) => w.day === d)
                             .map((w) => w.time)
                             .sort();
                           return (
-                            <div key={d} className="flex items-center gap-4 px-3 py-2 text-sm">
+                            <div key={d} className="flex items-center gap-4 px-3 py-2 text-sm odd:bg-white even:bg-ink-50">
                               <dt className="w-12 font-semibold text-ink-700">{dayName(d, locale)}</dt>
                               <dd className={times.length ? "font-mono font-bold text-brand-900" : "text-ink-300"}>
                                 {times.length ? times.join("  ·  ") : "—"}

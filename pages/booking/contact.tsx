@@ -117,7 +117,7 @@ export default function ContactStep() {
                   onChange={(e) => set("lastName", e.target.value)}
                   autoComplete="family-name"
                 />
-                {/* This is the number the confirmation and tracking SMS go to,
+                {/* This is the number the confirmation SMS goes to,
                     so the dialling code has to be right - it is a choice here,
                     not something to remember to type. */}
                 <PhoneField

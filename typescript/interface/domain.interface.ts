@@ -236,6 +236,20 @@ export interface Listing {
   attributes: ListingAttributes;
   rating?: number;
   reviewCount?: number;
+  /** Sent only while one runs. */
+  promotion?: Promotion;
+}
+
+/**
+ * A promotion the office typed: the old price, shown struck through beside
+ * `sellPrice`. Display only — what is charged is always `sellPrice`.
+ */
+export interface Promotion {
+  compareAtPrice: Money;
+  /** Whole percent, worked out on the francs. */
+  discountPercent: number;
+  /** ISO, the last day (stored at 00:00 UTC); absent: until the office removes it. */
+  endsAt?: string;
 }
 
 /** One length a car rents for, in hours, and its price. */

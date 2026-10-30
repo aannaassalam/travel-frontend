@@ -134,8 +134,8 @@ function ProfileBody({ user }: { user: CustomerSession }) {
         </h2>
         <p className="mt-2 text-sm text-ink-700">
           {locale === "fr"
-            ? "Votre compte et vos données personnelles sont supprimés. Les réservations déjà payées restent enregistrées pour des raisons comptables et légales ; elles ne sont pas remboursées."
-            : "Your account and personal data are deleted. Bookings already paid remain on record for accounting and legal reasons; they are not refunded."}
+            ? "Votre compte et vos données personnelles sont supprimés. Les réservations déjà payées restent enregistrées pour des raisons comptables et légales ; la suppression du compte ne les annule pas."
+            : "Your account and personal data are deleted. Bookings already paid remain on record for accounting and legal reasons; deleting your account does not cancel them."}
         </p>
         {confirmDelete ? (
           <div className="mt-4 flex flex-wrap gap-3">

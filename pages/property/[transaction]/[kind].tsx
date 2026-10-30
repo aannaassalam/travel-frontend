@@ -1,13 +1,16 @@
 import { PropertyRow, PropertyTile } from "@/components/catalog/cards";
 import EmptyState from "@/components/catalog/EmptyState";
 import LeadForm from "@/components/catalog/LeadForm";
+import Pager, { PageGone } from "@/components/catalog/Pager";
 import ResultsSearch from "@/components/catalog/ResultsSearch";
 import ViewToggle from "@/components/catalog/ViewToggle";
 import { Breadcrumbs } from "@/components/site/bits";
 import Layout from "@/components/site/Layout";
+import Partners from "@/components/site/Partners";
 import { CardSkeleton, Skeleton } from "@/components/ui/field";
 import { AlertTriangle, RotateCw } from "lucide-react";
 import { safely, searchListings } from "@/lib/api";
+import { PAGE_SIZE, pageParam } from "@/lib/paging";
 import { usePrefs } from "@/lib/prefs";
 import { cn } from "@/lib/utils";
 import { Listing } from "@/typescript/interface/domain.interface";
@@ -64,7 +67,9 @@ const ROUTES = [
 ] as const;
 
 interface Props {
+  /** The first page, as crawled. */
   listings: Listing[];
+  total: number;
   copy: { fr: { h1: string; lead: string }; en: { h1: string; lead: string } };
   transaction: string;
   kind: string;
@@ -73,6 +78,7 @@ interface Props {
 
 export default function PropertyCategory({
   listings,
+  total: builtTotal,
   copy,
   transaction,
   kind,
@@ -83,19 +89,24 @@ export default function PropertyCategory({
   const c = locale === "en" ? copy.en : copy.fr;
   const router = useRouter();
   const q = typeof router.query.q === "string" ? router.query.q : "";
+  const page = pageParam(router.query.page);
 
-  // The static list is the page as crawled. A search is a live request, the
-  // same one /property makes, narrowed to this page's kind.
-  const { data, isFetching, isError, refetch } = useQuery({
-    queryKey: ["listings", "PROPERTY", propertyType, q],
+  // The static list is the first page as crawled. A search, or another page,
+  // is a live request — the same one /property makes, narrowed to this kind.
+  const live = Boolean(q) || page > 1;
+  const { data, isFetching, isError, isPlaceholderData, refetch } = useQuery({
+    queryKey: ["listings", "PROPERTY", propertyType, q, page],
     queryFn: ({ signal }) =>
-      searchListings({ vertical: "PROPERTY", propertyType, q, limit: 40 }, { signal }),
-    enabled: Boolean(q),
+      searchListings({ vertical: "PROPERTY", propertyType, q, page, limit: PAGE_SIZE }, { signal }),
+    enabled: live,
     placeholderData: keepPreviousData,
     staleTime: 60_000
   });
-  const items = q ? (data?.items ?? []) : listings;
-  const pending = Boolean(q) && !data && !isError;
+  const items = live ? (data?.items ?? []) : listings;
+  const total = live ? (data?.total ?? 0) : builtTotal;
+  const pages = (live && data?.pages) || Math.ceil(total / PAGE_SIZE);
+  // Also while the last search, which found nothing, stands in for the next.
+  const pending = live && !isError && (!data || (isPlaceholderData && !data.items.length));
 
   return (
     <Layout title={c.h1} description={c.lead}>
@@ -124,12 +135,12 @@ export default function PropertyCategory({
           {pending ? (
             <Skeleton className="h-4 w-16" />
           ) : (
-            <span>{`${items.length} ${locale === "fr" ? "biens" : "listings"}`}</span>
+            <span>{`${total} ${locale === "fr" ? "biens" : "listings"}`}</span>
           )}
           <ViewToggle value={view} />
         </div>
 
-        {q && isError ? (
+        {live && isError ? (
           <div className="rounded-card bg-bad-100 p-8 text-center ring-1 ring-bad-600/20 ring-inset">
             <AlertTriangle className="mx-auto mb-3 size-8 text-bad-600" />
             <p className="font-bold text-brand-900">{t("common.error")}</p>
@@ -144,6 +155,8 @@ export default function PropertyCategory({
               grid ? <CardSkeleton key={i} /> : <Skeleton key={i} className="h-44 w-full" />
             )}
           </div>
+        ) : total > 0 && items.length === 0 ? (
+          <PageGone />
         ) : items.length === 0 ? (
           <div className="space-y-6">
             {q && (
@@ -164,6 +177,7 @@ export default function PropertyCategory({
             {items.map((l) =>
               grid ? <PropertyTile key={l.id} listing={l} /> : <PropertyRow key={l.id} listing={l} />
             )}
+            <Pager page={page} pages={pages} total={total} />
           </div>
         )}
 
@@ -183,6 +197,8 @@ export default function PropertyCategory({
           </div>
         </section>
       </div>
+
+      <Partners />
     </Layout>
   );
 }
@@ -205,13 +221,14 @@ export const getStaticProps: GetStaticProps<Props> = async ({ params }) => {
   // One filtered query per landing page. These exist for SEO, so they are
   // rendered server-side with the real result set rather than fetched client
   // -side after paint.
-  const { items } = await safely(
-    () => searchListings({ vertical: "PROPERTY", propertyType: route.propertyType, limit: 40 }),
+  const { items, total } = await safely(
+    () => searchListings({ vertical: "PROPERTY", propertyType: route.propertyType, limit: PAGE_SIZE }),
     { items: [], total: 0, limit: 0 }
   );
   return {
     props: {
       listings: items,
+      total,
       copy: { fr: route.fr, en: route.en },
       transaction: route.transaction,
       kind: route.kind,

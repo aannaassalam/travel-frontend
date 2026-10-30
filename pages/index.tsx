@@ -3,7 +3,8 @@ import {
   DealTile,
   DestinationTile,
   HotelTile,
-  PropertyTile
+  PropertyTile,
+  ResultTile
 } from "@/components/catalog/cards";
 import RecentlyViewed from "@/components/catalog/RecentlyViewed";
 import SearchWidget from "@/components/search/SearchWidget";
@@ -44,12 +45,14 @@ import Link from "next/link";
 
 interface Props {
   deals: Listing[];
+  /** Running promotions, biggest discount first; none hides the rail. */
+  promotions: Listing[];
   hotels: Hotel[];
   properties: Listing[];
   heroImage: string;
   /** The banner's wording as the office last saved it; null if the API did not answer. */
   hero: SiteContent["home"] | null;
-  /** Serviced places, owned by the admin — not a constant in this bundle. */
+  /** The first cities that sell hotels, owned by the admin — not a constant in this bundle. */
   destinations: ServiceLocation[];
   /** Logos from the admin's Partners screen; none hides the section. */
   partners: Partner[];
@@ -75,48 +78,59 @@ interface Props {
 const HERO_CANDIDATES = ["hero.avif", "hero.webp", "hero.jpg", "hero.jpeg", "hero.png"];
 const HERO_FALLBACK = "/img/hero-kinshasa.svg";
 
-/** Editorial rail — the "travel inspiration" strip, not another product grid. */
-const INSPIRATION = [
+/**
+ * Editorial rail — the "travel inspiration" strip, not another product grid.
+ * The office edits it under Website content → Home; these are the ideas the
+ * site ships with, shown until it has saved its own.
+ */
+const BUILT_IN_IDEAS: NonNullable<SiteContent["home"]["ideas"]> = [
   {
     image: "/img/photos/gorillas-kahuzi-biega.webp",
     href: "/activities?destination=Bukavu",
-    fr: { kicker: "Nature", title: "Gorilles du Kahuzi-Biega", body: "Une journée de pistage avec les rangers du parc." },
-    en: { kicker: "Nature", title: "Kahuzi-Biega gorillas", body: "A day tracking with the park rangers." }
+    kicker: { fr: "Nature", en: "Nature" },
+    title: { fr: "Gorilles du Kahuzi-Biega", en: "Kahuzi-Biega gorillas" },
+    body: { fr: "Une journée de pistage avec les rangers du parc.", en: "A day tracking with the park rangers." }
   },
   {
     image: "/img/photos/nyiragongo.webp",
     href: "/activities?destination=Goma",
-    fr: { kicker: "Aventure", title: "Nuit au sommet du Nyiragongo", body: "Le lac de lave, depuis le refuge du cratère." },
-    en: { kicker: "Adventure", title: "A night atop Nyiragongo", body: "The lava lake, from the crater shelter." }
+    kicker: { fr: "Aventure", en: "Adventure" },
+    title: { fr: "Nuit au sommet du Nyiragongo", en: "A night atop Nyiragongo" },
+    body: { fr: "Le lac de lave, depuis le refuge du cratère.", en: "The lava lake, from the crater shelter." }
   },
   {
     image: "/img/photos/congo-sunset.webp",
     href: "/activities?destination=Kinshasa",
-    fr: { kicker: "Fleuve", title: "Coucher de soleil sur le Congo", body: "Trois heures d'eau depuis la baie de Ngaliema." },
-    en: { kicker: "River", title: "Sunset on the Congo", body: "Three hours on the water from Ngaliema bay." }
+    kicker: { fr: "Fleuve", en: "River" },
+    title: { fr: "Coucher de soleil sur le Congo", en: "Sunset on the Congo" },
+    body: { fr: "Trois heures d'eau depuis la baie de Ngaliema.", en: "Three hours on the water from Ngaliema bay." }
   },
   {
     image: "/img/photos/lubumbashi-business.webp",
     href: "/hotels?destination=Lubumbashi",
-    fr: { kicker: "Affaires", title: "Lubumbashi en semaine", body: "Hôtels proches de Luano, salles de réunion incluses." },
-    en: { kicker: "Business", title: "Lubumbashi midweek", body: "Hotels near Luano, meeting rooms included." }
+    kicker: { fr: "Affaires", en: "Business" },
+    title: { fr: "Lubumbashi en semaine", en: "Lubumbashi midweek" },
+    body: { fr: "Hôtels proches de Luano, salles de réunion incluses.", en: "Hotels near Luano, meeting rooms included." }
   },
   {
     image: "/img/photos/road-n1.webp",
     href: "/bus?destination=Matadi",
-    fr: { kicker: "Route", title: "Kinshasa – Matadi par la nationale 1", body: "Sept heures de route, arrivée au port." },
-    en: { kicker: "Road", title: "Kinshasa – Matadi on the N1", body: "Seven hours by road, arriving at the port." }
+    kicker: { fr: "Route", en: "Road" },
+    title: { fr: "Kinshasa – Matadi par la nationale 1", en: "Kinshasa – Matadi on the N1" },
+    body: { fr: "Sept heures de route, arrivée au port.", en: "Seven hours by road, arriving at the port." }
   },
   {
     image: "/img/photos/gombe-property.webp",
     href: "/property/sale/houses",
-    fr: { kicker: "Immobilier", title: "Vivre à Gombe", body: "Villas et appartements, titre foncier vérifié." },
-    en: { kicker: "Property", title: "Living in Gombe", body: "Villas and apartments, title verified." }
+    kicker: { fr: "Immobilier", en: "Property" },
+    title: { fr: "Vivre à Gombe", en: "Living in Gombe" },
+    body: { fr: "Villas et appartements, titre foncier vérifié.", en: "Villas and apartments, title verified." }
   }
 ];
 
 export default function Home({
   deals,
+  promotions,
   hotels,
   properties,
   heroImage,
@@ -125,10 +139,22 @@ export default function Home({
   partners
 }: Props) {
   const contact = useSiteContact();
-  const { t, locale } = usePrefs();
+  const { t, locale, lz } = usePrefs();
   const heroTitle = siteText(hero?.heroTitle, locale, t("home.heroTitle"));
   const heroSubtitle = siteText(hero?.heroSubtitle, locale, t("home.heroSubtitle"));
-  const l = locale === "en" ? "en" : "fr";
+  const ideas = hero?.ideas?.length ? hero.ideas : BUILT_IN_IDEAS;
+  const ideasTitle = siteText(
+    hero?.ideasTitle,
+    locale,
+    locale === "fr" ? "Des idées pour partir" : "Ideas worth travelling for"
+  );
+  const ideasSubtitle = siteText(
+    hero?.ideasSubtitle,
+    locale,
+    locale === "fr"
+      ? "Des façons de voir le pays, choisies parmi ce que nous avons réellement en stock."
+      : "Ways to see the country, chosen from what we actually hold."
+  );
   // "Pay in cash" until the server says online payment is on.
   const payOnline = useOnlinePayment().offered ? "Online" : "";
 
@@ -265,6 +291,7 @@ export default function Home({
             subtitle={t("home.dealsSub")}
             href="/flights"
             cta={t("home.viewAll")}
+            autoplay
           >
             {deals.map((l) => (
               <DealTile key={l.id} listing={l} />
@@ -273,6 +300,25 @@ export default function Home({
         )}
       </section>
 
+      {/* ------------------------------------------------------- promotions */}
+      {promotions.length > 0 && (
+        <section className="container-site pb-16">
+          <Carousel
+            label={t("home.promotions")}
+            title={t("home.promotions")}
+            subtitle={t("home.promotionsSub")}
+            href="/promotions"
+            cta={t("home.seeAll")}
+            autoplay
+          >
+            {/* Any vertical, each in its own tile: a property is not priced per person. */}
+            {promotions.map((l) => (
+              <ResultTile key={l.id} listing={l} />
+            ))}
+          </Carousel>
+        </section>
+      )}
+
       {/* ------------------------------------------------------ inspiration */}
       <section className="wash-dark py-16">
         <div className="container-site">
@@ -280,16 +326,12 @@ export default function Home({
             label={locale === "fr" ? "Inspiration" : "Inspiration"}
             itemClassName="w-[260px] sm:w-[300px]"
             tone="dark"
-            title={locale === "fr" ? "Des idées pour partir" : "Ideas worth travelling for"}
-            subtitle={
-              locale === "fr"
-                ? "Six façons de voir le pays, choisies parmi ce que nous avons réellement en stock."
-                : "Six ways to see the country, chosen from what we actually hold."
-            }
+            title={ideasTitle}
+            subtitle={ideasSubtitle}
           >
-            {INSPIRATION.map((item) => (
+            {ideas.map((item, i) => (
               <Link
-                key={item.href + item.fr.title}
+                key={`${i}-${item.href}`}
                 href={item.href}
                 className="group relative block aspect-4/5 overflow-hidden rounded-xl2 ring-1 ring-white/10 transition-shadow hover:shadow-xl"
               >
@@ -302,11 +344,11 @@ export default function Home({
                 />
                 <div className="absolute inset-0 bg-linear-to-t from-brand-900 via-brand-900/45 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 p-5">
-                  <p className="eyebrow text-accent-500">{item[l].kicker}</p>
+                  <p className="eyebrow text-accent-500">{lz(item.kicker)}</p>
                   <p className="display mt-1.5 text-[19px] leading-tight text-white">
-                    {item[l].title}
+                    {lz(item.title)}
                   </p>
-                  <p className="mt-1.5 text-sm leading-snug text-white/70">{item[l].body}</p>
+                  <p className="mt-1.5 text-sm leading-snug text-white/70">{lz(item.body)}</p>
                 </div>
               </Link>
             ))}
@@ -322,7 +364,7 @@ export default function Home({
         />
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {/* The office's serviced list, not a constant in this bundle. */}
-          {destinations.slice(0, 8).map((c) => (
+          {destinations.map((c) => (
             <DestinationTile
               key={c.slug}
               city={{
@@ -416,9 +458,6 @@ export default function Home({
         </ul>
       </section>
 
-      {/* --------------------------------------------------------- partners */}
-      <Partners partners={partners} />
-
       {/* ------------------------------------------------------- office CTA */}
       <section className="container-site pb-20">
         <div className="wash-dark grid overflow-hidden rounded-xl2 shadow-xl lg:grid-cols-2">
@@ -487,6 +526,9 @@ export default function Home({
           </div>
         </div>
       </section>
+
+      {/* --------------------------------------------------------- partners */}
+      <Partners partners={partners} />
     </Layout>
   );
 }
@@ -504,7 +546,11 @@ export const getStaticProps: GetStaticProps<Props> = async () => {
   });
 
   // ISR (revalidate below) keeps this in step with the admin without a deploy.
-  const destinations = await safely(() => getLocations(), []);
+  // The tiles open hotel results, so: cities that sell hotels, by the office's
+  // position then name, as the API sorts them — never an airport or a station.
+  const destinations = (await safely(() => getLocations("HOTEL"), []))
+    .filter((c) => c.kind === "CITY")
+    .slice(0, 8);
 
   // The banner's picture and wording, as edited in the admin.
   const site = await safely(() => getSiteContent(), null);
@@ -521,7 +567,15 @@ export const getStaticProps: GetStaticProps<Props> = async () => {
     (dropped ? `/img/${dropped}` : HERO_FALLBACK);
 
   return {
-    props: { ...feed, heroImage, hero: site?.home ?? null, destinations, partners },
+    props: {
+      ...feed,
+      // Absent from an API older than promotions; undefined cannot be a prop.
+      promotions: feed.promotions ?? [],
+      heroImage,
+      hero: site?.home ?? null,
+      destinations,
+      partners
+    },
     revalidate: 120
   };
 };

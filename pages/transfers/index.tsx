@@ -1,5 +1,7 @@
 import { Breadcrumbs, Price } from "@/components/site/bits";
 import Layout from "@/components/site/Layout";
+import Partners from "@/components/site/Partners";
+import MapPicker from "@/components/transfers/MapPicker";
 import { PlaceField } from "@/components/transfers/PlaceField";
 import TransferMap from "@/components/transfers/TransferMap";
 import { DateField, SelectField, TextAreaField } from "@/components/ui/field";
@@ -9,42 +11,94 @@ import { useCheckout } from "@/lib/checkout";
 import { formatMinutes } from "@/lib/format";
 import { useLocations } from "@/lib/locations";
 import { mediaUrl } from "@/lib/media";
+import { baseMinor, price } from "@/lib/money";
 import { usePrefs } from "@/lib/prefs";
 import {
   fmtAt,
   fmtKm,
   getTransferCategories,
+  getTransferPlaces,
   inDrc,
   isoAt,
   maxBookableDate,
   minBookableAt,
   placeText,
+  pointNameQuery,
   quoteTransfer,
+  rideCentre,
+  round5,
   slotsOn,
   transferRefusalKey,
+  type TransferCategory,
   type TransferQuoteRequest
 } from "@/lib/transfers";
 import { cn } from "@/lib/utils";
-import type { TransferMode, TransferPoint } from "@/typescript/interface/domain.interface";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { CarTaxiFront, Check, Clock, Loader2, Route, Users } from "lucide-react";
+import type { Money, TransferMode, TransferPoint } from "@/typescript/interface/domain.interface";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowUpDown, CarTaxiFront, Check, Clock, Loader2, Route, Users } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 /**
  * Booking a ride with a driver, step by step in one card: the city, journey or
- * hourly, the two points, when and who, then the map and the price of each
- * vehicle category. The price exists only once both points are set, and only
- * as the server quotes it; "Réserver" hands the quote request to the ordinary
- * checkout, which has the server price it again.
+ * hourly, the two points with the map and the road right under them, when and
+ * who, then the price of each vehicle category. A point comes from the office's
+ * places, a search, or the map picker (a pin held in the middle while the map
+ * moves, as ride apps do), and a pin can be dragged to correct it. The price
+ * exists only once both points are set, and only as the server quotes it;
+ * "Réserver" hands the quote request to the ordinary checkout, which has the
+ * server price it again.
  */
 
 const PASSENGER_MAX = 8;
 const HOURS_MAX = 12;
 
-/** A map tap, rounded to about a metre: more digits are noise in a label. */
-const round5 = (n: number) => Math.round(n * 1e5) / 1e5;
+type End = "pickup" | "dropoff";
+
+/**
+ * The city's vehicle types and their rates, as soon as the city is chosen:
+ * what can be booked is on screen before the two points are, not only once a
+ * quote comes back. Only the prices a type has; none at all is not listed.
+ */
+function VehicleTypes({ city, categories }: { city: string; categories: TransferCategory[] }) {
+  const { t, locale, currency } = usePrefs();
+  const has = (m?: Money) => baseMinor(m) > 0;
+  const priced = categories.filter((c) => has(c.pricePerKm) || has(c.pricePerHour));
+  if (!priced.length) return null;
+  return (
+    <div className="mt-5">
+      <h3 className="mb-2 text-sm font-bold text-brand-900">{t("transfer.ourVehicles", { city })}</h3>
+      <ul className="divide-y divide-ink-100 rounded-xl ring-1 ring-ink-100 ring-inset">
+        {priced.map((c) => (
+          <li key={c.id} className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1 px-4 py-3">
+            <span className="min-w-0">
+              <span className="block font-semibold text-ink-900">{placeText(c.name, locale)}</span>
+              <span className="mt-0.5 flex items-center gap-1.5 text-xs text-ink-500">
+                <Users className="size-3.5" aria-hidden="true" />
+                {t("transfer.seats", { n: c.seats })}
+                {c.luggage ? ` · ${c.luggage}` : ""}
+              </span>
+            </span>
+            <span className="ml-auto text-right text-sm font-semibold text-brand-900">
+              {has(c.pricePerKm) && (
+                <span className="block">{t("transfer.perKm", { price: price(c.pricePerKm, currency, locale) })}</span>
+              )}
+              {has(c.pricePerHour) && (
+                <span className="block">{t("transfer.perHour", { price: price(c.pricePerHour, currency, locale) })}</span>
+              )}
+              {has(c.minimumFare) && (
+                <span className="block text-xs font-normal text-ink-500">
+                  {t("transfer.minimumFare", { price: price(c.minimumFare, currency, locale) })}
+                </span>
+              )}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
   return (
@@ -70,8 +124,12 @@ export default function TransfersPage() {
   const [mode, setMode] = useState<TransferMode>("DISTANCE");
   const [pickup, setPickup] = useState<TransferPoint>();
   const [dropoff, setDropoff] = useState<TransferPoint>();
-  const [picking, setPicking] = useState<"pickup" | "dropoff" | null>(null);
+  /** The map picker, open for one end — from "Use my location", it asks the device first. */
+  const [picker, setPicker] = useState<{ end: End; locate: boolean } | null>(null);
   const [pickError, setPickError] = useState("");
+  /** Bumped by the swap button: the two fields remount on the points they now hold. */
+  const [swaps, setSwaps] = useState(0);
+  const queryClient = useQueryClient();
   /** The earliest bookable moment — read after mount: it is "now", which the server render cannot share. */
   const [min, setMin] = useState<{ date: string; time: string }>();
   const [date, setDate] = useState("");
@@ -89,18 +147,38 @@ export default function TransfersPage() {
   }, []);
 
   // The search bar's `destination` and `from` (and a plain ?city=) prefill; else the first city.
+  // Once per city the address names: the page stays mounted when only the
+  // query changes (Back between two cities), and a city picked here stays.
+  const urlCity = useRef<string | null>(null);
   useEffect(() => {
-    if (city || !router.isReady || !locations?.length) return;
+    if (!router.isReady || !locations?.length) return;
     const wanted = String(router.query.city ?? router.query.destination ?? "").toLowerCase();
-    const hit = locations.find((l) => l.name.toLowerCase() === wanted);
-    setCity((hit ?? locations[0]).name);
+    if (urlCity.current === wanted) return;
+    const first = urlCity.current === null;
+    urlCity.current = wanted;
+    // No city in the address: the first one, as on a fresh visit. One this page
+    // does not sell: the one on screen stays.
+    const hit = wanted ? locations.find((l) => l.name.toLowerCase() === wanted) : locations[0];
+    if (first) setCity((hit ?? locations[0]).name);
+    else if (hit && hit.name !== city) {
+      // Places belong to a city; the points chosen in the old one are not in this one.
+      setCity(hit.name);
+      setPickup(undefined);
+      setDropoff(undefined);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.isReady, router.query.city, router.query.destination, locations]);
+
+  // The date the address names, each time it names one. Its own effect, after
+  // the one that opens on today: run twice (React's dev check), that one would
+  // otherwise put today back over it.
+  useEffect(() => {
     const from = String(router.query.from ?? "");
-    // Read afresh rather than from `min`: that state lands a render later, and
-    // this effect does not run again once the city is set.
+    // Read afresh rather than from `min`: that state lands a render later.
     if (/^\d{4}-\d{2}-\d{2}$/.test(from) && from > minBookableAt().date && from <= maxBookableDate()) {
       setDate(from);
     }
-  }, [city, router.isReady, router.query, locations]);
+  }, [router.query.from]);
 
   // A date earlier than the slot allows pulls the time back to the first one.
   const slots = useMemo(() => (min && date ? slotsOn(date, min) : []), [min, date]);
@@ -113,30 +191,94 @@ export default function TransfersPage() {
     // Places belong to a city; the points chosen in the old one are not in this one.
     setPickup(undefined);
     setDropoff(undefined);
-    setPicking(null);
   };
 
   const changeMode = (next: TransferMode) => {
     setMode(next);
-    if (next === "HOURLY") {
-      setDropoff(undefined);
-      if (picking === "dropoff") setPicking(null);
-    }
+    if (next === "HOURLY") setDropoff(undefined);
   };
 
-  const onPick = picking
-    ? (p: { lat: number; lng: number }) => {
-        if (!inDrc(p)) return setPickError(t("transfer.err.outsideDrc"));
-        setPickError("");
-        const point = {
-          label: `${t("transfer.mapPoint")} (${round5(p.lat)}, ${round5(p.lng)})`,
-          lat: round5(p.lat),
-          lng: round5(p.lng)
-        };
-        (picking === "pickup" ? setPickup : setDropoff)(point);
-        setPicking(null);
-      }
-    : undefined;
+  /**
+   * A point from the map (the picker, or a pin dragged): on the form at once,
+   * named by its coordinates until the server knows better — a saved place
+   * nearby or the street. The name lands on whichever end still holds that
+   * point (swapped meanwhile, it followed); a pin moved since has its own
+   * lookup on the way.
+   */
+  const placeAt = (end: End, p: { lat: number; lng: number }, name?: string) => {
+    if (!inDrc(p)) return setPickError(t("transfer.err.outsideDrc"));
+    setPickError("");
+    const at = { lat: round5(p.lat), lng: round5(p.lng) };
+    (end === "pickup" ? setPickup : setDropoff)({
+      ...at,
+      label: name ?? `${t("transfer.mapPoint")} (${at.lat}, ${at.lng})`
+    });
+    if (name) return;
+    queryClient
+      .fetchQuery(pointNameQuery(at))
+      .then((item) => {
+        if (!item) return;
+        const label = placeText(item.name, locale);
+        const named = (cur?: TransferPoint) =>
+          cur && cur.lat === at.lat && cur.lng === at.lng ? { ...cur, label } : cur;
+        setPickup(named);
+        setDropoff(named);
+      })
+      // Unnamed is fine: the coordinates are the point.
+      .catch(() => undefined);
+  };
+
+  /** Where the picker opens: the point being changed, else the other end, else the city. */
+  const pickerStart = (end: End) => {
+    const p = (end === "pickup" ? pickup : dropoff) ?? (end === "pickup" ? dropoff : pickup);
+    return p ? { lat: p.lat, lng: p.lng, zoom: 16 } : { ...cityCentre, zoom: 14 };
+  };
+
+  // Back closes the picker, as it closes any full-screen view on a phone,
+  // instead of leaving the page with the form on it. An entry is added while
+  // it is open (Next's own state copied, so its router sees the same page) and
+  // taken back off when the picker closes any other way.
+  const pickerOpen = Boolean(picker);
+  // A Back between the picker's entry and the page's own (the same address on
+  // both sides) is ours: Next would take it for a fresh visit, run the page
+  // again and scroll it to the top, away from the route and the prices.
+  useEffect(() => {
+    router.beforePopState((state) => state.as !== router.asPath);
+    return () => router.beforePopState(() => true);
+  }, [router]);
+  const takeBack = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => {
+    if (!pickerOpen) return;
+    // React's development double run comes straight back here: the entry stays.
+    clearTimeout(takeBack.current);
+    if (!window.history.state?.transferPicker) {
+      window.history.pushState({ ...window.history.state, transferPicker: true }, "");
+    }
+    const onBack = () => setPicker(null);
+    window.addEventListener("popstate", onBack);
+    return () => {
+      window.removeEventListener("popstate", onBack);
+      takeBack.current = setTimeout(() => {
+        if (window.history.state?.transferPicker) window.history.back();
+      }, 0);
+    };
+  }, [pickerOpen]);
+
+  const swap = () => {
+    setPickup(dropoff);
+    setDropoff(pickup);
+    setSwaps((n) => n + 1);
+  };
+
+  // The city's saved places (the fields' own list, shared): the first one
+  // centres the maps of a city the built-in list of city centres does not know.
+  const { data: cityPlaces } = useQuery({
+    queryKey: ["transfer-places", city, ""],
+    queryFn: ({ signal }) => getTransferPlaces(city, "", { signal }),
+    enabled: Boolean(city),
+    staleTime: 60_000
+  });
+  const cityCentre = rideCentre(city, cityPlaces?.[0]);
 
   const { data: categories = [] } = useQuery({
     queryKey: ["transfer-categories", city],
@@ -158,8 +300,12 @@ export default function TransfersPage() {
         passengers
       }
     : null;
+  // Keyed on what a price depends on: a point named after it was quoted (the
+  // map's lookup lands a moment later) is not quoted again. The labels still
+  // travel, in the body, and the order carries the latest ones.
+  const spot = (p?: TransferPoint) => p && [p.lat, p.lng];
   const quote = useQuery({
-    queryKey: ["transfer-quote", body],
+    queryKey: ["transfer-quote", body && { ...body, pickup: spot(body.pickup), dropoff: spot(body.dropoff) }],
     queryFn: () => quoteTransfer(body!),
     enabled: Boolean(body),
     staleTime: 60_000,
@@ -255,6 +401,7 @@ export default function TransfersPage() {
                   {citiesPending ? `${t("common.loading")}…` : t("transfer.noCities")}
                 </p>
               )}
+              {city && <VehicleTypes city={city} categories={categories} />}
             </Step>
 
             <Step n={2} title={t("transfer.step.mode")}>
@@ -292,25 +439,38 @@ export default function TransfersPage() {
             <Step n={3} title={mode === "DISTANCE" ? t("transfer.step.points") : t("transfer.pickup")}>
               <div className="space-y-3">
                 <PlaceField
-                  // Remounted per city: its places and its typed text belong to one.
-                  key={`pickup-${city}`}
+                  // Remounted per city (its places and typed text belong to one)
+                  // and per swap (the text follows the point it now holds).
+                  key={`pickup-${city}-${swaps}`}
                   city={city}
                   label={t("transfer.pickup")}
                   value={pickup}
                   onChange={setPickup}
-                  picking={picking === "pickup"}
-                  onPickOnMap={() => setPicking((p) => (p === "pickup" ? null : "pickup"))}
+                  onPickOnMap={() => setPicker({ end: "pickup", locate: false })}
+                  onLocate={() => setPicker({ end: "pickup", locate: true })}
                 />
                 {mode === "DISTANCE" ? (
-                  <PlaceField
-                    key={`dropoff-${city}`}
-                    city={city}
-                    label={t("transfer.dropoff")}
-                    value={dropoff}
-                    onChange={setDropoff}
-                    picking={picking === "dropoff"}
-                    onPickOnMap={() => setPicking((p) => (p === "dropoff" ? null : "dropoff"))}
-                  />
+                  <>
+                    <div className="-my-1 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={swap}
+                        disabled={!pickup && !dropoff}
+                        className="flex h-10 items-center gap-1.5 rounded-full px-3 text-xs font-bold text-brand-700 transition-colors hover:bg-brand-50 disabled:opacity-40"
+                      >
+                        <ArrowUpDown className="size-3.5" aria-hidden="true" />
+                        {t("transfer.swap")}
+                      </button>
+                    </div>
+                    <PlaceField
+                      key={`dropoff-${city}-${swaps}`}
+                      city={city}
+                      label={t("transfer.dropoff")}
+                      value={dropoff}
+                      onChange={setDropoff}
+                      onPickOnMap={() => setPicker({ end: "dropoff", locate: false })}
+                    />
+                  </>
                 ) : (
                   <SelectField
                     label={t("transfer.hours")}
@@ -325,6 +485,44 @@ export default function TransfersPage() {
                   </p>
                 )}
                 <p className="text-xs text-ink-500">{t("transfer.placesHint")}</p>
+                {/* Right under the two points: the route is checked where it was chosen.
+                    The pins drag, to correct a point without reopening the map. */}
+                <TransferMap
+                  city={city}
+                  around={cityCentre}
+                  pickup={pickup}
+                  dropoff={dropoff}
+                  // Not the previous points' road while the new one is on its way.
+                  route={complete && !quote.isPlaceholderData ? quote.data?.route : undefined}
+                  estimated={!quote.isPlaceholderData && quote.data?.routeSource === "ESTIMATE"}
+                  onMove={placeAt}
+                  // A tap on the map picks the point still missing.
+                  onTap={() => {
+                    const end = !pickup ? "pickup" : mode === "DISTANCE" && !dropoff ? "dropoff" : null;
+                    if (end) setPicker({ end, locate: false });
+                  }}
+                  className="h-56 sm:h-80"
+                />
+                {mode === "DISTANCE" && complete && quote.data && (
+                  <p
+                    className={cn(
+                      "flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink-700",
+                      quote.isFetching && "opacity-60"
+                    )}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <Route className="size-4 text-brand-500" aria-hidden="true" />
+                      <strong className="font-semibold">{fmtKm(quote.data.distanceKm, locale)}</strong>
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <Clock className="size-4 text-brand-500" aria-hidden="true" />
+                      <strong className="font-semibold">{formatMinutes(quote.data.durationMinutes, locale)}</strong>
+                    </span>
+                    {quote.data.routeSource === "ESTIMATE" && (
+                      <span className="w-full text-xs text-ink-500">{t("transfer.estimate")}</span>
+                    )}
+                  </p>
+                )}
               </div>
             </Step>
 
@@ -366,49 +564,21 @@ export default function TransfersPage() {
 
           <aside className="space-y-6 lg:sticky lg:top-header lg:h-fit">
             <Step n={5} title={t("transfer.quoteTitle")}>
-              <TransferMap
-                city={city}
-                pickup={pickup}
-                dropoff={dropoff}
-                route={complete ? quote.data?.route : undefined}
-                picking={Boolean(picking)}
-                onPick={onPick}
-                className="h-64 sm:h-72"
-              />
-
               {!complete ? (
-                <p className="mt-4 rounded-xl bg-ink-50 p-4 text-sm text-ink-700">
+                <p className="rounded-xl bg-ink-50 p-4 text-sm text-ink-700">
                   {t(mode === "HOURLY" ? "transfer.needPickup" : "transfer.needPoints")}
                 </p>
               ) : quote.isError ? (
-                <p role="alert" className="mt-4 rounded-xl bg-bad-100 p-4 text-sm font-medium text-bad-600">
+                <p role="alert" className="rounded-xl bg-bad-100 p-4 text-sm font-medium text-bad-600">
                   {t(quoteErrorKey)}
                 </p>
               ) : !quote.data ? (
-                <p className="mt-4 flex items-center gap-2 text-sm text-ink-500">
+                <p className="flex items-center gap-2 text-sm text-ink-500">
                   <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                   {t("transfer.quoting")}
                 </p>
               ) : (
-                <div className={cn("mt-4 space-y-4", quote.isFetching && "opacity-60")}>
-                  {mode === "DISTANCE" && (
-                    <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink-700">
-                      <span className="flex items-center gap-1.5">
-                        <Route className="size-4 text-brand-500" aria-hidden="true" />
-                        <strong className="font-semibold">{fmtKm(quote.data.distanceKm, locale)}</strong>
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <Clock className="size-4 text-brand-500" aria-hidden="true" />
-                        <strong className="font-semibold">
-                          {formatMinutes(quote.data.durationMinutes, locale)}
-                        </strong>
-                      </span>
-                      {quote.data.routeSource === "ESTIMATE" && (
-                        <span className="w-full text-xs text-ink-500">{t("transfer.estimate")}</span>
-                      )}
-                    </p>
-                  )}
-
+                <div className={cn("space-y-4", quote.isFetching && "opacity-60")}>
                   {quotes.length === 0 ? (
                     <p className="rounded-xl bg-ink-50 p-4 text-sm text-ink-700">{t("transfer.noCategories")}</p>
                   ) : (
@@ -489,6 +659,22 @@ export default function TransfersPage() {
           </aside>
         </div>
       </div>
+
+      {picker && (
+        <MapPicker
+          end={picker.end}
+          start={pickerStart(picker.end)}
+          other={picker.end === "pickup" ? dropoff : pickup}
+          locateFirst={picker.locate}
+          onClose={() => setPicker(null)}
+          onConfirm={(p, name) => {
+            placeAt(picker.end, p, name);
+            setPicker(null);
+          }}
+        />
+      )}
+
+      <Partners />
     </Layout>
   );
 }

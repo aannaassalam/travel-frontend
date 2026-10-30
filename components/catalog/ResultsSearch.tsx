@@ -1,7 +1,10 @@
 import { usePrefs } from "@/lib/prefs";
+import { pushQuery, queryNow, useQueryNow } from "@/lib/query";
 import { Search, X } from "lucide-react";
-import { useRouter } from "next/router";
+import Router from "next/router";
 import { useEffect, useRef, useState } from "react";
+
+const word = (q: string | string[] | undefined) => (typeof q === "string" ? q : "");
 
 /**
  * The "search these results" box on every listing page.
@@ -12,49 +15,72 @@ import { useEffect, useRef, useState } from "react";
  * Debounced so typing a word is one request rather than one per letter.
  */
 export default function ResultsSearch({ className }: { className?: string }) {
-  const router = useRouter();
   const { t } = usePrefs();
-  const inUrl = typeof router.query.q === "string" ? router.query.q : "";
-  const [value, setValue] = useState(inUrl);
-  // What this box last put in the URL. A URL change that is not ours — back,
-  // forward, a shared link — replaces the text; our own landing leaves it alone,
-  // so a word still being typed is never overwritten by its first half.
-  const pushed = useRef(inUrl);
+  // The word the address will say once what was asked for lands.
+  const now = useQueryNow();
+  const target = word(now.q);
+  const [value, setValue] = useState(target);
+  // What this box last asked for. When the address comes to say something else
+  // — Back, Forward, a link, a change of ours that a link replaced — the box
+  // follows; but never over letters still being typed, which are newer.
+  const pushed = useRef(target);
+  const typing = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
-    if (inUrl !== pushed.current) {
-      pushed.current = inUrl;
-      setValue(inUrl);
-    }
-  }, [inUrl]);
-  useEffect(() => () => clearTimeout(timer.current), []);
+    if (typing.current || target === pushed.current) return;
+    pushed.current = target;
+    setValue(target);
+  }, [target]);
+  useEffect(() => {
+    const drop = () => {
+      clearTimeout(timer.current);
+      typing.current = false;
+    };
+    // Off to another page (a card, the menu): the words still waiting stay
+    // unsent, or they would go out after the click and cancel it.
+    const leaving = (url: string) => {
+      if (url.split(/[?#]/)[0] !== Router.asPath.split(/[?#]/)[0]) drop();
+    };
+    // Back or Forward: dropped too — sent, they would undo the move — and the
+    // box says what the address does (Next may have landed already, or not yet:
+    // the effect above follows once it does).
+    const onPop = () => {
+      drop();
+      pushed.current = word(queryNow().q);
+      setValue(pushed.current);
+    };
+    Router.events.on("routeChangeStart", leaving);
+    window.addEventListener("popstate", onPop);
+    return () => {
+      Router.events.off("routeChangeStart", leaving);
+      window.removeEventListener("popstate", onPop);
+      drop();
+    };
+  }, []);
 
   function apply(next: string) {
     clearTimeout(timer.current);
+    typing.current = false;
     if (next === pushed.current) return;
     pushed.current = next;
-    const query = { ...router.query };
-    delete query.q;
-    // A filter clicked while this navigation is in flight cancels it (the
-    // filter's own push wins, without q). Then the word goes on top of that.
-    void router
-      .push(
-        { pathname: router.pathname, query: next ? { ...query, q: next } : query },
-        undefined,
-        { scroll: false }
-      )
-      .then((landed) => {
-        if (!landed && pushed.current === next) {
-          pushed.current = "";
-          apply(next);
-        }
-      });
+    // On the address as it will be: a filter ticked during the pause, or while
+    // this is on its way, stays — and so does the word. New words, new
+    // results: back to their first page.
+    void pushQuery({ q: next || undefined });
+    // Not sent: a move the visitor is making (the search bar, a link) stands,
+    // and the box says what the address does — `target` never saw the word.
+    const now = word(queryNow().q);
+    if (now !== next) {
+      pushed.current = now;
+      setValue(now);
+    }
   }
 
   function onChange(next: string) {
     setValue(next);
     clearTimeout(timer.current);
+    typing.current = true;
     // A full pause, not the gap between two letters: 300ms fired mid-word.
     timer.current = setTimeout(() => apply(next.trim()), 600);
   }

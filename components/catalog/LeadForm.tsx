@@ -246,7 +246,7 @@ export default function LeadForm({
           error={errors.name}
           autoComplete="name"
         />
-        {/* The acknowledgement SMS goes here, so the dialling code is chosen
+        {/* The office calls this number back, so the dialling code is chosen
             rather than typed. */}
         <PhoneField
           label={t("rtb.phone")}

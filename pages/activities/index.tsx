@@ -30,8 +30,8 @@ export default function ActivitiesPage({ facets }: Props) {
       title={locale === "fr" ? "Activités et excursions en RDC" : "Activities and tours in the DRC"}
       description={
         locale === "fr"
-          ? "Gorilles de Kahuzi-Biega, ascension du Nyiragongo, croisière sur le fleuve Congo, chutes de Zongo. Places limitées, réservation ferme."
-          : "Kahuzi-Biega gorillas, the Nyiragongo climb, a Congo river cruise, the Zongo falls. Limited places, firm booking."
+          ? "Gorilles de Kahuzi-Biega, ascension du Nyiragongo, croisière sur le fleuve Congo, chutes de Zongo. Places limitées."
+          : "Kahuzi-Biega gorillas, the Nyiragongo climb, a Congo river cruise, the Zongo falls. Limited places."
       }
       priceRange={bounds(facets, "ACTIVITY")}
       filters={[

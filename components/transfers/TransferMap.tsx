@@ -1,11 +1,10 @@
-import { cityGeo } from "@/lib/catalog";
 import { usePrefs } from "@/lib/prefs";
-import { KINSHASA } from "@/lib/transfers";
+import { rideCentre } from "@/lib/transfers";
 import { cn } from "@/lib/utils";
 import type { TransferPoint } from "@/typescript/interface/domain.interface";
 import { MapPin, MapPinOff } from "lucide-react";
 import dynamic from "next/dynamic";
-import type { TransferCanvasProps } from "./TransferMapCanvas";
+import type { RideEnd, TransferCanvasProps } from "./TransferMapCanvas";
 
 /**
  * The map of a ride: both pins and the road between them.
@@ -17,7 +16,7 @@ import type { TransferCanvasProps } from "./TransferMapCanvas";
  * helps, it is never required.
  */
 
-function Placeholder() {
+export function Placeholder() {
   return (
     <div className="relative h-full bg-brand-100">
       <div className="absolute inset-0 opacity-40 [background-image:linear-gradient(#1e5a8e_1px,transparent_1px),linear-gradient(90deg,#1e5a8e_1px,transparent_1px)] [background-size:32px_32px]" />
@@ -26,7 +25,7 @@ function Placeholder() {
   );
 }
 
-function Unavailable() {
+export function Unavailable() {
   const { t } = usePrefs();
   return (
     <div className="flex h-full items-center justify-center gap-3 bg-ink-50 p-6 text-center text-sm text-ink-700">
@@ -45,22 +44,29 @@ export default function TransferMap({
   pickup,
   dropoff,
   route,
+  estimated,
   city,
-  picking,
-  onPick,
+  around,
+  onMove,
+  onTap,
   className
 }: {
   pickup?: TransferPoint;
   dropoff?: TransferPoint;
   route?: [number, number][];
+  estimated?: boolean;
   /** Centres the empty map on this city; Kinshasa when it is not one we know. */
   city?: string;
-  picking?: boolean;
-  onPick?: (p: { lat: number; lng: number }) => void;
+  /** Where to centre the empty map instead, when the page knows better (a city's saved place). */
+  around?: { lat: number; lng: number };
+  /** The pins can be dragged to correct a point. */
+  onMove?: (end: RideEnd, p: { lat: number; lng: number }) => void;
+  /** A tap on the map itself (the booking page opens the picker). */
+  onTap?: () => void;
   className?: string;
 }) {
   const { t } = usePrefs();
-  const centre = pickup ?? dropoff ?? cityGeo(city) ?? KINSHASA;
+  const centre = pickup ?? dropoff ?? around ?? rideCentre(city);
   return (
     /* `isolate`: Leaflet's panes carry z-indexes up to 1000, which would sail
        over the sticky header; a stacking context keeps them in this box. */
@@ -70,17 +76,11 @@ export default function TransferMap({
         pickup={pickup}
         dropoff={dropoff}
         route={route}
-        picking={picking}
-        onPick={onPick}
+        estimated={estimated}
+        onMove={onMove}
+        onTap={onTap}
+        labels={{ zoomIn: t("transfer.zoomIn"), zoomOut: t("transfer.zoomOut") }}
       />
-      {picking && (
-        <p
-          role="status"
-          className="pointer-events-none absolute inset-x-3 top-3 z-[1001] rounded-lg bg-brand-900/90 px-3 py-2 text-center text-sm font-semibold text-white shadow-md"
-        >
-          {t("transfer.picking")}
-        </p>
-      )}
     </div>
   );
 }

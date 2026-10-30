@@ -133,7 +133,7 @@ export const hoursOn = (day: string, min: string, max?: string) =>
 
 type T = (key: string, vars?: Record<string, string | number>) => string;
 
-/** "Par heure", "6 heures" … — a rate by its length. */
+/** "Par heure", "Pour 6 heures" … — a rate by its length, on cards and in the booking box alike. */
 export const rateLabel = (hours: number, t: T) =>
   hours === 1 ? t("rental.perHour") : t("rental.hours", { n: hours });
 

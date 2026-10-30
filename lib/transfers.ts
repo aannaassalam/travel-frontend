@@ -8,6 +8,7 @@ import {
   TransferPoint
 } from "@/typescript/interface/domain.interface";
 import { get, post } from "./api";
+import { cityGeo } from "./catalog";
 import { fmtDate } from "./format";
 import { localized } from "./i18n";
 
@@ -40,6 +41,30 @@ export const getTransferPlaces = (city: string, q?: string, init?: RequestInit) 
     `/transfers/places?city=${encodeURIComponent(city)}${q ? `&q=${encodeURIComponent(q)}` : ""}`,
     init
   ).then((r) => r.items);
+
+/**
+ * What to call a point picked on the map: a saved place within 100 m, else
+ * the map provider's address, else null — the point then keeps the label
+ * built from its coordinates.
+ */
+export const nameTransferPoint = (p: { lat: number; lng: number }, init?: RequestInit) =>
+  get<{ item: TransferPlace | null }>(`/transfers/places/reverse?lat=${p.lat}&lng=${p.lng}`, init).then(
+    (r) => r.item
+  );
+
+/** A map point, rounded to about a metre: more digits are noise in a label. */
+export const round5 = (n: number) => Math.round(n * 1e5) / 1e5;
+
+/** One cache entry per point, shared by the map picker and the form. */
+export const pointNameQuery = (p: { lat: number; lng: number }) => ({
+  queryKey: ["transfer-point-name", round5(p.lat), round5(p.lng)],
+  // No abort signal on purpose: confirming closes the picker, the last
+  // observer of a lookup still on its way, and a query that consumes the
+  // signal is cancelled then — the form, waiting on that same lookup, would
+  // never get the name.
+  queryFn: () => nameTransferPoint({ lat: round5(p.lat), lng: round5(p.lng) }),
+  staleTime: 60 * 60_000
+});
 
 /* -------------------------------------------------------------- categories */
 
@@ -184,6 +209,15 @@ export const inDrc = (p: { lat: number; lng: number }) =>
 /** Kinshasa centre: the map's view before any point is set in an unknown city. */
 export const KINSHASA = { lat: -4.325, lng: 15.3222 };
 
+/**
+ * Where a ride map looks before any point is set. The catalogue's point for
+ * Kinshasa is the middle of the province, 13 km south of downtown (Mont
+ * Ngafula); rides start downtown, so the picker opens there. A city the
+ * office opened that the built-in list does not know: one of its saved places.
+ */
+export const rideCentre = (city?: string, savedPlace?: { lat: number; lng: number }) =>
+  city?.trim().toLowerCase() === "kinshasa" ? KINSHASA : (cityGeo(city) ?? savedPlace ?? KINSHASA);
+
 const pad = (n: number) => String(n).padStart(2, "0");
 
 /**
@@ -303,3 +337,34 @@ export function locate(): Promise<{ lat: number; lng: number } | undefined> {
     }
   });
 }
+
+/**
+ * The browser's position for the map picker, or why not. Unlike the alert's
+ * `locate`, choosing a pick-up is not urgent: it waits for an exact fix (high
+ * accuracy, at most 30 s old) and for an answer to the permission prompt, and
+ * says whether the visitor refused. The hard stop is only for a prompt closed
+ * without an answer (Firefox), which calls neither callback.
+ */
+export function locateForPicker(): Promise<{ lat: number; lng: number; accuracy: number } | "denied" | "failed"> {
+  return new Promise((resolve) => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) return resolve("failed");
+    const stop = setTimeout(() => resolve("failed"), 60_000);
+    const done = (r: { lat: number; lng: number; accuracy: number } | "denied" | "failed") => {
+      clearTimeout(stop);
+      resolve(r);
+    };
+    try {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => done({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy }),
+        (err) => done(err.code === err.PERMISSION_DENIED ? "denied" : "failed"),
+        { enableHighAccuracy: true, timeout: 20_000, maximumAge: 30_000 }
+      );
+    } catch {
+      done("failed");
+    }
+  });
+}
+
+/** The zoom a fix earns: street level when it is exact, the area it is good for when it is rough. */
+export const zoomForAccuracy = (metres: number) =>
+  metres <= 50 ? 17 : metres <= 150 ? 16 : metres <= 400 ? 15 : metres <= 1000 ? 14 : metres <= 3000 ? 13 : 12;

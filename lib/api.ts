@@ -97,13 +97,20 @@ export interface SearchQuery {
   from?: string;
   to?: string;
   adults?: number;
+  /** Only listings with a running promotion, any vertical unless one is given. */
+  promo?: boolean;
   limit?: number;
+  /** 1-based; the server takes up to 1000. */
+  page?: number;
 }
 
 export interface Paged<T> {
   items: T[];
   total: number;
   limit: number;
+  /** Absent from an API older than paging. */
+  page?: number;
+  pages?: number;
 }
 
 /** GET /listings */
@@ -147,10 +154,13 @@ export const getFacets = (init?: RequestInit) =>
 
 /** GET /catalogue/home — one round trip for every homepage rail. */
 export const getHomeFeed = (init?: RequestInit) =>
-  get<{ deals: Listing[]; properties: Listing[]; hotels: Hotel[] }>(
-    "/catalogue/home",
-    init
-  );
+  get<{
+    deals: Listing[];
+    properties: Listing[];
+    hotels: Hotel[];
+    /** Running promotions, biggest discount first. Absent from an older API. */
+    promotions?: Listing[];
+  }>("/catalogue/home", init);
 
 /** GET /catalogue/slugs — drives getStaticPaths. */
 export const getSlugs = (init?: RequestInit) =>
@@ -570,9 +580,15 @@ export async function safely<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
 
 /** GET /restaurants */
 export const searchRestaurants = (
-  q: { q?: string; city?: string; cuisine?: string; sort?: string; limit?: number },
+  q: { q?: string; city?: string; cuisine?: string; sort?: string; limit?: number; page?: number },
   init?: RequestInit
-) => get<Paged<Restaurant>>(`/restaurants${qs(q as never)}`, init);
+) =>
+  get<
+    Paged<Restaurant> & {
+      /** Over every published restaurant, not the page. Absent from an older API. */
+      facets?: { cities: string[]; cuisines: string[] };
+    }
+  >(`/restaurants${qs(q as never)}`, init);
 
 /** GET /restaurants/:slug — carries the full published menu. */
 export const getRestaurant = (slug: string, init?: RequestInit) =>
@@ -614,7 +630,16 @@ export const getSiteContact = (init?: RequestInit) =>
  * Every language in one payload; an empty image means the built-in picture.
  */
 export interface SiteContent {
-  home: { heroImage: string; heroTitle: Localized; heroSubtitle: Localized };
+  home: {
+    heroImage: string;
+    heroTitle: Localized;
+    heroSubtitle: Localized;
+    /** "Ideas worth travelling for". Absent from an older API: the built-in ones stand in. */
+    ideasTitle?: Localized;
+    ideasSubtitle?: Localized;
+    /** `image`: an upload or a built-in /img/photos picture; `href`: a /path or https:// address. */
+    ideas?: { title: Localized; kicker: Localized; body: Localized; image: string; href: string }[];
+  };
   about: {
     image: string;
     title: Localized;

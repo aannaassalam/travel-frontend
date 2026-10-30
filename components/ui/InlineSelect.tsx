@@ -41,7 +41,10 @@ export function InlineSelect({
   id?: string;
 }) {
   return (
-    <Select value={value} onValueChange={onValueChange}>
+    // Never "": Radix reports it when a value arrives before its option is
+    // drawn (a budget the price slider set), and that wiped the value. No
+    // option can be "" in Radix, so it is never a real choice.
+    <Select value={value} onValueChange={(v) => v !== "" && onValueChange(v)}>
       <SelectTrigger
         id={id}
         aria-label={ariaLabel}

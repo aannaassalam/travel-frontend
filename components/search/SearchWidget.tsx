@@ -90,6 +90,8 @@ function Field({
 const ANY = "__any";
 const toSelect = (v: string) => (v ? v : ANY);
 const fromSelect = (v: string) => (v === ANY ? "" : v);
+/** The property budgets on offer, in francs (`maxPrice`). */
+const BUDGETS = ["6000000", "30000000", "600000000", "1500000000"];
 
 /**
  * The same look as `inputCls`, for a Radix trigger rather than an input.
@@ -146,6 +148,15 @@ export default function SearchWidget({
 
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
+  // The results page's price slider writes `maxPrice` too: the budget follows
+  // it in place, and a place typed here but not searched yet stays.
+  const urlBudget = initial.maxPrice ?? "";
+  useEffect(() => setForm((f) => ({ ...f, maxPrice: urlBudget })), [urlBudget]);
+  // Shown as a whole number of francs, or "any": a hand-typed address can say
+  // anything (?maxPrice=abc read "≤ NaN FC").
+  const typed = Number(form.maxPrice);
+  const budget = Number.isInteger(typed) && typed > 0 ? String(typed) : "";
+
   /**
    * The serviced list comes from the API, not from a constant compiled into
    * this bundle — the office adds a city and it appears here (§12/§15).
@@ -172,8 +183,10 @@ export default function SearchWidget({
   // are not in the server HTML is a hydration mismatch.
   useEffect(() => setRecent(getRecentSearches()), []);
 
-  function submit(e: React.FormEvent) {
+  function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    // The page stays when only the URL's query changes: fold the guests panel.
+    e.currentTarget.querySelector("details")?.removeAttribute("open");
     // §8: only allow-listed params travel in the URL. No raw filter DSL.
     const allowed: Record<Vertical, string[]> = {
       // A flight is booked one way, on one day: a return is a second booking.
@@ -190,7 +203,9 @@ export default function SearchWidget({
     };
     const params = new URLSearchParams();
     for (const key of allowed[vertical]) {
-      if (form[key]) params.set(key, form[key]);
+      // The budget as shown: a hand-typed ?maxPrice=-5 is not sent back.
+      const value = key === "maxPrice" ? budget : form[key];
+      if (value) params.set(key, value);
     }
     /**
      * Somewhere we do not service is still a real customer with real intent.
@@ -454,7 +469,7 @@ export default function SearchWidget({
               <Field as="div" label={t("search.budget")}>
                 <InlineSelect
                   ariaLabel={t("search.budget")}
-                  value={toSelect(form.maxPrice)}
+                  value={toSelect(budget)}
                   onValueChange={(v) => set("maxPrice", fromSelect(v))}
                   // In francs, like every price and `maxPrice` (about 2 000 $ a
                   // month, 10 000, 200 000 and 500 000 $).
@@ -466,7 +481,11 @@ export default function SearchWidget({
                     },
                     { value: "30000000", label: `≤ ${formatMoney(30_000_000, "CDF", locale)}` },
                     { value: "600000000", label: `≤ ${formatMoney(600_000_000, "CDF", locale)}` },
-                    { value: "1500000000", label: `≤ ${formatMoney(1_500_000_000, "CDF", locale)}` }
+                    { value: "1500000000", label: `≤ ${formatMoney(1_500_000_000, "CDF", locale)}` },
+                    // A budget the price slider set, between those: shown, not blank.
+                    ...(budget && !BUDGETS.includes(budget)
+                      ? [{ value: budget, label: `≤ ${formatMoney(Number(budget), "CDF", locale)}` }]
+                      : [])
                   ]}
                   triggerClassName={selectTriggerCls}
                 />

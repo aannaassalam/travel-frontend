@@ -3,9 +3,11 @@ import { getTransferPlaces, placeText, type PlaceKind, type TransferPlace } from
 import { cn } from "@/lib/utils";
 import type { TransferPoint } from "@/typescript/interface/domain.interface";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useDebounced } from "@/lib/useDebounced";
 import {
   Hotel,
   Landmark,
+  LocateFixed,
   MapPin,
   MapPinned,
   Plane,
@@ -17,7 +19,7 @@ import { useEffect, useId, useRef, useState } from "react";
 
 /**
  * Where the ride starts or ends: one of the office's saved places (airport,
- * hotels, station…), a place found by search, or a point tapped on the map.
+ * hotels, station…), a place found by search, or a point picked on the map.
  *
  * Same combobox shape as search/LocationField, but the list is the server's:
  * it already merges the office's places with external suggestions once three
@@ -35,31 +37,21 @@ const KIND_ICON: Record<PlaceKind, typeof MapPin> = {
   OTHER: MapPin
 };
 
-/** A value that only changes once typing has paused — one request per pause, not per key. */
-function useDebounced<T>(value: T, ms: number): T {
-  const [v, setV] = useState(value);
-  useEffect(() => {
-    const id = setTimeout(() => setV(value), ms);
-    return () => clearTimeout(id);
-  }, [value, ms]);
-  return v;
-}
-
 export function PlaceField({
   city,
   label,
   value,
   onChange,
-  picking,
-  onPickOnMap
+  onPickOnMap,
+  onLocate
 }: {
   city: string;
   label: string;
   value?: TransferPoint;
   onChange: (point: TransferPoint | undefined) => void;
-  /** This field is the one the next map tap fills. */
-  picking: boolean;
   onPickOnMap: () => void;
+  /** Offers "Use my location" at the top of the list (the pick-up's). */
+  onLocate?: () => void;
 }) {
   const { t, locale } = usePrefs();
   const id = useId();
@@ -76,7 +68,7 @@ export function PlaceField({
   }, [value]);
 
   const q = useDebounced(text.trim(), 300);
-  const { data: places = [], isFetching } = useQuery({
+  const { data: places = [], isFetching, isPlaceholderData } = useQuery({
     // Only what is typed is searched; a chosen place's own name is not re-asked.
     queryKey: ["transfer-places", city, value ? "" : q],
     queryFn: ({ signal }) => getTransferPlaces(city, value ? "" : q, { signal }),
@@ -86,6 +78,12 @@ export function PlaceField({
   });
 
   useEffect(() => setActive(0), [places]);
+
+  const listed = places.length > 0 || isFetching;
+  // Typed, searched, nothing: said, with the map offered — with no MapTiler
+  // key that is most street addresses.
+  const noMatch = !value && q.length >= 3 && !isFetching && !isPlaceholderData && places.length === 0;
+  const credited = places.some((p) => p.external);
 
   useEffect(() => {
     if (!open) return;
@@ -102,14 +100,9 @@ export function PlaceField({
   };
 
   return (
-    <div ref={box} className="relative">
-      <div
-        className={cn(
-          "field flex items-center gap-2 pr-2",
-          picking && "ring-2 ring-brand-500 ring-inset"
-        )}
-        data-filled={text ? true : undefined}
-      >
+    // data-place-field / data-pick-on-map: where the map picker hands focus back (see MapPicker).
+    <div ref={box} className="relative" data-place-field>
+      <div className="field flex items-center gap-2 pr-2" data-filled={text ? true : undefined}>
         <label htmlFor={id} className="field-label">
           {label}
         </label>
@@ -121,7 +114,7 @@ export function PlaceField({
           placeholder=" "
           role="combobox"
           aria-expanded={open}
-          aria-controls={`${id}-list`}
+          aria-controls={open && listed ? `${id}-list` : undefined}
           aria-autocomplete="list"
           aria-activedescendant={open && places[active] ? `${id}-opt-${active}` : undefined}
           autoComplete="off"
@@ -157,12 +150,9 @@ export function PlaceField({
             setOpen(false);
             onPickOnMap();
           }}
-          aria-pressed={picking}
           title={t("transfer.pickOnMap")}
-          className={cn(
-            "flex h-11 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold transition-colors",
-            picking ? "bg-brand-900 text-white" : "bg-brand-50 text-brand-700 hover:bg-brand-100"
-          )}
+          data-pick-on-map
+          className="flex h-11 shrink-0 items-center gap-1.5 rounded-lg bg-brand-50 px-2.5 text-xs font-bold text-brand-700 transition-colors hover:bg-brand-100"
         >
           <MapPinned className="size-4" aria-hidden="true" />
           <span className="hidden sm:inline">{t("transfer.pickOnMap")}</span>
@@ -170,43 +160,74 @@ export function PlaceField({
         </button>
       </div>
 
-      {open && (places.length > 0 || isFetching) && (
-        <ul
-          id={`${id}-list`}
-          role="listbox"
-          className="motion-settle absolute left-0 top-[calc(100%+0.5rem)] z-50 max-h-72 w-full overflow-y-auto rounded-xl bg-white p-1.5 shadow-lg ring-1 ring-ink-100 ring-inset"
-        >
-          {places.map((p, i) => {
-            const Icon = p.external ? Search : KIND_ICON[p.kind ?? "OTHER"] ?? MapPin;
-            return (
-              <li
-                key={p.id ?? `${p.lat},${p.lng}`}
-                id={`${id}-opt-${i}`}
-                role="option"
-                aria-selected={i === active}
-                // mousedown, not click: the input blurs first on click and the
-                // list would unmount before the choice registered.
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  choose(p);
-                }}
-                onMouseEnter={() => setActive(i)}
-                className={cn(
-                  "flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-colors",
-                  i === active ? "bg-brand-50" : "bg-transparent"
-                )}
-              >
-                <Icon className="size-4 shrink-0 text-ink-300" aria-hidden="true" />
-                <span className="min-w-0 flex-1 truncate font-semibold text-ink-900">
-                  {placeText(p.name, locale)}
-                </span>
-              </li>
-            );
-          })}
-          {isFetching && !places.length && (
-            <li className="px-3 py-2.5 text-sm text-ink-500">{t("common.loading")}…</li>
+      {open && (listed || onLocate || noMatch) && (
+        <div className="motion-settle absolute left-0 top-[calc(100%+0.5rem)] z-50 max-h-80 w-full overflow-y-auto rounded-xl bg-white p-1.5 shadow-lg ring-1 ring-ink-100 ring-inset">
+          {onLocate && (
+            // A button, not an option: it opens the map rather than choosing a value.
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                setOpen(false);
+                onLocate();
+              }}
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-brand-700 hover:bg-brand-50"
+            >
+              <LocateFixed className="size-4 shrink-0" aria-hidden="true" />
+              {t("transfer.myLocation")}
+            </button>
           )}
-        </ul>
+          {listed && (
+            <ul id={`${id}-list`} role="listbox">
+              {places.map((p, i) => {
+                const Icon = p.external ? Search : KIND_ICON[p.kind ?? "OTHER"] ?? MapPin;
+                return (
+                  <li
+                    key={p.id ?? `${p.lat},${p.lng}`}
+                    id={`${id}-opt-${i}`}
+                    role="option"
+                    aria-selected={i === active}
+                    // mousedown, not click: the input blurs first on click and the
+                    // list would unmount before the choice registered.
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      choose(p);
+                    }}
+                    onMouseEnter={() => setActive(i)}
+                    className={cn(
+                      "flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-colors",
+                      i === active ? "bg-brand-50" : "bg-transparent"
+                    )}
+                  >
+                    <Icon className="size-4 shrink-0 text-ink-300" aria-hidden="true" />
+                    <span className="min-w-0 flex-1 truncate font-semibold text-ink-900">
+                      {placeText(p.name, locale)}
+                    </span>
+                  </li>
+                );
+              })}
+              {isFetching && !places.length && (
+                <li className="px-3 py-2.5 text-sm text-ink-500">{t("common.loading")}…</li>
+              )}
+            </ul>
+          )}
+          {noMatch && (
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                setOpen(false);
+                onPickOnMap();
+              }}
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm text-ink-700 hover:bg-brand-50"
+            >
+              <MapPinned className="size-4 shrink-0 text-brand-700" aria-hidden="true" />
+              {t("transfer.noMatch")}
+            </button>
+          )}
+          {/* Suggestions from MapTiler, on OpenStreetMap data: credited where they show. */}
+          {credited && <p className="px-3 pt-1 pb-0.5 text-[11px] text-ink-500">{t("transfer.namesCredit")}</p>}
+        </div>
       )}
     </div>
   );

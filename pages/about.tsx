@@ -43,7 +43,7 @@ const BUILT_IN = {
     ],
     listTitle: "Ce que nous ne faisons pas",
     listItems: [
-      "Nous ne remboursons pas. Toutes les réservations sont définitives, et nous vous le disons avant que vous payiez, pas après.",
+      "Nous ne cachons pas nos conditions d'annulation : 80 % du montant payé est remboursable après déduction des frais de dossier, et nous vous le disons avant que vous payiez, pas après.",
       "Nous n'affichons pas de faux compteurs d'urgence. Quand il reste trois places, c'est qu'il en reste trois.",
       "Nous ne révélons aucun frais à la dernière étape. Le prix affiché est le prix payé.",
       "Nous ne vendons pas vos données et n'utilisons pas de traceurs publicitaires."
@@ -73,7 +73,7 @@ const BUILT_IN = {
     ],
     listTitle: "What we do not do",
     listItems: [
-      "We do not refund. All bookings are final, and we tell you before you pay, not after.",
+      "We do not hide our cancellation terms: 80% of the amount paid is refundable after deducting processing fees, and we tell you before you pay, not after.",
       "We do not run fake urgency counters. When three seats are left, three seats are left.",
       "We do not reveal a fee at the last step. The price shown is the price paid.",
       "We do not sell your data and use no advertising trackers."
@@ -165,7 +165,7 @@ export default function AboutPage({ about }: Props) {
               ))}
             </ul>
             <Link
-              href="/terms#no-refund"
+              href="/terms#cancellation"
               className="mt-4 inline-flex text-sm font-semibold text-brand-500 underline"
             >
               {t("policy.readFull")}

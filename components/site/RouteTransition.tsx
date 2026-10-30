@@ -10,25 +10,31 @@ import { useEffect, useState } from "react";
  *  - a short fade-and-rise on the new content.
  *
  * ponytail: CSS keyframes and two router events, not a transition library.
- * The animation is skipped entirely under `prefers-reduced-motion` (handled
- * globally in globals.css), and the progress bar only appears after 120ms so
- * instant client-side navigations do not flash a bar for one frame.
+ * The animation is shortened under `prefers-reduced-motion` (handled globally
+ * in globals.css), and the progress bar only appears after 120ms so instant
+ * client-side navigations do not flash a bar for one frame.
  */
 export default function RouteTransition({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [key, setKey] = useState(router.asPath);
+  // The path only: a new page fades in and starts afresh, while a filter, a
+  // sort, a page number or a #anchor on the same page keeps it as it is —
+  // focus, an open filter sheet, a word half typed. Read in render, so the new
+  // page mounts once, with its own props (an error event carries no URL).
+  const key = router.asPath.split(/[?#]/)[0];
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
 
     const start = () => {
+      // A second start before the first ends (one navigation cancels another)
+      // must not leave the first timer to light the bar after both are done.
+      clearTimeout(timer);
       timer = setTimeout(() => setLoading(true), 120);
     };
-    const done = (url: string) => {
+    const done = () => {
       clearTimeout(timer);
       setLoading(false);
-      setKey(url);
     };
 
     router.events.on("routeChangeStart", start);
@@ -58,7 +64,7 @@ export default function RouteTransition({ children }: { children: React.ReactNod
         />
       </div>
 
-      {/* Keyed on the path so the fade replays on every navigation. */}
+      {/* Keyed on the path so the fade replays on every new page. */}
       <div key={key} className="animate-fade-in">
         {children}
       </div>

@@ -37,6 +37,10 @@ export const fmtDateLong = (iso: string, locale: Locale = "fr") =>
     year: "numeric"
   });
 
+/** "30 nov." / "30 Nov": a day as written, stored at 00:00 UTC, so read in UTC. */
+export const fmtDayMonth = (iso: string, locale: Locale = "fr") =>
+  fmt(iso, locale, { day: "numeric", month: "short", timeZone: "UTC" });
+
 export const fmtTime = (iso: string, locale: Locale = "fr") =>
   fmt(iso, locale, { hour: "2-digit", minute: "2-digit" });
 

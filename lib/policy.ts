@@ -1,9 +1,9 @@
 import { Locale } from "@/typescript/interface/domain.interface";
 
 /**
- * §2.2 / §13(6). The no-refund text is defined once, here, and referenced
- * everywhere — web, checkout, confirmation, e-mail, app — so the wording can
- * never diverge between surfaces.
+ * §2.2 / §13(6). The cancellation terms as this site ships them. The live text
+ * is what the office publishes in the admin (consent kind NO_REFUND, and
+ * TERMS); /terms falls back to these only when nothing is published.
  *
  * Versions are immutable and append-only. An order stores the *label and the
  * exact text it displayed*, so changing the policy later never rewrites what a
@@ -26,6 +26,17 @@ export const POLICY_VERSIONS: PolicyVersion[] = [
     text: {
       fr: "Je comprends que cette réservation est définitive et non remboursable. Aucun remboursement ni annulation avec remboursement ne sera accordé.",
       en: "I understand that this booking is final and non-refundable. No refund, and no cancellation with refund, will be granted.",
+      pt: "",
+      es: ""
+    }
+  },
+  {
+    id: "pv_2026_10",
+    label: "v2.0",
+    effectiveFrom: "2026-10-27",
+    text: {
+      fr: "Je comprends qu'en cas d'annulation de cette réservation, 80 % du montant payé est remboursable après déduction des frais de dossier.",
+      en: "I understand that if this booking is cancelled, 80% of the amount paid is refundable after deducting processing fees.",
       pt: "",
       es: ""
     }
@@ -93,12 +104,12 @@ export const POLICY_SECTIONS: Record<
 > = {
   fr: [
     {
-      heading: "1. Réservations définitives",
-      body: "Toutes les réservations effectuées sur cette plateforme sont définitives. Aucun remboursement n'est accordé, quelle qu'en soit la raison, une fois le paiement encaissé. Cette condition vous est présentée sur la page de l'offre, dans le récapitulatif de prix et à l'étape de paiement, et son acceptation est enregistrée avec votre réservation."
+      heading: "1. Conditions d'annulation",
+      body: "En cas d'annulation d'une réservation effectuée sur cette plateforme, 80 % du montant payé est remboursable après déduction des frais de dossier. Cette condition vous est présentée sur la page de l'offre, dans le récapitulatif de prix et à l'étape de paiement, et son acceptation est enregistrée avec votre réservation."
     },
     {
-      heading: "2. Annulation sans remboursement",
-      body: "Vous pouvez demander l'annulation d'une réservation en contactant notre service client. L'annulation libère les places ou les chambres concernées, mais n'ouvre droit à aucun remboursement, total ou partiel, ni à aucun avoir."
+      heading: "2. Demander une annulation",
+      body: "Vous pouvez demander l'annulation d'une réservation en contactant notre service client. L'annulation libère les places ou les chambres concernées."
     },
     {
       heading: "3. Réservations payées en espèces",
@@ -106,7 +117,7 @@ export const POLICY_SECTIONS: Record<
     },
     {
       heading: "4. Lorsque nous ne pouvons pas assurer la prestation",
-      body: "Si un vol est annulé par la compagnie, si un hôtel n'honore pas une réservation confirmée, ou si nous ne pouvons pas fournir la prestation vendue, contactez-nous immédiatement. Ces situations sont traitées au cas par cas par la direction et ne relèvent pas de la politique de non-remboursement ci-dessus."
+      body: "Si un vol est annulé par la compagnie, si un hôtel n'honore pas une réservation confirmée, ou si nous ne pouvons pas fournir la prestation vendue, contactez-nous immédiatement. Ces situations sont traitées au cas par cas par la direction et ne relèvent pas des conditions d'annulation ci-dessus."
     },
     {
       heading: "5. Prix et devises",
@@ -123,12 +134,12 @@ export const POLICY_SECTIONS: Record<
   ],
   en: [
     {
-      heading: "1. Bookings are final",
-      body: "All bookings made on this platform are final. No refund is granted, for any reason, once payment has been collected. This condition is shown on the offer page, in the price summary and at the payment step, and your acceptance is recorded against your booking."
+      heading: "1. Cancellation terms",
+      body: "If a booking made on this platform is cancelled, 80% of the amount paid is refundable after deducting processing fees. This condition is shown on the offer page, in the price summary and at the payment step, and your acceptance is recorded against your booking."
     },
     {
-      heading: "2. Cancellation without refund",
-      body: "You may ask us to cancel a booking by contacting customer service. Cancelling releases the seats or rooms concerned, but gives no right to any refund, whole or partial, and no credit note."
+      heading: "2. Asking to cancel",
+      body: "You may ask us to cancel a booking by contacting customer service. Cancelling releases the seats or rooms concerned."
     },
     {
       heading: "3. Bookings paid in cash",
@@ -136,7 +147,7 @@ export const POLICY_SECTIONS: Record<
     },
     {
       heading: "4. When we cannot deliver",
-      body: "If an airline cancels a flight, a hotel does not honour a confirmed booking, or we cannot supply what was sold, contact us immediately. These situations are handled case by case by management and fall outside the no-refund policy above."
+      body: "If an airline cancels a flight, a hotel does not honour a confirmed booking, or we cannot supply what was sold, contact us immediately. These situations are handled case by case by management and fall outside the cancellation terms above."
     },
     {
       heading: "5. Prices and currencies",

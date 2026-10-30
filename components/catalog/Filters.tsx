@@ -1,7 +1,9 @@
 import { fromBase, price as fmtPrice } from "@/lib/money";
 import { usePrefs } from "@/lib/prefs";
+import { pushQuery, queryNow, useQueryNow } from "@/lib/query";
+import * as Slider from "@radix-ui/react-slider";
 import { SlidersHorizontal } from "lucide-react";
-import { useRouter } from "next/router";
+import { useState } from "react";
 
 export interface FilterSection {
   /** Must be an allow-listed search param (§8) — nothing else reaches the API. */
@@ -18,45 +20,38 @@ export interface FilterSection {
 export default function Filters({
   sections,
   priceBounds,
+  priceLabel,
   className
 }: {
   sections: FilterSection[];
   priceBounds?: [number, number];
+  /** What the price is for: per night, per 24 hours… */
+  priceLabel?: string;
   className?: string;
 }) {
-  const router = useRouter();
-  const { t, currency, locale, rates } = usePrefs();
-  const q = router.query as Record<string, string | string[] | undefined>;
+  const { t, rates } = usePrefs();
+  // The address as it will be: a tick shows at once, even on a slow line.
+  const q = useQueryNow();
 
-  const current = (key: string): string[] => {
-    const v = q[key];
-    if (!v) return [];
-    return Array.isArray(v) ? v : v.split(",").filter(Boolean);
-  };
+  const list = (v: string | string[] | undefined): string[] =>
+    !v ? [] : Array.isArray(v) ? v : v.split(",").filter(Boolean);
+  const current = (key: string) => list(q[key]);
 
-  function apply(next: Record<string, string | undefined>) {
-    const merged = { ...q, ...next };
-    for (const k of Object.keys(merged)) {
-      if (!merged[k]) delete merged[k];
-    }
-    router.push({ pathname: router.pathname, query: merged as never }, undefined, {
-      scroll: false
-    });
-  }
+  // A narrower search starts again at its first page.
+  const apply = (next: Record<string, string | undefined>) => void pushQuery(next);
 
-  function toggle(key: string, value: string, multi: boolean) {
-    if (!multi) {
-      apply({ [key]: current(key)[0] === value ? undefined : value });
-      return;
-    }
-    const set = new Set(current(key));
+  function toggle(key: string, value: string) {
+    // From the address as it will be: a box ticked while the last tick is on
+    // its way adds to it.
+    const set = new Set(list(queryNow()[key]));
     if (set.has(value)) set.delete(value);
     else set.add(value);
     apply({ [key]: set.size ? Array.from(set).join(",") : undefined });
   }
 
+  // The price range is one filter, whichever end is set.
   const activeCount = sections.reduce((n, s) => n + current(s.key).length, 0) +
-    (q.maxPrice ? 1 : 0);
+    (q.minPrice || q.maxPrice ? 1 : 0);
 
   // From 5 $, not from the cheapest listing: with one bus on sale both ends
   // read its fare. Prices are francs, so the floor is 5 $ at the office's rate,
@@ -64,37 +59,24 @@ export default function Filters({
   // dollar rate). The top stays the dearest listing, never below the floor.
   const floor = rates?.USD ? Math.ceil(Number((5 * rates.USD).toFixed(6))) : 0;
   const [low, high] = [floor, Math.max(floor, priceBounds?.[1] ?? 0)];
-  const step = Math.max(100, Math.round((high - low) / 40));
 
-  const body = (
+  // Drawn twice, the phone sheet and the desktop aside: each copy names its
+  // radios apart, or the two form one group and the hidden copy keeps the tick.
+  const body = (copy: string) => (
     <div className="space-y-6">
-      {priceBounds && (
-        <fieldset>
-          <legend className="mb-3 text-sm font-bold text-brand-900">
-            {t("results.priceRange")}
-          </legend>
-          <input
-            type="range"
-            min={low}
-            max={high}
-            step={step}
-            value={Number(q.maxPrice ?? high)}
-            // The last notch is "any price": when the step does not divide the
-            // span it stops short of the top, and would leave the dearest out.
-            onChange={(e) => {
-              const v = Number(e.target.value);
-              apply({ maxPrice: v + step > high ? undefined : String(v) });
-            }}
-            className="w-full accent-brand-500"
-            aria-label={t("results.priceRange")}
-          />
-          <p className="mt-1 flex justify-between text-xs text-ink-500">
-            <span>{fmtPrice(fromBase(low, rates), currency, locale)}</span>
-            <strong className="font-semibold text-ink-700">
-              {fmtPrice(fromBase(Number(q.maxPrice ?? high), rates), currency, locale)}
-            </strong>
-          </p>
-        </fieldset>
+      {priceBounds && high > low && (
+        <PriceRange
+          // New ends start it again (the floor waits for the office's dollar
+          // rate); a new URL does not: every key press commits, and a remount
+          // would take the focused handle away.
+          key={`${low}-${high}`}
+          low={low}
+          high={high}
+          label={priceLabel ?? t("results.priceRange")}
+          min={Number(q.minPrice) || low}
+          max={Number(q.maxPrice) || high}
+          onCommit={apply}
+        />
       )}
 
       {/* A filter with nothing to choose (no makes on sale yet) is not shown. */}
@@ -109,9 +91,36 @@ export default function Filters({
                   <label className="flex cursor-pointer items-center gap-2.5 text-sm text-ink-700">
                     <input
                       type={section.type}
-                      name={section.key}
+                      name={`${section.key}-${copy}`}
                       checked={checked}
-                      onChange={() => toggle(section.key, opt.value, section.type === "checkbox")}
+                      onChange={() =>
+                        section.type === "checkbox"
+                          ? toggle(section.key, opt.value)
+                          : apply({ [section.key]: opt.value })
+                      }
+                      // A radio fires no change when the ticked one is picked
+                      // again: that click, or Space (no click from the
+                      // keyboard), clears it. Space on release, as the browser
+                      // ticks one: held down, it clears once, not off then on.
+                      onClick={
+                        section.type === "radio" && checked
+                          ? () => apply({ [section.key]: undefined })
+                          : undefined
+                      }
+                      onKeyDown={
+                        section.type === "radio" && checked
+                          ? (e) => e.key === " " && e.preventDefault()
+                          : undefined
+                      }
+                      onKeyUp={
+                        section.type === "radio" && checked
+                          ? (e) => {
+                              if (e.key !== " ") return;
+                              e.preventDefault();
+                              apply({ [section.key]: undefined });
+                            }
+                          : undefined
+                      }
                       className="size-4 accent-brand-500"
                     />
                     {opt.label}
@@ -126,8 +135,13 @@ export default function Filters({
       {activeCount > 0 && (
         <button
           type="button"
+          // The filters on this side, not the search itself (place, dates, words).
           onClick={() =>
-            router.push({ pathname: router.pathname }, undefined, { scroll: false })
+            apply(
+              Object.fromEntries(
+                [...sections.map((s) => s.key), "minPrice", "maxPrice"].map((k) => [k, undefined])
+              )
+            )
           }
           className="text-sm font-semibold text-brand-500 hover:underline"
         >
@@ -150,7 +164,7 @@ export default function Filters({
             </span>
           )}
         </summary>
-        <div className="border-t border-ink-100/70 p-4">{body}</div>
+        <div className="border-t border-ink-100/70 p-4">{body("m")}</div>
       </details>
 
       <aside
@@ -161,8 +175,92 @@ export default function Filters({
           <SlidersHorizontal className="size-4" />
           {t("results.filters")}
         </h2>
-        {body}
+        {body("d")}
       </aside>
     </>
+  );
+}
+
+/**
+ * The price, between two handles, in francs: `minPrice` and `maxPrice` in the
+ * URL, each left out at its end of the range so "any price" has one address.
+ * Dragging moves only the handles; the URL — and the one request it makes —
+ * changes when a handle is let go, not at every notch.
+ */
+function PriceRange({
+  low,
+  high,
+  label,
+  min,
+  max,
+  onCommit
+}: {
+  low: number;
+  high: number;
+  label: string;
+  min: number;
+  max: number;
+  onCommit: (next: { minPrice?: string; maxPrice?: string }) => void;
+}) {
+  const { t, currency, locale, rates } = usePrefs();
+  const clamp = (v: number) => Math.min(high, Math.max(low, v));
+  const [value, setValue] = useState([clamp(min), clamp(max)]);
+  // Drawn twice (phone and desktop): a new URL — the other copy, the back
+  // button, "clear" — moves these handles too.
+  const [fromUrl, setFromUrl] = useState([min, max]);
+  if (fromUrl[0] !== min || fromUrl[1] !== max) {
+    setFromUrl([min, max]);
+    setValue([clamp(min), clamp(max)]);
+  }
+  const step = Math.max(100, Math.round((high - low) / 40));
+  // The last notch is "any price". It is where the slider snaps the top to:
+  // the top itself, or a notch short of it when the step does not divide the
+  // span — which must not leave the dearest out.
+  const top = Math.min(high, low + Math.round((high - low) / step) * step);
+  const atTop = (v: number) => v >= top;
+  const shown = (v: number) => fmtPrice(fromBase(v, rates), currency, locale);
+  const thumb =
+    "block size-5 rounded-full border-2 border-brand-500 bg-white shadow-sm transition-colors hover:border-brand-700";
+
+  return (
+    <fieldset>
+      <legend className="mb-3 text-sm font-bold text-brand-900">{label}</legend>
+      <Slider.Root
+        min={low}
+        max={high}
+        step={step}
+        value={value}
+        onValueChange={setValue}
+        onValueCommit={([from, to]) => {
+          const next = {
+            minPrice: from > low ? String(from) : undefined,
+            maxPrice: atTop(to) ? undefined : String(to)
+          };
+          onCommit(next);
+          // Not taken (a move the visitor made is still loading): the handles
+          // go back to the prices the address has — after Radix has set the
+          // value of a key press, which it does after this call.
+          const now = queryNow();
+          if (now.minPrice !== next.minPrice || now.maxPrice !== next.maxPrice) {
+            setTimeout(() => setValue([clamp(min), clamp(max)]));
+          }
+        }}
+        className="relative flex h-5 touch-none items-center select-none"
+      >
+        <Slider.Track className="relative h-1.5 grow rounded-full bg-ink-100">
+          <Slider.Range className="absolute h-full rounded-full bg-brand-500" />
+        </Slider.Track>
+        <Slider.Thumb aria-label={t("results.priceMin")} aria-valuetext={shown(value[0])} className={thumb} />
+        <Slider.Thumb
+          aria-label={t("results.priceMax")}
+          aria-valuetext={shown(atTop(value[1]) ? high : value[1])}
+          className={thumb}
+        />
+      </Slider.Root>
+      <p className="mt-2 flex justify-between gap-3 text-xs font-semibold text-ink-700">
+        <span>{shown(value[0])}</span>
+        <span>{shown(atTop(value[1]) ? high : value[1])}</span>
+      </p>
+    </fieldset>
   );
 }

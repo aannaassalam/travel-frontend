@@ -15,12 +15,13 @@ appId: com.flexiairbnb.app
     commands:
       - tapOn: "Plus tard|Later|Pas maintenant"
 - tapOn: "Restaurants"
+# the card's label starts with its kind ("Restaurant, Kivu Lakeside Kitchen"), hence the leading .*
 - extendedWaitUntil:
     visible:
-      text: "Kivu Lakeside Kitchen"
+      text: ".*Kivu Lakeside Kitchen"
     timeout: 20000
 - takeScreenshot: mobile-20-restaurants
-- tapOn: "Kivu Lakeside Kitchen"
+- tapOn: ".*Kivu Lakeside Kitchen"
 - extendedWaitUntil:
     visible:
       text: "Kivu Lakeside Kitchen"

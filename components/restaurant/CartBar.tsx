@@ -101,7 +101,10 @@ export default function CartBar() {
             />
           )}
 
-          <div className="motion-settle sticky bottom-0 z-30 border-t border-brand-900/10 bg-white/95 backdrop-blur-sm">
+          <div
+            data-cart-bar
+            className="motion-settle sticky bottom-0 z-30 border-t border-brand-900/10 bg-white/95 backdrop-blur-sm"
+          >
             {/* The lines. Collapsed with max-height rather than unmounted so the
                 open and close both animate, and the list keeps its scroll. */}
             <div

@@ -11,8 +11,8 @@ import Link from "next/link";
 
 /**
  * §11.4 JSON-LD FAQPage: these are questions people actually type, and the
- * answers repeat the no-refund policy rather than hiding it — a customer who
- * discovers it at the payment step is a customer who abandons.
+ * answers repeat the cancellation terms rather than hiding them — a customer
+ * who discovers them at the payment step is a customer who abandons.
  *
  * This is the list the page shipped with. The office edits its own in the
  * admin's "Website content" screen; this one shows until it has, and whenever
@@ -22,7 +22,7 @@ const FAQ = {
   fr: [
     {
       q: "Puis-je annuler et être remboursé ?",
-      a: "Non. Toutes nos réservations sont définitives et non remboursables. Vous pouvez demander l'annulation d'une réservation en nous contactant, ce qui libère la place ou la chambre, mais aucune somme n'est restituée. Cette condition vous est présentée trois fois avant le paiement et votre acceptation est enregistrée."
+      a: "Oui. En cas d'annulation, 80 % du montant payé est remboursable après déduction des frais de dossier. Pour annuler une réservation, contactez-nous : l'annulation libère la place ou la chambre. Cette condition vous est présentée trois fois avant le paiement et votre acceptation est enregistrée."
     },
     {
       q: "Comment puis-je payer ?",
@@ -42,11 +42,11 @@ const FAQ = {
     },
     {
       q: "Quand vais-je recevoir mon billet ou mon voucher ?",
-      a: "Sous 24 heures ouvrées après confirmation du paiement. Les documents apparaissent dans votre compte et vous recevez un SMS. Nous n'envoyons jamais un document par un lien public permanent."
+      a: "Sous 24 heures ouvrées après confirmation du paiement. Les documents apparaissent dans votre compte et sur la page de votre réservation. Nous n'envoyons jamais un document par un lien public permanent."
     },
     {
       q: "Que se passe-t-il si la compagnie annule mon vol ?",
-      a: "Contactez-nous immédiatement. Ces situations ne relèvent pas de la politique de non-remboursement : elles sont traitées au cas par cas par la direction, qui vous propose une solution."
+      a: "Contactez-nous immédiatement. Ces situations ne relèvent pas des conditions d'annulation habituelles : elles sont traitées au cas par cas par la direction, qui vous propose une solution."
     },
     {
       q: "Puis-je acheter un bien immobilier en ligne ?",
@@ -56,7 +56,7 @@ const FAQ = {
   en: [
     {
       q: "Can I cancel and get a refund?",
-      a: "No. All our bookings are final and non-refundable. You can ask us to cancel a booking, which releases the seat or room, but no money is returned. This condition is shown to you three times before payment and your acceptance is recorded."
+      a: "Yes. If you cancel, 80% of the amount paid is refundable after deducting processing fees. To cancel a booking, contact us: cancelling releases the seat or room. This condition is shown to you three times before payment and your acceptance is recorded."
     },
     {
       q: "How can I pay?",
@@ -76,11 +76,11 @@ const FAQ = {
     },
     {
       q: "When do I get my ticket or voucher?",
-      a: "Within 24 working hours of payment being confirmed. Documents appear in your account and you get an SMS. We never send a document as a permanent public link."
+      a: "Within 24 working hours of payment being confirmed. Documents appear in your account and on your booking page. We never send a document as a permanent public link."
     },
     {
       q: "What if the airline cancels my flight?",
-      a: "Contact us immediately. These situations fall outside the no-refund policy: they are handled case by case by management, who will propose a solution."
+      a: "Contact us immediately. These situations fall outside the usual cancellation terms: they are handled case by case by management, who will propose a solution."
     },
     {
       q: "Can I buy a property online?",

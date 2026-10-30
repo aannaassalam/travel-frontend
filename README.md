@@ -235,16 +235,13 @@ required by both app stores (§12.4), so an unreachable API must degrade to the
 last shipped text rather than to a blank page. `scripts/seedPolicies.ts` in the
 backend loaded those same constants into Mongo as v1.0.
 
-Still hardcoded: the no-refund sentence *at checkout*. `/terms` reads it from
-the API, but `lib/checkout.tsx` snapshots `CURRENT_POLICY` onto the order. Moving
-it means storing the `PolicyVersion` id on the order, which needs the orders
-endpoints that do not exist yet (see `lib/store.ts`).
-
 ## Guide requirements that are load-bearing here
 
-- **No-refund policy (§2.2)** — one source of text in `lib/policy.ts`, surfaced
-  three times before payment (listing box, price summary, payment step), captured
-  as a separate unticked blocking checkbox, and snapshotted onto the order with
+- **Cancellation terms (80% refundable after deducting processing fees) (§2.2)** — worded by the office in
+  the admin (the reminder is the footer notice, the checkbox the `NO_REFUND`
+  policy; `lib/policy.ts` is only the `/terms` fallback), surfaced three times
+  before payment (listing box, price summary, payment step), captured as a
+  separate unticked blocking checkbox, and snapshotted onto the order with
   locale and timestamp. Repeated on the confirmation and in the booking detail.
 - **Empty state (§1)** — `components/catalog/EmptyState.tsx` is a lead form with
   alternatives, not a shrug. The Request-to-Book form also appears on every

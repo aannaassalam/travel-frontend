@@ -273,7 +273,7 @@ export function Summary({ children }: { children?: React.ReactNode }) {
 }
 
 /**
- * The no-refund sentence the office has published — the one the server stores
+ * The consent sentence the office has published — the one the server stores
  * with the order as "the text the customer was shown" — and which version it
  * is. It used to be a copy built into this site, so editing the policy in the
  * admin changed what was recorded but not what was read. Same choice of
@@ -426,7 +426,7 @@ export function ConsentBox({
         {/* In a new tab: a checkout form is not a page to navigate away
             from — the restaurant one keeps what was typed nowhere else. */}
         <Link
-          href="/terms#no-refund"
+          href="/terms#cancellation"
           target="_blank"
           rel="noopener"
           className="text-brand-500 underline"

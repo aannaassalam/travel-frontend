@@ -58,9 +58,11 @@ export default function TermsPage({ terms, noRefund }: Props) {
           {effectiveFrom}
         </p>
 
-        {/* §2.2(3): stated plainly, at the top, never in fine print. */}
+        {/* §2.2(3): stated plainly, at the top, never in fine print. The old
+            #no-refund anchor stays so links already shared still land here. */}
+        <span id="no-refund" />
         <section
-          id="no-refund"
+          id="cancellation"
           className="mt-8 rounded-lg border-2 border-brand-900 bg-brand-50 p-6"
         >
           <h2 className="flex items-center gap-2 text-xl font-bold text-brand-900">

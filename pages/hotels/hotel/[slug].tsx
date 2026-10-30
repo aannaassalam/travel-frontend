@@ -85,7 +85,10 @@ export default function HotelDetail({ hotel: initialHotel, others }: Props) {
     else if (q.from) setTo(plusDays(q.from, 2));
     if (Number(q.adults)) setAdults(Number(q.adults));
     if (Number(q.rooms)) setRooms(Number(q.rooms));
-  }, [router.isReady, router.query]);
+    // The values, not the query object: that is new on every router update
+    // (a #rooms jump, Back), which put the URL's dates back over edited ones.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.isReady, router.query.from, router.query.to, router.query.adults, router.query.rooms]);
 
   // Moving check-in past check-out would make `nights` zero or negative. Keep
   // check-out at least a night after check-in.

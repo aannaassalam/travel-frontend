@@ -35,7 +35,7 @@ export const siteText = (
 ) => localized(field, locale) || builtIn;
 
 /**
- * The one-line no-refund reminder, as the office worded it. One sentence for
+ * The cancellation terms in brief, as the office worded them. One sentence for
  * the whole site: the footer, the price box on every offer, the checkout
  * summary and the top of the Terms page must never say different things.
  */
@@ -45,7 +45,7 @@ export function usePolicyNotice(): string {
   return siteText(footer?.notice, locale, t("policy.body"));
 }
 
-/** The bold words in front of that sentence ("Réservation définitive"), edited beside it. */
+/** The bold words in front of that sentence ("Conditions d'annulation"), edited beside it. */
 export function usePolicyTitle(): string {
   const footer = useSiteFooter();
   const { t, locale } = usePrefs();

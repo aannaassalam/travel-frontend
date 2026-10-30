@@ -40,11 +40,12 @@ appId: com.flexiairbnb.app
           direction: UP
           timeout: 30000
 - tapOn: "Restaurants"
+# the card's label starts with its kind ("Restaurant, Kivu Lakeside Kitchen"), hence the leading .*
 - extendedWaitUntil:
     visible:
-      text: "Kivu Lakeside Kitchen"
+      text: ".*Kivu Lakeside Kitchen"
     timeout: 20000
-- tapOn: "Kivu Lakeside Kitchen"
+- tapOn: ".*Kivu Lakeside Kitchen"
 - extendedWaitUntil:
     visible:
       text: "Kivu Lakeside Kitchen"

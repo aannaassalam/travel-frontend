@@ -1,13 +1,18 @@
+import Pager, { PageGone } from "@/components/catalog/Pager";
 import ResultsSearch from "@/components/catalog/ResultsSearch";
 import ViewToggle from "@/components/catalog/ViewToggle";
+import { CardKind } from "@/components/catalog/cards";
 import { Breadcrumbs } from "@/components/site/bits";
 import Layout from "@/components/site/Layout";
+import Partners from "@/components/site/Partners";
 import { Skeleton } from "@/components/ui/field";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { searchRestaurants } from "@/lib/api";
 import { restaurantHref } from "@/lib/catalog";
 import { mediaUrl } from "@/lib/media";
 import { baseMinor, price } from "@/lib/money";
+import { PAGE_SIZE, pageParam } from "@/lib/paging";
+import { pushQuery } from "@/lib/query";
 import { usePrefs } from "@/lib/prefs";
 import { cn } from "@/lib/utils";
 import { Restaurant } from "@/typescript/interface/domain.interface";
@@ -33,11 +38,12 @@ const fromSelect = (v: string) => (v === ANY ? "" : v);
  * Not built on `SearchResults` like the other verticals: that component runs on
  * `Listing`/`Hotel` and a filter sidebar of stars and cabins, none of which a
  * restaurant has. A restaurant is chosen by city and cuisine in about two
- * seconds, so the page is a grid and a pair of selects rather than a search.
- * The grid is the default here; a visitor who prefers a list can have one.
+ * seconds, so the page is a list and a pair of selects rather than a search.
+ * A list by default, like every results page; a visitor who prefers the grid
+ * can have it for the rest of the visit.
  */
 export default function RestaurantsPage() {
-  const { t, locale, currency, view = "grid" } = usePrefs();
+  const { t, locale, currency, view = "list" } = usePrefs();
   const router = useRouter();
   const grid = view === "grid";
 
@@ -54,12 +60,13 @@ export default function RestaurantsPage() {
       city: q.destination || q.city,
       cuisine: q.cuisine,
       sort: q.sort,
-      limit: 40
+      page: pageParam(q.page),
+      limit: PAGE_SIZE
     }),
     [q]
   );
 
-  const { data, isPending, isFetching, isError, refetch } = useQuery({
+  const { data, isPending: loading, isPlaceholderData, isFetching, isError, refetch } = useQuery({
     queryKey: ["restaurants", params],
     queryFn: ({ signal }) => searchRestaurants(params, { signal }),
     placeholderData: keepPreviousData,
@@ -67,24 +74,25 @@ export default function RestaurantsPage() {
   });
 
   const items = data?.items ?? [];
+  const total = data?.total ?? 0;
+  // A search that found nothing does not stand in for the next one: skeletons.
+  const isPending = loading || (isPlaceholderData && !items.length);
+  const pages = data?.pages ?? Math.ceil(total / PAGE_SIZE);
 
-  // Derived from what came back rather than a fixed list, so a cuisine the
-  // office stops serving stops being offered without a deploy (§15).
-  const cuisines = useMemo(
-    () => Array.from(new Set(items.flatMap((r) => r.cuisines))).sort(),
-    [items]
-  );
-  const cities = useMemo(
-    () => Array.from(new Set(items.map((r) => r.city))).sort(),
-    [items]
-  );
+  // Not a fixed list, so a cuisine the office stops serving stops being offered
+  // without a deploy (§15). Over every restaurant, as the API counts them: a
+  // page's own thirty would hide the rest. An API older than that sends none,
+  // and the page's are better than nothing.
+  const cuisines = data?.facets?.cuisines ?? [...new Set(items.flatMap((r) => r.cuisines))].sort();
+  const cities = data?.facets?.cities ?? [...new Set(items.map((r) => r.city))].sort();
 
+  // A new city, cuisine or search word starts again at its first page.
   const setParam = (key: string, value: string) =>
-    router.push(
-      { pathname: router.pathname, query: { ...q, [key]: value || undefined } },
-      undefined,
-      { scroll: false }
-    );
+    pushQuery({
+      [key]: value || undefined,
+      // The city a search brought along (?destination=) gives way to the one picked here.
+      ...(key === "city" ? { destination: undefined } : {})
+    });
 
   const title = locale === "fr" ? "Restaurants et livraison en RDC" : "Restaurants and delivery in the DRC";
   const description =
@@ -107,7 +115,7 @@ export default function RestaurantsPage() {
                 <Skeleton className="h-4 w-28" />
               ) : (
                 <span>
-                  <strong className="font-semibold text-ink-900">{data?.total ?? 0}</strong>{" "}
+                  <strong className="font-semibold text-ink-900">{total}</strong>{" "}
                   {locale === "fr" ? "restaurants livrent chez vous" : "restaurants deliver to you"}
                 </span>
               )}
@@ -159,6 +167,7 @@ export default function RestaurantsPage() {
               >
                 <Skeleton className={cn("h-44 rounded-none", !grid && "h-auto w-28 shrink-0 sm:w-64")} />
                 <div className="flex-1 space-y-3 p-5">
+                  <Skeleton className="h-3 w-20" />
                   <Skeleton className="h-5 w-3/5" />
                   <Skeleton className="h-3 w-4/5" />
                   <Skeleton className="h-3 w-2/5" />
@@ -166,6 +175,8 @@ export default function RestaurantsPage() {
               </div>
             ))}
           </div>
+        ) : total > 0 && !items.length ? (
+          <PageGone />
         ) : !items.length ? (
           /* §1: an empty result says what to do next, never just "0 results". */
           <div className="rounded-card bg-brand-50 p-10 text-center ring-1 ring-brand-100 ring-inset">
@@ -207,9 +218,12 @@ export default function RestaurantsPage() {
             {items.map((r) => (
               <RestaurantCard key={r.id} restaurant={r} currency={currency} locale={locale} row={!grid} />
             ))}
+            <Pager page={params.page} pages={pages} total={total} />
           </div>
         )}
       </div>
+
+      <Partners />
     </Layout>
   );
 }
@@ -253,6 +267,7 @@ function RestaurantCard({
         />
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-2 p-5">
+        <CardKind kind="RESTAURANT" />
         <div className="flex items-start justify-between gap-3">
           <h2 className="text-lg font-bold text-brand-900">{r.name.fr || r.name.en}</h2>
           {r.rating ? (

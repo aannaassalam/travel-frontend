@@ -56,8 +56,12 @@ export default function SignInPage() {
   useEffect(() => {
     if (!router.isReady) return;
     const wanted = String(router.query.mode ?? "");
-    if (wanted === "signup" || wanted === "forgot") setMode(wanted);
-  }, [router.isReady, router.query.mode]);
+    // The page stays when a link changes only its query (the header's "Sign
+    // in" from ?mode=signup): the flow follows the link, sign-in if it names none.
+    const next: Mode = wanted === "signup" || wanted === "forgot" ? wanted : "signin";
+    if (next !== mode) go(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.isReady, router.asPath]);
   /** Only the two SMS flows have a second step; sign-in is a single form. */
   const [sent, setSent] = useState(false);
 
@@ -317,7 +321,7 @@ export default function SignInPage() {
 
   return (
     <Layout title={heading} description={subheading} noindex>
-      <div className="grid lg:grid-cols-2">
+      <div className="grid grid-cols-1 lg:grid-cols-2">
         <div className="flex items-center justify-center px-4 py-14">
           <div className="w-full max-w-md">
             {/* Two-step flows say where they are. One line beats a progress bar

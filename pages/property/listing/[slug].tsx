@@ -4,7 +4,7 @@ import LocationMap, { osmLink } from "@/components/catalog/LocationMap";
 import RecentlyViewed, { useRecordView } from "@/components/catalog/RecentlyViewed";
 import LeadForm from "@/components/catalog/LeadForm";
 import { PROPERTY_LABEL, PropertyTile } from "@/components/catalog/cards";
-import { Breadcrumbs, Price } from "@/components/site/bits";
+import { Breadcrumbs, Price, PromoEnds, PromoWas } from "@/components/site/bits";
 import Layout, { SITE } from "@/components/site/Layout";
 import { getListing, getSlugs, safely } from "@/lib/api";
 import { propertySizes, sqm } from "@/lib/catalog";
@@ -86,10 +86,12 @@ export default function PropertyDetail({ listing, related }: Props) {
             </p>
           </div>
           <div className="sm:text-right">
-            <Price money={listing.sellPrice} className="text-3xl font-bold text-brand-900" />
+            <PromoWas promotion={listing.promotion} />
+            <Price money={listing.sellPrice} className="block text-3xl font-bold text-brand-900" />
             <p className="text-sm text-ink-500">
               {isRent ? t("listing.perMonth") : t("listing.total")}
             </p>
+            <PromoEnds promotion={listing.promotion} />
           </div>
         </div>
 
