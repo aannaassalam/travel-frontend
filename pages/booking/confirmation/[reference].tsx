@@ -14,6 +14,7 @@ import { usePrefs } from "@/lib/prefs";
 import { usePolicyTitle } from "@/lib/siteContent";
 import { useSession } from "@/lib/session";
 import { useOrder } from "@/lib/orders";
+import { useOnlinePayment } from "@/lib/payments";
 import { Order } from "@/typescript/interface/domain.interface";
 import {
   Banknote,
@@ -42,6 +43,8 @@ export default function ConfirmationPage() {
   const policyTitle = usePolicyTitle();
   const contact = useSiteContact();
   const { t, locale } = usePrefs();
+  // Switched off on the server: an online order not paid yet is paid in cash.
+  const onlineOffered = useOnlinePayment().offered;
   const { signedIn, isPending: sessionPending } = useSession();
   const router = useRouter();
   const { clear } = useCheckout();
@@ -236,14 +239,18 @@ export default function ConfirmationPage() {
                 been taken. */}
             {!confirming && (
               <div className="mt-4 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  disabled={paying !== null}
-                  onClick={() => void settle("ONLINE")}
-                  className="btn btn-md btn-primary"
-                >
-                  {paying === "ONLINE" ? t("checkout.waitingOnline") : t("confirm.payNow")}
-                </button>
+                {onlineOffered ? (
+                  <button
+                    type="button"
+                    disabled={paying !== null}
+                    onClick={() => void settle("ONLINE")}
+                    className="btn btn-md btn-primary"
+                  >
+                    {paying === "ONLINE" ? t("checkout.waitingOnline") : t("confirm.payNow")}
+                  </button>
+                ) : (
+                  <p className="w-full text-sm text-ink-700">{t("pay.errUnavailable")}</p>
+                )}
                 <button
                   type="button"
                   disabled={paying !== null}
