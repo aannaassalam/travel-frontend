@@ -1,0 +1,22 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["UCLW7CTSH6.com.flexiairbnb.app"],
+        "components": [
+          { "/": "/hotels/*" },
+          { "/": "/restaurants" },
+          { "/": "/restaurants/*" },
+          { "/": "/promotions" },
+          { "/": "/transfers" },
+          { "/": "/account" },
+          { "/": "/account/orders" },
+          { "/": "/account/saved" },
+          { "/": "/orders/*" },
+          { "/": "/booking/payment/return/*" },
+          { "/": "/login" }
+        ]
+      }
+    ]
+  }
+}

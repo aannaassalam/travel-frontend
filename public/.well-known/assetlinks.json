@@ -1,0 +1,16 @@
+[
+    {
+        "relation": [
+            "delegate_permission/common.handle_all_urls"
+        ],
+        "target": {
+            "namespace": "android_app",
+            "package_name": "com.flexiagency.app",
+            "sha256_cert_fingerprints": [
+                "0C:0F:7F:15:55:C7:AB:BE:AD:52:52:9E:B7:45:FD:23:09:91:87:A0:1C:0A:6F:84:A2:D0:45:89:22:DE:98:9C",
+                "43:E9:AA:B4:E1:84:25:B3:6D:E5:66:4F:71:7D:FE:CA:7D:60:BA:DE:82:F7:6D:EA:A4:34:E5:41:B8:D0:DC:D7",
+                "87:CB:D4:CF:7E:0C:26:2C:D8:9A:E8:49:72:CC:97:41:C0:1D:FE:E9:CB:46:79:6D:51:0E:B6:20:04:51:AA:3D"
+            ]
+        }
+    }
+]

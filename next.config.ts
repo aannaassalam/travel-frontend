@@ -184,6 +184,12 @@ const nextConfig: NextConfig = {
     return [
       { source: "/:path*", headers: security },
       {
+        // Read by iOS and Android to confirm the app may open flexiagency.net
+        // links. The Apple file has no extension, so it needs its type set.
+        source: "/.well-known/:file(apple-app-site-association|assetlinks.json)",
+        headers: [...security, { key: "Content-Type", value: "application/json" }]
+      },
+      {
         // §8: never cache an authenticated response. A misconfigured CDN
         // serving one customer's booking to another is catastrophic and
         // entirely preventable — so the header is set at the framework level
