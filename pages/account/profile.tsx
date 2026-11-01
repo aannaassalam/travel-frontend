@@ -32,7 +32,7 @@ export default function ProfilePage() {
 }
 
 function ProfileBody({ user }: { user: CustomerSession }) {
-  const { t, locale } = usePrefs();
+  const { t } = usePrefs();
   const router = useRouter();
   const [values, setValues] = useState({
     firstName: user.firstName ?? "",
@@ -55,7 +55,7 @@ function ProfileBody({ user }: { user: CustomerSession }) {
       // Persisted server-side. This used to write to a localStorage copy that
       // nothing read back, so an edit looked saved and was gone on reload.
       await update.mutateAsync(values);
-      toast.success(locale === "fr" ? "Profil enregistré" : "Profile saved");
+      toast.success(t("pg.profile.saved"));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("err.required"));
     }
@@ -94,11 +94,9 @@ function ProfileBody({ user }: { user: CustomerSession }) {
             </span>
             {/* The phone number is the identity (§7.1) — changing it is a
                 support operation with re-verification, not a text field. */}
-            <input className={`${inputCls} bg-ink-50`} value={user.phone} readOnly />
+            <input className={`${inputCls} bg-ink-50`} value={user.phone} readOnly dir="ltr" />
             <span className="mt-1 block text-xs text-ink-500">
-              {locale === "fr"
-                ? "Pour changer de numéro, contactez le support : une nouvelle vérification est nécessaire."
-                : "To change your number, contact support: it needs re-verification."}
+              {t("pg.profile.phoneHint")}
             </span>
           </label>
           <label className="block sm:col-span-2">
@@ -133,9 +131,7 @@ function ProfileBody({ user }: { user: CustomerSession }) {
           {t("account.deleteAccount")}
         </h2>
         <p className="mt-2 text-sm text-ink-700">
-          {locale === "fr"
-            ? "Votre compte et vos données personnelles sont supprimés. Les réservations déjà payées restent enregistrées pour des raisons comptables et légales ; la suppression du compte ne les annule pas."
-            : "Your account and personal data are deleted. Bookings already paid remain on record for accounting and legal reasons; deleting your account does not cancel them."}
+          {t("pg.profile.deleteBody")}
         </p>
         {confirmDelete ? (
           <div className="mt-4 flex flex-wrap gap-3">
@@ -150,7 +146,7 @@ function ProfileBody({ user }: { user: CustomerSession }) {
               className="inline-flex items-center gap-2 rounded-md bg-bad-600 px-4 py-2.5 text-sm font-bold text-white"
             >
               <Trash2 className="size-4" />
-              {locale === "fr" ? "Confirmer la suppression" : "Confirm deletion"}
+              {t("pg.profile.confirmDelete")}
             </button>
             <button
               type="button"

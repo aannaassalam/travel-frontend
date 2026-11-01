@@ -18,28 +18,27 @@ export interface PolicyVersion {
   text: Record<Locale, string>;
 }
 
+/** French and English; the other languages show the English, as their e-mails do (no translation yet). */
+const inLocales = <T>(fr: T, en: T): Record<Locale, T> => ({ fr, en, pt: en, es: en, zh: en, ar: en, ru: en });
+
 export const POLICY_VERSIONS: PolicyVersion[] = [
   {
     id: "pv_2026_01",
     label: "v1.0",
     effectiveFrom: "2026-01-15",
-    text: {
-      fr: "Je comprends que cette réservation est définitive et non remboursable. Aucun remboursement ni annulation avec remboursement ne sera accordé.",
-      en: "I understand that this booking is final and non-refundable. No refund, and no cancellation with refund, will be granted.",
-      pt: "",
-      es: ""
-    }
+    text: inLocales(
+      "Je comprends que cette réservation est définitive et non remboursable. Aucun remboursement ni annulation avec remboursement ne sera accordé.",
+      "I understand that this booking is final and non-refundable. No refund, and no cancellation with refund, will be granted."
+    )
   },
   {
     id: "pv_2026_10",
     label: "v2.0",
     effectiveFrom: "2026-10-27",
-    text: {
-      fr: "Je comprends qu'en cas d'annulation de cette réservation, 80 % du montant payé est remboursable après déduction des frais de dossier.",
-      en: "I understand that if this booking is cancelled, 80% of the amount paid is refundable after deducting processing fees.",
-      pt: "",
-      es: ""
-    }
+    text: inLocales(
+      "Je comprends qu'en cas d'annulation de cette réservation, 80 % du montant payé est remboursable après déduction des frais de dossier.",
+      "I understand that if this booking is cancelled, 80% of the amount paid is refundable after deducting processing fees."
+    )
   }
 ];
 
@@ -98,11 +97,8 @@ export function parsePolicyBody(body: string): PolicySection[] {
   return sections.filter((s) => s.heading || s.body);
 }
 
-export const POLICY_SECTIONS: Record<
-  Locale,
-  { heading: string; body: string }[]
-> = {
-  fr: [
+export const POLICY_SECTIONS: Record<Locale, PolicySection[]> = inLocales<PolicySection[]>(
+  [
     {
       heading: "1. Conditions d'annulation",
       body: "En cas d'annulation d'une réservation effectuée sur cette plateforme, 80 % du montant payé est remboursable après déduction des frais de dossier. Cette condition vous est présentée sur la page de l'offre, dans le récapitulatif de prix et à l'étape de paiement, et son acceptation est enregistrée avec votre réservation."
@@ -132,7 +128,7 @@ export const POLICY_SECTIONS: Record<
       body: "Les numéros de passeport et de pièce d'identité sont conservés sous forme chiffrée et supprimés automatiquement 90 jours après la fin du voyage. Voir notre politique de confidentialité pour le détail."
     }
   ],
-  en: [
+  [
     {
       heading: "1. Cancellation terms",
       body: "If a booking made on this platform is cancelled, 80% of the amount paid is refundable after deducting processing fees. This condition is shown on the offer page, in the price summary and at the payment step, and your acceptance is recorded against your booking."
@@ -161,7 +157,5 @@ export const POLICY_SECTIONS: Record<
       heading: "7. Personal data",
       body: "Passport and ID numbers are stored encrypted and deleted automatically 90 days after travel ends. See our privacy policy for detail."
     }
-  ],
-  pt: [],
-  es: []
-};
+  ]
+);

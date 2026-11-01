@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils";
 import { fmtDate } from "@/lib/format";
 import { mediaUrl, mediaUrls } from "@/lib/media";
 import { baseMinor, multiply, nightsBetween } from "@/lib/money";
-import { facetLabel } from "@/lib/i18n";
+import { tagLabel } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
 import { usePolicyNotice, usePolicyTitle } from "@/lib/siteContent";
 import { Hotel, RoomType } from "@/typescript/interface/domain.interface";
@@ -44,12 +44,12 @@ interface Props {
   others: Hotel[];
 }
 
-const MEAL_LABEL: Record<string, { fr: string; en: string }> = {
-  ROOM_ONLY: { fr: "Sans repas", en: "Room only" },
-  BREAKFAST: { fr: "Petit-déjeuner inclus", en: "Breakfast included" },
-  HALF_BOARD: { fr: "Demi-pension", en: "Half board" },
-  FULL_BOARD: { fr: "Pension complète", en: "Full board" },
-  ALL_INCLUSIVE: { fr: "Tout inclus", en: "All inclusive" }
+const MEAL_LABEL: Record<string, string> = {
+  ROOM_ONLY: "pg.hotel.meal.roomOnly",
+  BREAKFAST: "pg.hotel.meal.breakfast",
+  HALF_BOARD: "pg.hotel.meal.halfBoard",
+  FULL_BOARD: "pg.hotel.meal.fullBoard",
+  ALL_INCLUSIVE: "pg.hotel.meal.allInclusive"
 };
 
 export default function HotelDetail({ hotel: initialHotel, others }: Props) {
@@ -201,7 +201,7 @@ export default function HotelDetail({ hotel: initialHotel, others }: Props) {
               {lz(hotel.name)}
             </h1>
             <Stars n={hotel.stars} />
-            <span className="ml-auto">
+            <span className="ms-auto">
               <SaveButton slug={hotel.slug} />
             </span>
           </div>
@@ -241,7 +241,7 @@ export default function HotelDetail({ hotel: initialHotel, others }: Props) {
                 {hotel.amenities.map((a) => (
                   <li key={a} className="flex items-center gap-2 text-[15px] text-ink-700">
                     <Check className="size-4 shrink-0 text-ok-600" />
-                    {facetLabel(locale, a)}
+                    {tagLabel(locale, hotel, a)}
                   </li>
                 ))}
               </ul>
@@ -309,7 +309,7 @@ export default function HotelDetail({ hotel: initialHotel, others }: Props) {
               </div>
 
               <p className="mb-3 text-sm text-ink-500">
-                {fmtDate(from, locale)} → {fmtDate(to, locale)} ·{" "}
+                {fmtDate(from, locale)} <span className="inline-block rtl:-scale-x-100">→</span> {fmtDate(to, locale)} ·{" "}
                 <strong className="font-semibold text-ink-700">
                   {nights} {t(nights > 1 ? "common.nights" : "common.night")}
                 </strong>
@@ -344,7 +344,7 @@ export default function HotelDetail({ hotel: initialHotel, others }: Props) {
                         <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-sm text-ink-700">
                           <li className="flex items-center gap-1.5">
                             <BedDouble className="size-4 text-ink-500" />
-                            {room.beds}
+                            {lz(room.beds)}
                           </li>
                           <li className="flex items-center gap-1.5">
                             <Users className="size-4 text-ink-500" />
@@ -359,11 +359,11 @@ export default function HotelDetail({ hotel: initialHotel, others }: Props) {
                         </ul>
                         <p className="mt-2 inline-flex items-center gap-1.5 rounded bg-ok-100 px-2 py-1 text-xs font-semibold text-ok-600">
                           <Check className="size-3.5" />
-                          {MEAL_LABEL[room.mealPlan][locale === "en" ? "en" : "fr"]}
+                          {t(MEAL_LABEL[room.mealPlan])}
                         </p>
                       </div>
 
-                      <div className="flex shrink-0 flex-col justify-end gap-2 border-t border-ink-100/70 pt-3 sm:w-56 sm:border-l sm:border-ink-100/70 sm:border-t-0 sm:pl-4 sm:pt-0 sm:text-right">
+                      <div className="flex shrink-0 flex-col justify-end gap-2 border-t border-ink-100/70 pt-3 sm:w-56 sm:border-s sm:border-ink-100/70 sm:border-t-0 sm:ps-4 sm:pt-0 sm:text-end">
                         <div>
                           <PromoWas promotion={room.promotion} />
                           <Price
@@ -435,7 +435,7 @@ export default function HotelDetail({ hotel: initialHotel, others }: Props) {
                       rel="noreferrer noopener"
                       className="text-sm font-semibold text-brand-500 underline"
                     >
-                      {locale === "fr" ? "Ouvrir la carte" : "Open the map"}
+                      {t("pg.hotel.openMap")}
                     </a>
                   )}
                 </div>
@@ -451,7 +451,7 @@ export default function HotelDetail({ hotel: initialHotel, others }: Props) {
                 {t("search.checkin")} {hotel.checkInTime} · {t("search.checkout")}{" "}
                 {hotel.checkOutTime}
               </p>
-              <p className="mb-3 text-sm text-ink-700">{hotel.policies}</p>
+              <p className="mb-3 text-sm text-ink-700">{lz(hotel.policies)}</p>
               <PolicyLine />
             </section>
 
@@ -499,7 +499,7 @@ export default function HotelDetail({ hotel: initialHotel, others }: Props) {
         {others.length > 0 && (
           <section className="mt-14">
             <h2 className="mb-5 text-xl font-bold text-brand-900">
-              {locale === "fr" ? "Autres hôtels" : "Other hotels"}
+              {t("pg.hotel.others")}
             </h2>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {others.map((h) => (

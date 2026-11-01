@@ -1,5 +1,6 @@
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { useDriver } from "@/lib/driver";
+import { LOCALE_NAMES } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
 import { ENABLED_LOCALES, Locale } from "@/typescript/interface/domain.interface";
 import { CarTaxiFront, UserRound } from "lucide-react";
@@ -63,7 +64,7 @@ export default function DriverLayout({
               ariaLabel={t("common.language")}
               value={locale}
               onValueChange={(v) => setLocale(v as Locale)}
-              options={ENABLED_LOCALES.map((l) => ({ value: l, label: l.toUpperCase() }))}
+              options={ENABLED_LOCALES.map((l) => ({ value: l, label: LOCALE_NAMES[l] }))}
             />
             {driver && (
               <>

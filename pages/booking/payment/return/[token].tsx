@@ -309,7 +309,7 @@ export default function PaymentReturnPage({ token, params }: Props) {
               <Reference value={view.reference} />
               <div className="mt-6 flex flex-wrap justify-center gap-3">
                 {contact.phone && (
-                  <a href={`tel:${dial(contact.phone)}`} className="btn btn-md btn-dark">
+                  <a href={`tel:${dial(contact.phone)}`} dir="ltr" className="btn btn-md btn-dark">
                     {contact.phone}
                   </a>
                 )}

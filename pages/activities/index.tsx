@@ -22,17 +22,13 @@ const bounds = (facets: Facets, key: string): [number, number] =>
   facets.priceBounds[key] ?? [0, 3_000_000]; // francs (about 1 000 $)
 
 export default function ActivitiesPage({ facets }: Props) {
-  const { t, locale } = usePrefs();
+  const { t } = usePrefs();
   return (
     <SearchResults
       vertical="ACTIVITY"
       heroLabel={t("nav.activities")}
-      title={locale === "fr" ? "Activités et excursions en RDC" : "Activities and tours in the DRC"}
-      description={
-        locale === "fr"
-          ? "Gorilles de Kahuzi-Biega, ascension du Nyiragongo, croisière sur le fleuve Congo, chutes de Zongo. Places limitées."
-          : "Kahuzi-Biega gorillas, the Nyiragongo climb, a Congo river cruise, the Zongo falls. Limited places."
-      }
+      title={t("pg.activities.title")}
+      description={t("pg.activities.description")}
       priceRange={bounds(facets, "ACTIVITY")}
       filters={[
         {

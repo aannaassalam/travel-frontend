@@ -1,5 +1,6 @@
 import Layout from "@/components/site/Layout";
 import { Breadcrumbs } from "@/components/site/bits";
+import { localized } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
 import { usePolicyNotice, usePolicyTitle } from "@/lib/siteContent";
 import {
@@ -26,7 +27,7 @@ export default function TermsPage({ terms, noRefund }: Props) {
   const notice = usePolicyNotice();
   const policyTitle = usePolicyTitle();
 
-  const published = terms?.bodies[locale] ?? terms?.bodies.fr;
+  const published = localized(terms?.bodies, locale);
   const parsed = published ? parsePolicyBody(published) : [];
   const sections = parsed.length
     ? parsed
@@ -34,8 +35,7 @@ export default function TermsPage({ terms, noRefund }: Props) {
       ? POLICY_SECTIONS[locale]
       : POLICY_SECTIONS.fr;
 
-  const consent =
-    noRefund?.bodies[locale] ?? noRefund?.bodies.fr ?? policyText(locale);
+  const consent = localized(noRefund?.bodies, locale) || policyText(locale);
   const label = terms?.label ?? CURRENT_POLICY.label;
   const effectiveFrom = terms?.effectiveFrom ?? CURRENT_POLICY.effectiveFrom;
 
@@ -53,9 +53,7 @@ export default function TermsPage({ terms, noRefund }: Props) {
           {t("footer.terms")}
         </h1>
         <p className="mt-2 text-sm text-ink-500">
-          {locale === "fr" ? "Version" : "Version"} {label} ·{" "}
-          {locale === "fr" ? "en vigueur depuis le" : "in force since"}{" "}
-          {effectiveFrom}
+          {t("pg.terms.version", { label, date: effectiveFrom })}
         </p>
 
         {/* §2.2(3): stated plainly, at the top, never in fine print. The old
@@ -73,12 +71,10 @@ export default function TermsPage({ terms, noRefund }: Props) {
             {notice}
           </p>
           <p className="mt-4 rounded-md bg-white p-4 text-[15px] font-medium text-ink-900">
-            « {consent} »
+            {t("pg.confirm.quoted", { text: consent })}
           </p>
           <p className="mt-3 text-sm text-ink-500">
-            {locale === "fr"
-              ? "Cette phrase exacte vous est présentée à l'étape de paiement, sous forme de case à cocher distincte. Votre acceptation est horodatée et conservée avec votre réservation."
-              : "That exact sentence is shown to you at the payment step as a separate checkbox. Your acceptance is timestamped and stored with your booking."}
+            {t("pg.terms.consentNote")}
           </p>
         </section>
 

@@ -5,8 +5,10 @@ import {
   PopoverContent,
   PopoverTrigger
 } from "@/components/ui/popover";
+import { usePrefs } from "@/lib/prefs";
 import { cn } from "@/lib/utils";
-import { enGB, fr } from "date-fns/locale";
+import type { Locale } from "@/typescript/interface/domain.interface";
+import { ar, enGB, es, fr, pt, ru, zhCN, type Locale as DateLocale } from "date-fns/locale";
 import { CalendarDays } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -18,6 +20,9 @@ export const toIso = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
     d.getDate()
   ).padStart(2, "0")}`;
+
+/** The calendar's month and day names, per site language. */
+const DATE_LOCALES: Record<Locale, DateLocale> = { fr, en: enGB, pt, es, zh: zhCN, ar, ru };
 
 /** dd/mm/yyyy — day first in both languages this site speaks. */
 const display = (d?: Date) =>
@@ -79,6 +84,7 @@ export function DatePicker({
   id?: string;
   "aria-invalid"?: boolean;
 }) {
+  const { t, dir } = usePrefs();
   const [open, setOpen] = useState(false);
   const selected = parseIso(value);
   const [text, setText] = useState(() => display(selected));
@@ -126,9 +132,7 @@ export function DatePicker({
               type="button"
               // The icon is the only pointer affordance left, so it says what it
               // does rather than being decoration you are expected to guess at.
-              aria-label={
-                locale === "fr" ? "Ouvrir le calendrier" : "Open the calendar"
-              }
+              aria-label={t("cmp.date.open")}
               // The padding and the negative margin cancel out, so the icon sits
               // where it did while the button itself is a 44px tap target.
               className="-m-3.5 shrink-0 rounded-md p-3.5 text-ink-500 transition-colors hover:text-brand-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
@@ -146,7 +150,7 @@ export function DatePicker({
             inputMode="numeric"
             autoComplete="off"
             aria-invalid={ariaInvalid}
-            placeholder={placeholder ?? (locale === "fr" ? "jj/mm/aaaa" : "dd/mm/yyyy")}
+            placeholder={placeholder ?? t("cmp.date.placeholder")}
             className={cn(
               "tnum w-full min-w-0 bg-transparent font-semibold text-ink-900 outline-none placeholder:font-normal placeholder:text-ink-300"
             )}
@@ -182,7 +186,9 @@ export function DatePicker({
            * field that reads "26/08/2026" - two languages inside one control,
            * on a French-first site.
            */
-          locale={locale === "fr" ? fr : enGB}
+          locale={DATE_LOCALES[locale as Locale] ?? fr}
+          // Right to left, the arrow keys follow the mirrored grid.
+          dir={dir}
           autoFocus
         />
       </PopoverContent>

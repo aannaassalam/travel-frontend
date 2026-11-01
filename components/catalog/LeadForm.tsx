@@ -131,13 +131,10 @@ export default function LeadForm({
     } catch {
       // §8: a generic message to the customer; the detail stays in the log.
       toast.error(t("common.error"), {
+        // The number isolated (LRI…PDI), so it reads left to right in an Arabic sentence.
         description: contact.phone
-          ? locale === "fr"
-            ? `Votre demande n'a pas pu être envoyée. Appelez-nous au ${contact.phone}.`
-            : `Your request could not be sent. Call us on ${contact.phone}.`
-          : locale === "fr"
-            ? "Votre demande n'a pas pu être envoyée. Veuillez réessayer."
-            : "Your request could not be sent. Please try again."
+          ? t("cmp.lead.failedCall", { phone: `\u2066${contact.phone}\u2069` })
+          : t("cmp.lead.failed")
       });
     } finally {
       setBusy(false);
@@ -292,9 +289,7 @@ export default function LeadForm({
       </button>
 
       <p className="text-xs leading-relaxed text-ink-500">
-        {locale === "fr"
-          ? "Nous n'utilisons votre numéro que pour cette demande. Aucune somme n'est prélevée à cette étape."
-          : "We use your number only for this request. Nothing is charged at this stage."}
+        {t("cmp.lead.privacy")}
       </p>
     </form>
   );

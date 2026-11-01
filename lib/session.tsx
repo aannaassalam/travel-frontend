@@ -10,6 +10,7 @@ import {
   verifyOtp,
   type CustomerSession
 } from "./api";
+import { usePrefs } from "./prefs";
 
 /**
  * The signed-in customer.
@@ -49,8 +50,10 @@ export function useRequestOtp() {
  */
 export function useVerifyOtp() {
   const qc = useQueryClient();
+  const { locale } = usePrefs();
   return useMutation({
-    mutationFn: verifyOtp,
+    // With the language in use, for the customer's SMS and e-mails.
+    mutationFn: (input: Parameters<typeof verifyOtp>[0]) => verifyOtp({ ...input, locale }),
     onSuccess: (customer) => {
       qc.setQueryData(["session"], customer);
       qc.invalidateQueries({ queryKey: ["my-orders"] });
@@ -65,8 +68,9 @@ export function useVerifyOtp() {
  */
 export function useLogin() {
   const qc = useQueryClient();
+  const { locale } = usePrefs();
   return useMutation({
-    mutationFn: login,
+    mutationFn: (input: Parameters<typeof login>[0]) => login({ ...input, locale }),
     onSuccess: (customer) => {
       qc.setQueryData(["session"], customer);
       qc.invalidateQueries({ queryKey: ["my-orders"] });
@@ -89,8 +93,9 @@ export function useResetPassword() {
 /** Saves the profile and refreshes the cached session in one step. */
 export function useUpdateProfile() {
   const qc = useQueryClient();
+  const { locale } = usePrefs();
   return useMutation({
-    mutationFn: updateProfile,
+    mutationFn: (patch: Parameters<typeof updateProfile>[0]) => updateProfile({ ...patch, locale }),
     onSuccess: (customer) => qc.setQueryData(["session"], customer)
   });
 }

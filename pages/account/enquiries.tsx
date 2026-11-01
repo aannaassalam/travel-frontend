@@ -30,9 +30,7 @@ export default function EnquiriesPage() {
             <div className="surface p-10 text-center">
               <p className="font-semibold text-brand-900">{t("account.noEnquiries")}</p>
               <p className="mx-auto mt-1 max-w-sm text-sm text-ink-500">
-                {locale === "fr"
-                  ? "Vos demandes de devis et vos demandes d'informations sur un bien apparaîtront ici."
-                  : "Your quote requests and property enquiries will appear here."}
+                {t("pg.enquiries.emptyBody")}
               </p>
               <Link
                 href="/property"
@@ -61,7 +59,7 @@ export default function EnquiriesPage() {
                         {fmtDateTime(e.createdAt, locale)}
                       </p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-end">
                       <span
                         className={`rounded px-2.5 py-1 text-xs font-bold ${STAGE_TONE[e.stage]}`}
                       >
@@ -80,9 +78,7 @@ export default function EnquiriesPage() {
           )}
 
           <p className="rounded-card bg-ink-50 p-5 ring-1 ring-ink-100 ring-inset text-sm text-ink-700">
-            {locale === "fr"
-              ? "Nous répondons sous 24 heures ouvrées par téléphone ou WhatsApp. Une demande n'est jamais un engagement d'achat."
-              : "We reply within 24 working hours by phone or WhatsApp. A request is never a commitment to buy."}
+            {t("pg.enquiries.replyNote")}
           </p>
         </div>
       )}

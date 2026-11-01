@@ -57,7 +57,7 @@ export default function RouteTransition({ children }: { children: React.ReactNod
         }`}
       >
         <div
-          className="h-full w-full origin-left bg-linear-to-r from-accent-500 via-accent-500 to-brand-400"
+          className="h-full w-full origin-left bg-linear-to-r from-accent-500 via-accent-500 to-brand-400 rtl:origin-right rtl:bg-linear-to-l"
           style={{
             animation: loading ? "route-progress 1.6s ease-out forwards" : "none"
           }}

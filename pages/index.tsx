@@ -86,50 +86,50 @@ const HERO_FALLBACK = "/img/hero-kinshasa.svg";
 /**
  * Editorial rail — the "travel inspiration" strip, not another product grid.
  * The office edits it under Website content → Home; these are the ideas the
- * site ships with, shown until it has saved its own.
+ * site ships with, shown until it has saved its own (as message keys).
  */
-const BUILT_IN_IDEAS: NonNullable<SiteContent["home"]["ideas"]> = [
+const BUILT_IN_IDEAS = [
   {
     image: "/img/photos/gorillas-kahuzi-biega.webp",
     href: "/activities?destination=Bukavu",
-    kicker: { fr: "Nature", en: "Nature" },
-    title: { fr: "Gorilles du Kahuzi-Biega", en: "Kahuzi-Biega gorillas" },
-    body: { fr: "Une journée de pistage avec les rangers du parc.", en: "A day tracking with the park rangers." }
+    kicker: "pg.home.idea.gorillas.kicker",
+    title: "pg.home.idea.gorillas.title",
+    body: "pg.home.idea.gorillas.body"
   },
   {
     image: "/img/photos/nyiragongo.webp",
     href: "/activities?destination=Goma",
-    kicker: { fr: "Aventure", en: "Adventure" },
-    title: { fr: "Nuit au sommet du Nyiragongo", en: "A night atop Nyiragongo" },
-    body: { fr: "Le lac de lave, depuis le refuge du cratère.", en: "The lava lake, from the crater shelter." }
+    kicker: "pg.home.idea.nyiragongo.kicker",
+    title: "pg.home.idea.nyiragongo.title",
+    body: "pg.home.idea.nyiragongo.body"
   },
   {
     image: "/img/photos/congo-sunset.webp",
     href: "/activities?destination=Kinshasa",
-    kicker: { fr: "Fleuve", en: "River" },
-    title: { fr: "Coucher de soleil sur le Congo", en: "Sunset on the Congo" },
-    body: { fr: "Trois heures d'eau depuis la baie de Ngaliema.", en: "Three hours on the water from Ngaliema bay." }
+    kicker: "pg.home.idea.sunset.kicker",
+    title: "pg.home.idea.sunset.title",
+    body: "pg.home.idea.sunset.body"
   },
   {
     image: "/img/photos/lubumbashi-business.webp",
     href: "/hotels?destination=Lubumbashi",
-    kicker: { fr: "Affaires", en: "Business" },
-    title: { fr: "Lubumbashi en semaine", en: "Lubumbashi midweek" },
-    body: { fr: "Hôtels proches de Luano, salles de réunion incluses.", en: "Hotels near Luano, meeting rooms included." }
+    kicker: "pg.home.idea.lubumbashi.kicker",
+    title: "pg.home.idea.lubumbashi.title",
+    body: "pg.home.idea.lubumbashi.body"
   },
   {
     image: "/img/photos/road-n1.webp",
     href: "/bus?destination=Matadi",
-    kicker: { fr: "Route", en: "Road" },
-    title: { fr: "Kinshasa – Matadi par la nationale 1", en: "Kinshasa – Matadi on the N1" },
-    body: { fr: "Sept heures de route, arrivée au port.", en: "Seven hours by road, arriving at the port." }
+    kicker: "pg.home.idea.matadi.kicker",
+    title: "pg.home.idea.matadi.title",
+    body: "pg.home.idea.matadi.body"
   },
   {
     image: "/img/photos/gombe-property.webp",
     href: "/property/sale/houses",
-    kicker: { fr: "Immobilier", en: "Property" },
-    title: { fr: "Vivre à Gombe", en: "Living in Gombe" },
-    body: { fr: "Villas et appartements, titre foncier vérifié.", en: "Villas and apartments, title verified." }
+    kicker: "pg.home.idea.gombe.kicker",
+    title: "pg.home.idea.gombe.title",
+    body: "pg.home.idea.gombe.body"
   }
 ];
 
@@ -177,21 +177,13 @@ export default function Home({ heroImage, hero, destinations, partners, ...built
     }))
   ].sort((a, b) => b.off - a.off);
   const { t, locale, lz } = usePrefs();
-  const heroTitle = siteText(hero?.heroTitle, locale, t("home.heroTitle"));
-  const heroSubtitle = siteText(hero?.heroSubtitle, locale, t("home.heroSubtitle"));
-  const ideas = hero?.ideas?.length ? hero.ideas : BUILT_IN_IDEAS;
-  const ideasTitle = siteText(
-    hero?.ideasTitle,
-    locale,
-    locale === "fr" ? "Des idées pour partir" : "Ideas worth travelling for"
-  );
-  const ideasSubtitle = siteText(
-    hero?.ideasSubtitle,
-    locale,
-    locale === "fr"
-      ? "Des façons de voir le pays, choisies parmi ce que nous avons réellement en stock."
-      : "Ways to see the country, chosen from what we actually hold."
-  );
+  const heroTitle = siteText(hero?.heroTitle, locale, "home.heroTitle");
+  const heroSubtitle = siteText(hero?.heroSubtitle, locale, "home.heroSubtitle");
+  const ideas = hero?.ideas?.length
+    ? hero.ideas.map((i) => ({ ...i, kicker: lz(i.kicker), title: lz(i.title), body: lz(i.body) }))
+    : BUILT_IN_IDEAS.map((i) => ({ ...i, kicker: t(i.kicker), title: t(i.title), body: t(i.body) }));
+  const ideasTitle = siteText(hero?.ideasTitle, locale, "pg.home.ideasTitle");
+  const ideasSubtitle = siteText(hero?.ideasSubtitle, locale, "pg.home.ideasSubtitle");
   // "Pay in cash" until the server says online payment is on.
   const payOnline = useOnlinePayment().offered ? "Online" : "";
 
@@ -252,7 +244,7 @@ export default function Home({ heroImage, hero, destinations, partners, ...built
             water, the balcony — is left essentially untouched.
           */}
           <div className="absolute inset-x-0 top-0 h-44 bg-linear-to-b from-brand-900/80 via-brand-900/30 to-transparent" />
-          <div className="absolute inset-0 bg-linear-to-r from-brand-900/90 via-brand-900/55 to-brand-900/20 sm:from-brand-900/85 sm:via-brand-900/35 sm:to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-r rtl:bg-linear-to-l from-brand-900/90 via-brand-900/55 to-brand-900/20 sm:from-brand-900/85 sm:via-brand-900/35 sm:to-transparent" />
           <div className="absolute inset-x-0 bottom-0 h-32 bg-linear-to-t from-brand-900/75 to-transparent" />
         </div>
 
@@ -284,12 +276,12 @@ export default function Home({ heroImage, hero, destinations, partners, ...built
         <ul className="container-site grid divide-y divide-ink-100/70 sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:divide-x lg:divide-ink-100/70">
           {[
             { Icon: MapPin, title: t("home.trustOffice"), body: contact.streetAddress },
-            { Icon: Phone, title: t("home.trustPhone"), body: contact.phone },
+            { Icon: Phone, title: t("home.trustPhone"), body: <span dir="ltr">{contact.phone}</span> },
             { Icon: MessageCircle, title: "WhatsApp", body: contact.officeHours || t("home.trustHours") },
             {
               Icon: Banknote,
-              title: locale === "fr" ? "Paiement" : "Payment",
-              body: locale === "fr" ? "Espèces à notre agence" : "Cash at our office"
+              title: t("pg.home.trustPayment"),
+              body: t("pg.home.trustPaymentBody")
             }
           ].map(({ Icon, title, body }) => (
             <li key={title} className="flex items-center gap-3.5 py-5 lg:px-6">
@@ -358,7 +350,7 @@ export default function Home({ heroImage, hero, destinations, partners, ...built
       <section className="wash-dark py-16">
         <div className="container-site">
           <Carousel
-            label={locale === "fr" ? "Inspiration" : "Inspiration"}
+            label={t("pg.home.inspiration")}
             itemClassName="w-[260px] sm:w-[300px]"
             tone="dark"
             title={ideasTitle}
@@ -379,11 +371,11 @@ export default function Home({ heroImage, hero, destinations, partners, ...built
                 />
                 <div className="absolute inset-0 bg-linear-to-t from-brand-900 via-brand-900/45 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 p-5">
-                  <p className="eyebrow text-accent-500">{lz(item.kicker)}</p>
+                  <p className="eyebrow text-accent-500">{item.kicker}</p>
                   <p className="display mt-1.5 text-[19px] leading-tight text-white">
-                    {lz(item.title)}
+                    {item.title}
                   </p>
-                  <p className="mt-1.5 text-sm leading-snug text-white/70">{lz(item.body)}</p>
+                  <p className="mt-1.5 text-sm leading-snug text-white/70">{item.body}</p>
                 </div>
               </Link>
             ))}
@@ -418,11 +410,7 @@ export default function Home({ heroImage, hero, destinations, partners, ...built
         <div className="container-site">
           <SectionHeading
             title={t("nav.hotels")}
-            subtitle={
-              locale === "fr"
-                ? "Chambres achetées à l'avance dans nos établissements partenaires."
-                : "Rooms bought in advance at our partner properties."
-            }
+            subtitle={t("pg.home.hotelsSub")}
             href="/hotels"
             cta={t("home.viewAll")}
           />
@@ -498,19 +486,17 @@ export default function Home({ heroImage, hero, destinations, partners, ...built
         <div className="wash-dark grid overflow-hidden rounded-xl2 shadow-xl lg:grid-cols-2">
           <div className="p-8 lg:p-12">
             <h2 className="display text-[28px] leading-tight text-white sm:text-[34px]">
-              {locale === "fr"
-                ? "Vous préférez parler à quelqu'un ?"
-                : "Would you rather speak to someone?"}
+              {t("pg.home.officeTitle")}
             </h2>
             <p className="mt-3 max-w-md text-white/75">
-              {locale === "fr"
-                ? `Passez à notre bureau${contact.city ? ` de ${contact.city}` : ""}, appelez-nous, ou écrivez sur WhatsApp. Nous réservons pour vous et vous payez en espèces sur place.`
-                : `Come to our ${contact.city || ""} office, call us, or message on WhatsApp. We book for you and you pay cash on the spot.`}
+              {contact.city
+                ? t("pg.home.officeBody", { city: contact.city })
+                : t("pg.home.officeBodyNoCity")}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <a href={`tel:${dial(contact.phone)}`} className="btn btn-lg btn-primary">
                 <Phone className="size-4" />
-                {contact.phone}
+                <span dir="ltr">{contact.phone}</span>
               </a>
               <Link
                 href="/contact"

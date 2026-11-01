@@ -4,8 +4,10 @@ import { CartProvider } from "@/lib/cart";
 import { CheckoutProvider } from "@/lib/checkout";
 import { fraunces, inter } from "@/lib/fonts";
 import { checkWindow } from "@/lib/functions/_helpers.lib";
+import { translate } from "@/lib/i18n";
 import { PrefsProvider } from "@/lib/prefs";
 import "@/styles/globals.css";
+import { Locale } from "@/typescript/interface/domain.interface";
 import {
   MutationCache,
   QueryClient,
@@ -64,7 +66,8 @@ export const queryClient = new QueryClient({
       if (result?.response?.data?.message) {
         toast.error(result?.response?.data?.message);
       } else {
-        toast.error("An error occurred while processing your request.");
+        // In the visitor's language, which lib/prefs.tsx keeps on <html>.
+        toast.error(translate(document.documentElement.lang as Locale, "common.error"));
       }
     },
     onSettled: (_data, _error, _variables, _context, mutation) => {

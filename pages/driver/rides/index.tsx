@@ -102,7 +102,8 @@ function RideCard({ ride }: { ride: DriverRide }) {
         </span>
       </div>
       <p className="mt-3 font-semibold text-ink-900">
-        {ride.pickup.label} → {ride.dropoff?.label ?? t("ride.hourly", { n: ride.hours ?? 0 })}
+        {ride.pickup.label} <span className="inline-block rtl:-scale-x-100">→</span>{" "}
+        {ride.dropoff?.label ?? t("ride.hourly", { n: ride.hours ?? 0 })}
       </p>
       <p className="mt-1 text-sm text-ink-700">
         {ride.customer?.name}
@@ -119,7 +120,7 @@ function RideCard({ ride }: { ride: DriverRide }) {
         ) : (
           <span />
         )}
-        <ChevronRight className="size-4 text-ink-300" aria-hidden="true" />
+        <ChevronRight className="size-4 text-ink-300 rtl:-scale-x-100" aria-hidden="true" />
       </div>
     </Link>
   );

@@ -39,7 +39,7 @@ export default function SaveButton({ slug }: { slug: string }) {
         <span aria-hidden className="invisible col-start-1 row-start-1">
           {t("listing.saved")}
         </span>
-        <span className="col-start-1 row-start-1 text-left">
+        <span className="col-start-1 row-start-1 text-start">
           {saved ? t("listing.saved") : t("listing.save")}
         </span>
       </span>

@@ -28,12 +28,8 @@ export default function HotelsPage({ facets }: Props) {
     <SearchResults
       vertical="HOTEL"
       heroLabel={t("nav.hotels")}
-      title={locale === "fr" ? "Hôtels en RDC" : "Hotels in the DRC"}
-      description={
-        locale === "fr"
-          ? "Chambres achetées à l'avance à Kinshasa, Lubumbashi, Goma, Bukavu et Matadi. Prix en USD, CDF ou EUR, paiement en espèces à notre agence."
-          : "Rooms bought in advance in Kinshasa, Lubumbashi, Goma, Bukavu and Matadi. Prices in USD, CDF or EUR, pay in cash at our office."
-      }
+      title={t("pg.hotels.title")}
+      description={t("pg.hotels.description")}
       priceRange={bounds(facets, "HOTEL")}
       filters={[
         {
@@ -42,7 +38,7 @@ export default function HotelsPage({ facets }: Props) {
           type: "checkbox",
           options: [5, 4, 3].map((n) => ({
             value: String(n),
-            label: `${n} ${locale === "fr" ? "étoiles" : "stars"}`
+            label: t("pg.hotels.stars", { n })
           }))
         },
         {

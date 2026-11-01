@@ -1,3 +1,4 @@
+import { usePrefs } from "@/lib/prefs";
 import { Money, MenuItem, Restaurant } from "@/typescript/interface/domain.interface";
 import {
   createContext,
@@ -78,6 +79,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<CartState>(EMPTY);
   const [ready, setReady] = useState(false);
   const [pending, setPending] = useState<Ctx["pending"]>(null);
+  // Names are kept as text in the basket: in the visitor's language when they add a dish.
+  const { lz } = usePrefs();
 
   // Read after mount, never during render: the server has no sessionStorage,
   // and a first paint that disagrees with the server's is a hydration error.
@@ -132,7 +135,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             ...state.lines,
             {
               menuItemId: item.id,
-              name: item.name.fr || item.name.en || "",
+              name: lz(item.name),
               unitPrice: item.sellPrice,
               quantity: Math.min(quantity, MAX_QTY),
               image: item.images?.[0]
@@ -142,11 +145,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       persist({
         restaurantId: restaurant.id,
         restaurantSlug: restaurant.slug,
-        restaurantName: restaurant.name.fr || restaurant.name.en || "",
+        restaurantName: lz(restaurant.name),
         lines
       });
     },
-    [state, persist]
+    [state, persist, lz]
   );
 
   const setQuantity = useCallback(
@@ -177,18 +180,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     persist({
       restaurantId: restaurant.id,
       restaurantSlug: restaurant.slug,
-      restaurantName: restaurant.name.fr || restaurant.name.en || "",
+      restaurantName: lz(restaurant.name),
       lines: [
         {
           menuItemId: item.id,
-          name: item.name.fr || item.name.en || "",
+          name: lz(item.name),
           unitPrice: item.sellPrice,
           quantity: 1,
           image: item.images?.[0]
         }
       ]
     });
-  }, [pending, persist]);
+  }, [pending, persist, lz]);
 
   const cancelReplace = useCallback(() => setPending(null), []);
 

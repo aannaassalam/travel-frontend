@@ -33,36 +33,31 @@ const ROUTES = [
     transaction: "sale",
     kind: "houses",
     propertyType: "HOUSE_SALE",
-    fr: { h1: "Maisons à vendre en RDC", lead: "Villas et maisons familiales à Kinshasa, Lubumbashi et Matadi, avec titre foncier vérifié." },
-    en: { h1: "Houses for sale in the DRC", lead: "Villas and family houses in Kinshasa, Lubumbashi and Matadi, with verified title." }
+    copy: "pg.propertyKind.houseSale"
   },
   {
     transaction: "sale",
     kind: "land",
     propertyType: "LAND_SALE",
-    fr: { h1: "Terrains à vendre en RDC", lead: "Parcelles bornées et viabilisées, plan cadastral disponible." },
-    en: { h1: "Land for sale in the DRC", lead: "Surveyed, serviced plots with a cadastral plan available." }
+    copy: "pg.propertyKind.landSale"
   },
   {
     transaction: "rent",
     kind: "apartments",
     propertyType: "APARTMENT_RENT",
-    fr: { h1: "Appartements à louer en RDC", lead: "Appartements meublés et non meublés en résidence sécurisée." },
-    en: { h1: "Apartments to rent in the DRC", lead: "Furnished and unfurnished apartments in secure residences." }
+    copy: "pg.propertyKind.apartmentRent"
   },
   {
     transaction: "rent",
     kind: "houses",
     propertyType: "HOUSE_RENT",
-    fr: { h1: "Maisons à louer en RDC", lead: "Maisons en location longue durée, bail d'un an minimum." },
-    en: { h1: "Houses to rent in the DRC", lead: "Long-term house rentals, one-year minimum lease." }
+    copy: "pg.propertyKind.houseRent"
   },
   {
     transaction: "rent",
     kind: "land",
     propertyType: "LAND_RENT",
-    fr: { h1: "Terrains à louer en RDC", lead: "Terrains agricoles et commerciaux en bail de trois à neuf ans." },
-    en: { h1: "Land to rent in the DRC", lead: "Agricultural and commercial land on three-to-nine-year leases." }
+    copy: "pg.propertyKind.landRent"
   }
 ] as const;
 
@@ -70,7 +65,8 @@ interface Props {
   /** The first page, as crawled. */
   listings: Listing[];
   total: number;
-  copy: { fr: { h1: string; lead: string }; en: { h1: string; lead: string } };
+  /** The key base of the page's heading and lead (`${copy}.h1`, `${copy}.lead`). */
+  copy: string;
   transaction: string;
   kind: string;
   propertyType: string;
@@ -84,9 +80,9 @@ export default function PropertyCategory({
   kind,
   propertyType
 }: Props) {
-  const { t, locale, view = "list" } = usePrefs();
+  const { t, view = "list" } = usePrefs();
   const grid = view === "grid";
-  const c = locale === "en" ? copy.en : copy.fr;
+  const c = { h1: t(`${copy}.h1`), lead: t(`${copy}.lead`) };
   const router = useRouter();
   const q = typeof router.query.q === "string" ? router.query.q : "";
   const page = pageParam(router.query.page);
@@ -135,7 +131,7 @@ export default function PropertyCategory({
           {pending ? (
             <Skeleton className="h-4 w-16" />
           ) : (
-            <span>{`${total} ${locale === "fr" ? "biens" : "listings"}`}</span>
+            <span>{t("pg.propertyKind.count", { n: total })}</span>
           )}
           <ViewToggle value={view} />
         </div>
@@ -183,14 +179,10 @@ export default function PropertyCategory({
 
         <section className="mt-10 rounded-card bg-brand-50 p-6 ring-1 ring-brand-100 ring-inset">
           <h2 className="text-lg font-bold text-brand-900">
-            {locale === "fr"
-              ? "Vous cherchez autre chose ?"
-              : "Looking for something else?"}
+            {t("pg.propertyKind.elseTitle")}
           </h2>
           <p className="mb-4 mt-1 max-w-2xl text-sm text-ink-700">
-            {locale === "fr"
-              ? "Décrivez le bien recherché — quartier, budget, nombre de chambres. Notre agent vous rappelle avec ce qui est disponible, y compris les biens non publiés."
-              : "Describe what you are after — area, budget, bedrooms. Our agent calls you back with what is available, including listings we have not published."}
+            {t("pg.propertyKind.elseBody")}
           </p>
           <div className="rounded-lg bg-white p-5">
             <LeadForm kind="PROPERTY" vertical="PROPERTY" compact />
@@ -229,7 +221,7 @@ export const getStaticProps: GetStaticProps<Props> = async ({ params }) => {
     props: {
       listings: items,
       total,
-      copy: { fr: route.fr, en: route.en },
+      copy: route.copy,
       transaction: route.transaction,
       kind: route.kind,
       propertyType: route.propertyType

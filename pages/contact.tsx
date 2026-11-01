@@ -29,9 +29,9 @@ export default function ContactPage({ copy }: Props) {
         admin now, so it cannot go stale again.
       */
       description={
-        locale === "fr"
-          ? `Bureau${contact.city ? ` à ${contact.city}` : ""}. Téléphone, WhatsApp et paiement en espèces sur place.`
-          : `Office${contact.city ? ` in ${contact.city}` : ""}. Phone, WhatsApp and cash payment on site.`
+        contact.city
+          ? t("pg.contact.description", { city: contact.city })
+          : t("pg.contact.descriptionNoCity")
       }
       image="/img/photos/tshopo-village.webp"
       jsonLd={
@@ -83,13 +83,7 @@ export default function ContactPage({ copy }: Props) {
           {t("footer.contact")}
         </h1>
         <p className="mt-2 max-w-2xl whitespace-pre-line text-[15px] text-ink-500">
-          {siteText(
-            copy?.intro,
-            locale,
-            locale === "fr"
-              ? "Une vraie personne répond, au bureau comme au téléphone. Vous pouvez aussi venir régler votre réservation en espèces."
-              : "A real person answers, in the office and on the phone. You can also come and settle a booking in cash."
-          )}
+          {siteText(copy?.intro, locale, "pg.contact.intro")}
         </p>
 
         <div className="mt-8 grid gap-8 lg:grid-cols-2">
@@ -110,12 +104,13 @@ export default function ContactPage({ copy }: Props) {
                     <div className="p-5">
                       <p className="font-bold text-brand-900">{officeTitle(o)}</p>
                       <ul className="mt-2 space-y-1.5">
-                        {officeLines(o).map(({ Icon, text, href, external }) => (
+                        {officeLines(o).map(({ Icon, text, href, external, dir }) => (
                           <li key={text} className="flex gap-2 text-[15px] text-ink-700">
                             <Icon className="mt-1 size-4 shrink-0 text-brand-500" />
                             {href ? (
                               <a
                                 href={href}
+                                dir={dir}
                                 className="hover:underline"
                                 {...(external
                                   ? { target: "_blank", rel: "noopener noreferrer" }
@@ -144,25 +139,27 @@ export default function ContactPage({ copy }: Props) {
                   {
                     Icon: Phone,
                     title: t("home.trustPhone"),
-                    lines: [contact.phone].filter(Boolean)
+                    lines: [contact.phone].filter(Boolean),
+                    ltr: true
                   },
                   {
                     Icon: MessageCircle,
                     title: "WhatsApp",
-                    lines: [contact.whatsapp].filter(Boolean)
+                    lines: [contact.whatsapp].filter(Boolean),
+                    ltr: true
                   },
                   {
                     Icon: Clock,
-                    title: locale === "fr" ? "Horaires" : "Opening hours",
+                    title: t("pg.contact.hours"),
                     lines: [contact.officeHours].filter(Boolean)
                   },
                   ...(contact.email
-                    ? [{ Icon: Mail, title: "Email", lines: [contact.email] }]
+                    ? [{ Icon: Mail, title: t("pg.contact.email"), lines: [contact.email], ltr: true }]
                     : [])
                   // Every line comes from Settings, so the office edits its own
                   // details. `.filter(Boolean)` keeps a blank field from
                   // rendering an empty row under a heading.
-                ].map(({ Icon, title, lines }) => (
+                ].map(({ Icon, title, lines, ltr }) => (
                   <li
                     key={title}
                     className="flex gap-4 surface p-5"
@@ -174,7 +171,7 @@ export default function ContactPage({ copy }: Props) {
                       <p className="font-bold text-brand-900">{title}</p>
                       {lines.map((line) => (
                         <p key={line} className="text-[15px] text-ink-700">
-                          {line}
+                          {ltr ? <span dir="ltr">{line}</span> : line}
                         </p>
                       ))}
                     </div>
@@ -207,20 +204,10 @@ export default function ContactPage({ copy }: Props) {
               otherwise inflate the shared track past the viewport. */}
           <div className="min-w-0 surface p-6">
             <h2 className="text-xl font-bold text-brand-900">
-              {siteText(
-                copy?.formTitle,
-                locale,
-                locale === "fr" ? "Écrivez-nous" : "Write to us"
-              )}
+              {siteText(copy?.formTitle, locale, "pg.contact.formTitle")}
             </h2>
             <p className="mb-5 mt-1 text-sm text-ink-500">
-              {siteText(
-                copy?.formIntro,
-                locale,
-                locale === "fr"
-                  ? "Nous rappelons sous 24 heures ouvrées au numéro que vous laissez."
-                  : "We call back within 24 working hours on the number you leave."
-              )}
+              {siteText(copy?.formIntro, locale, "pg.contact.formIntro")}
             </p>
             <LeadForm kind="REQUEST_TO_BOOK" vertical="FLIGHT" compact />
           </div>

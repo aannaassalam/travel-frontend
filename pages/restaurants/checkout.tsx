@@ -32,7 +32,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
  */
 export default function RestaurantCheckoutPage() {
   const router = useRouter();
-  const { t, locale, currency } = usePrefs();
+  const { t, locale, currency, lz } = usePrefs();
   const {
     ready,
     lines,
@@ -234,15 +234,13 @@ export default function RestaurantCheckoutPage() {
             ? t("pay.errPolicyChanged")
             : err instanceof ApiError
             ? err.message
-            : locale === "fr"
-              ? "La commande n’a pas pu être envoyée. Réessayez."
-              : "The order could not be sent. Try again."
+            : t("pg.checkout.errSend")
       );
       setSubmitting(false);
     }
   }
 
-  const title = locale === "fr" ? "Votre commande" : "Your order";
+  const title = t("pg.checkout.title");
 
   if (ready && !lines.length) {
     return (
@@ -250,14 +248,14 @@ export default function RestaurantCheckoutPage() {
         <div className="container-site py-20 text-center">
           <ShoppingBag className="mx-auto mb-4 size-10 text-ink-300" />
           <h1 className="text-xl font-bold text-brand-900">
-            {locale === "fr" ? "Votre panier est vide" : "Your basket is empty"}
+            {t("pg.checkout.emptyTitle")}
           </h1>
           <button
             type="button"
             onClick={() => router.push("/restaurants")}
             className="btn btn-md btn-dark mt-6"
           >
-            {locale === "fr" ? "Voir les restaurants" : "Browse restaurants"}
+            {t("pg.checkout.browse")}
           </button>
         </div>
       </Layout>
@@ -277,7 +275,7 @@ export default function RestaurantCheckoutPage() {
             {/* --- basket --- */}
             <section className="surface p-5">
               <h2 className="mb-4 text-lg font-bold text-brand-900">
-                {locale === "fr" ? "Vos plats" : "Your food"}
+                {t("pg.checkout.yourFood")}
               </h2>
               <ul className="divide-y divide-ink-100">
                 {lines.map((l) => (
@@ -292,7 +290,7 @@ export default function RestaurantCheckoutPage() {
                       <button
                         type="button"
                         onClick={() => setQuantity(l.menuItemId, l.quantity - 1)}
-                        aria-label={locale === "fr" ? "Retirer un" : "Remove one"}
+                        aria-label={t("pg.menu.removeOne")}
                         className="grid size-8 place-items-center rounded-lg text-brand-900 hover:bg-white"
                       >
                         <Minus className="size-4" />
@@ -303,7 +301,7 @@ export default function RestaurantCheckoutPage() {
                       <button
                         type="button"
                         onClick={() => setQuantity(l.menuItemId, l.quantity + 1)}
-                        aria-label={locale === "fr" ? "Ajouter un" : "Add one"}
+                        aria-label={t("pg.menu.addOne")}
                         className="grid size-8 place-items-center rounded-lg text-brand-900 hover:bg-white"
                       >
                         <Plus className="size-4" />
@@ -312,7 +310,7 @@ export default function RestaurantCheckoutPage() {
                     <button
                       type="button"
                       onClick={() => remove(l.menuItemId)}
-                      aria-label={locale === "fr" ? `Retirer ${l.name}` : `Remove ${l.name}`}
+                      aria-label={t("pg.checkout.removeItem", { name: l.name })}
                       className="grid size-9 place-items-center rounded-lg text-ink-400 transition-colors hover:bg-bad-100 hover:text-bad-600"
                     >
                       <Trash2 className="size-4" />
@@ -325,19 +323,19 @@ export default function RestaurantCheckoutPage() {
             {/* --- who and where --- */}
             <section className="surface space-y-5 p-5">
               <h2 className="text-lg font-bold text-brand-900">
-                {locale === "fr" ? "Livraison" : "Delivery"}
+                {t("pg.checkout.delivery")}
               </h2>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <TextField
-                  label={locale === "fr" ? "Prénom" : "First name"}
+                  label={t("checkout.firstName")}
                   value={form.firstName}
                   onChange={(e) => setForm({ ...form, firstName: e.target.value })}
                   autoComplete="given-name"
                   required
                 />
                 <TextField
-                  label={locale === "fr" ? "Nom" : "Last name"}
+                  label={t("checkout.lastName")}
                   value={form.lastName}
                   onChange={(e) => setForm({ ...form, lastName: e.target.value })}
                   autoComplete="family-name"
@@ -346,20 +344,16 @@ export default function RestaurantCheckoutPage() {
               </div>
 
               <PhoneField
-                label={locale === "fr" ? "Téléphone" : "Phone"}
+                label={t("pg.checkout.phone")}
                 country={country}
                 national={form.national}
                 onCountryChange={setCountry}
                 onNationalChange={(v) => setForm({ ...form, national: v })}
-                helper={
-                  locale === "fr"
-                    ? "Le livreur vous appelle sur ce numéro."
-                    : "The driver calls you on this number."
-                }
+                helper={t("pg.checkout.phoneHelper")}
               />
 
               <TextField
-                label={locale === "fr" ? "Adresse de livraison" : "Delivery address"}
+                label={t("pg.checkout.address")}
                 value={form.address}
                 onChange={(e) => setForm({ ...form, address: e.target.value })}
                 autoComplete="street-address"
@@ -368,39 +362,33 @@ export default function RestaurantCheckoutPage() {
 
               <div>
                 <span className="eyebrow mb-2 block text-brand-600">
-                  {locale === "fr" ? "Zone" : "Zone"}
+                  {t("pg.checkout.zone")}
                 </span>
                 <InlineSelect
-                  ariaLabel={locale === "fr" ? "Zone de livraison" : "Delivery zone"}
+                  ariaLabel={t("pg.checkout.zoneAria")}
                   value={form.zoneId}
                   onValueChange={(v) => setForm({ ...form, zoneId: v })}
                   options={zones.map((z) => ({
                     value: z.id,
-                    label: `${z.name} — ${price(z.fee, currency, locale)} · ${
-                      (restaurant?.prepTimeMinutes ?? 0) + z.etaMinutes
-                    } min`
+                    label: `${lz(z.name)} — ${price(z.fee, currency, locale)} · ${t("pg.menu.minutes", {
+                      n: (restaurant?.prepTimeMinutes ?? 0) + z.etaMinutes
+                    })}`
                   }))}
                   triggerClassName="w-full rounded-xl px-4 py-3.5 shadow-xs"
                 />
                 {belowMinimum && (
                   <p className="mt-2 text-sm text-bad-600">
-                    {locale === "fr"
-                      ? `Commande minimum de ${price(belowMinimum, currency, locale)} pour cette zone.`
-                      : `This zone has a ${price(belowMinimum, currency, locale)} minimum order.`}
+                    {t("pg.checkout.belowMinimum", { price: price(belowMinimum, currency, locale) })}
                   </p>
                 )}
               </div>
 
               <TextAreaField
-                label={locale === "fr" ? "Indications (facultatif)" : "Directions (optional)"}
+                label={t("pg.checkout.notes")}
                 value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
                 rows={2}
-                helper={
-                  locale === "fr"
-                    ? "Deuxième portail, demander Papa Jean…"
-                    : "Second gate, ask for Papa Jean…"
-                }
+                helper={t("pg.checkout.notesHelper")}
               />
             </section>
           </div>
@@ -409,7 +397,7 @@ export default function RestaurantCheckoutPage() {
           <aside className="space-y-4 lg:sticky lg:top-header lg:self-start">
             <div className="surface space-y-3 p-5">
               <div className="flex justify-between text-sm">
-                <span className="text-ink-700">{locale === "fr" ? "Sous-total" : "Subtotal"}</span>
+                <span className="text-ink-700">{t("checkout.subtotal")}</span>
                 <span className="tnum font-semibold text-ink-900">
                   {price(subtotal, currency, locale)}
                 </span>
@@ -417,18 +405,16 @@ export default function RestaurantCheckoutPage() {
               <div className="flex justify-between text-sm">
                 <span className="flex items-center gap-1.5 text-ink-700">
                   <Bike className="size-4 text-brand-500" />
-                  {locale === "fr" ? "Livraison" : "Delivery"}
+                  {t("pg.checkout.delivery")}
                 </span>
                 <span className="tnum font-semibold text-ink-900">
                   {zone
                     ? price(zone.fee, currency, locale)
-                    : locale === "fr"
-                      ? "Choisir une zone"
-                      : "Pick a zone"}
+                    : t("pg.checkout.pickZone")}
                 </span>
               </div>
               <div className="flex justify-between border-t border-ink-100 pt-3 text-base">
-                <span className="font-bold text-brand-900">{locale === "fr" ? "Total" : "Total"}</span>
+                <span className="font-bold text-brand-900">{t("pg.checkout.total")}</span>
                 <span className="tnum text-lg font-bold text-brand-900">
                   {price(total, currency, locale)}
                 </span>
@@ -436,7 +422,7 @@ export default function RestaurantCheckoutPage() {
 
               <fieldset className="pt-2">
                 <legend className="eyebrow mb-2 text-brand-600">
-                  {locale === "fr" ? "Paiement" : "Payment"}
+                  {t("pg.checkout.payment")}
                 </legend>
                 {online.available ? (
                   <PaymentChoice
@@ -446,19 +432,15 @@ export default function RestaurantCheckoutPage() {
                       setError(null);
                     }}
                     online={online}
-                    cashLabel={locale === "fr" ? "Espèces à la livraison" : "Cash on delivery"}
-                    cashNote={
-                      locale === "fr"
-                        ? "Vous payez le livreur à la réception de la commande."
-                        : "You pay the driver when the food arrives."
-                    }
+                    cashLabel={t("pg.checkout.cash")}
+                    cashNote={t("pg.checkout.cashNote")}
                   />
                 ) : (
                   <>
                     {/* Cash only: stated, not chosen. */}
                     <p className="flex items-center gap-2 rounded-xl bg-brand-900 px-3 py-2.5 text-sm font-semibold text-white">
                       <Banknote className="size-4 shrink-0" />
-                      {locale === "fr" ? "Espèces à la livraison" : "Cash on delivery"}
+                      {t("pg.checkout.cash")}
                     </p>
                     {online.offered && (
                       <p className="mt-2 text-sm text-ink-500">{t("checkout.onlineUsdOnly")}</p>
@@ -502,19 +484,13 @@ export default function RestaurantCheckoutPage() {
                 {submitting
                   ? t(method === "ONLINE" ? "checkout.waitingOnline" : "common.loading")
                   : method === "ONLINE"
-                    ? locale === "fr"
-                      ? "Commander — payer en ligne"
-                      : "Order — pay online"
-                    : locale === "fr"
-                      ? "Commander — payer à la livraison"
-                      : "Order — pay on delivery"}
+                    ? t("pg.checkout.submitOnline")
+                    : t("pg.checkout.submitCash")}
               </button>
 
               {blocked && !belowMinimum && (
                 <p className="text-center text-xs text-ink-500">
-                  {locale === "fr"
-                    ? "Complétez vos coordonnées, l’adresse et la zone."
-                    : "Fill in your details, address and zone."}
+                  {t("pg.checkout.blocked")}
                 </p>
               )}
             </div>

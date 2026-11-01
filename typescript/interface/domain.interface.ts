@@ -88,11 +88,11 @@ export const MEAL_PLANS = {
 } as const;
 export type MealPlan = (typeof MEAL_PLANS)[keyof typeof MEAL_PLANS];
 
-export const LOCALES = ["fr", "en", "pt", "es"] as const;
+export const LOCALES = ["fr", "en", "pt", "es", "zh", "ar", "ru"] as const;
 export type Locale = (typeof LOCALES)[number];
 export const DEFAULT_LOCALE: Locale = "fr";
-/** §6: pt/es stay scaffolded behind this flag — half-translated reads as untrustworthy. */
-export const ENABLED_LOCALES: Locale[] = ["fr", "en"];
+/** The languages the pickers offer: all of them (a missing string falls back, lib/i18n.ts FALLBACK). */
+export const ENABLED_LOCALES: Locale[] = [...LOCALES];
 
 export const ENQUIRY_STAGES = {
   NEW: "NEW",
@@ -124,7 +124,15 @@ export const ARCHETYPE: Record<Vertical, "INSTANT" | "REQUEST" | "ENQUIRY"> = {
   TRANSFER: "INSTANT"
 };
 
+/** A text the office types per language. Typed `Localized | string` where an older API sends plain (French) text. */
 export type Localized = Partial<Record<Locale, string>>;
+
+/**
+ * The office's translations of the words in an item's lists (amenities,
+ * cuisines, features…), keyed by the French word the list holds. Absent from
+ * an older API. Read through `tagLabel` (lib/i18n.ts).
+ */
+export type TagTranslations = Record<string, Localized>;
 
 /**
  * Prices, per currency, in integer minor units — mirroring the backend Money
@@ -151,8 +159,8 @@ export interface ListingAttributes {
   weeklyTimes?: WeeklyTime[];
   // Flights
   cabin?: "ECONOMY" | "PREMIUM" | "BUSINESS" | "FIRST";
-  baggage?: string;
-  fareRules?: string;
+  baggage?: Localized | string;
+  fareRules?: Localized | string;
   // Bus
   routeStops?: string[];
   vehicleClass?: string;
@@ -165,16 +173,16 @@ export interface ListingAttributes {
   withDriver?: boolean;
   /** Whole francs. */
   deposit?: number;
-  mileageLimit?: string;
+  mileageLimit?: Localized | string;
   pickupLocations?: string[];
-  insuranceTerms?: string;
+  insuranceTerms?: Localized | string;
   // Activities
   durationMinutes?: number;
   minParticipants?: number;
   maxParticipants?: number;
   inclusions?: string[];
   exclusions?: string[];
-  meetingPoint?: string;
+  meetingPoint?: Localized | string;
   languages?: string[];
   childPrice?: number;
   // Properties
@@ -190,7 +198,7 @@ export interface ListingAttributes {
   bathrooms?: number;
   plotSizeSqm?: number;
   features?: string[];
-  titleDeedStatus?: string;
+  titleDeedStatus?: Localized | string;
   availabilityStatus?: "AVAILABLE" | "UNDER_OFFER" | "SOLD" | "RENTED";
   // Shared
   seatsOrCapacity?: number;
@@ -234,6 +242,7 @@ export interface Listing {
   validFrom?: string;
   validUntil?: string;
   attributes: ListingAttributes;
+  tagTranslations?: TagTranslations;
   rating?: number;
   reviewCount?: number;
   /** Sent only while one runs. For a bus or flight, the adult fare's; for a car, the 24-hour rate's. */
@@ -289,12 +298,13 @@ export interface Hotel {
   country: string;
   geo?: { lat: number; lng: number };
   amenities: string[];
+  tagTranslations?: TagTranslations;
   images: string[];
   /** The optional video: the stored address of the uploaded file (see lib/media.ts). */
   videoUrl?: string;
   checkInTime: string;
   checkOutTime: string;
-  policies: string;
+  policies: Localized | string;
   rating?: number;
   reviewCount?: number;
   /** Cheapest nightly price across room types, per currency. */
@@ -311,8 +321,9 @@ export interface RoomType {
   description: Localized;
   maxAdults: number;
   maxChildren: number;
-  beds: string;
+  beds: Localized | string;
   amenities: string[];
+  tagTranslations?: TagTranslations;
   images: string[];
   mealPlan: MealPlan;
   /** Nightly price, per currency — the same every night. Rooms are not counted. */
@@ -444,7 +455,7 @@ export interface OrderTimelineEntry {
 
 export interface OrderDelivery {
   address: string;
-  zoneName?: string;
+  zoneName?: Localized | string;
   /** Francs (the base) — and in the currency actually charged. */
   fee: number;
   feeCharged: number;
@@ -517,7 +528,7 @@ export type MenuSection = (typeof MENU_SECTIONS)[keyof typeof MENU_SECTIONS];
 
 export interface DeliveryZone {
   id: string;
-  name: string;
+  name: Localized | string;
   /** Per-currency minor units, added to the order total. */
   fee: Money;
   /** Food subtotal the order must reach before this zone is offered. */
@@ -545,6 +556,7 @@ export interface Restaurant {
   slug: string;
   description: Localized;
   cuisines: string[];
+  tagTranslations?: TagTranslations;
   address: string;
   city: string;
   country: string;
@@ -552,7 +564,7 @@ export interface Restaurant {
   images: string[];
   /** The optional video: the stored address of the uploaded file (see lib/media.ts). */
   videoUrl?: string;
-  openingHours: string;
+  openingHours: Localized | string;
   /** Minutes in the kitchen, before any travel time. */
   prepTimeMinutes: number;
   phone?: string;

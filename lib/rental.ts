@@ -143,7 +143,7 @@ export const rateLabel = (hours: number, t: T) =>
 export const durationLabel = (hours: number, t: T) => {
   const days = Math.floor(hours / 24);
   const rest = hours % 24;
-  return [days ? `${days} ${t(days > 1 ? "common.days" : "common.day")}` : "", rest ? `${rest} h` : ""]
+  return [days ? `${days} ${t(days > 1 ? "common.days" : "common.day")}` : "", rest ? t("rental.hoursShort", { n: rest }) : ""]
     .filter(Boolean)
     .join(" ");
 };

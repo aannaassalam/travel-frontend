@@ -1,4 +1,4 @@
-import { facetLabel, translate } from "@/lib/i18n";
+import { facetLabel, intlLocale, translate } from "@/lib/i18n";
 import {
   Hotel,
   Listing,
@@ -112,5 +112,5 @@ export function propertySizes(a: ListingAttributes): { kind: "area" | "builtArea
   return a.areaSqm ? [{ kind: "area", sqm: a.areaSqm }] : [];
 }
 
-/** "1 800 m²", grouped the DRC way. */
-export const sqm = (n: number) => `${n.toLocaleString("fr-FR")} m²`;
+/** "1 800 m²", grouped the DRC way unless a locale is given. */
+export const sqm = (n: number, locale: Locale = "fr") => `${n.toLocaleString(intlLocale(locale))} m²`;

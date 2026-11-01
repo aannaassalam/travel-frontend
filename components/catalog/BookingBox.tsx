@@ -161,8 +161,8 @@ function StockBookingBox({ listing }: { listing: Listing }) {
             {rates.map((r) => (
               <div key={r.hours} className="flex flex-wrap items-baseline justify-between gap-x-4">
                 <dt className="text-sm text-ink-700">{rateLabel(r.hours, t)}</dt>
-                <dd className="ml-auto text-right">
-                  <PromoWas promotion={r.promotion} className="mr-2" />
+                <dd className="ms-auto text-end">
+                  <PromoWas promotion={r.promotion} className="me-2" />
                   <Price money={r.price} className="text-lg font-bold text-brand-900" />
                 </dd>
               </div>
@@ -278,7 +278,7 @@ function StockBookingBox({ listing }: { listing: Listing }) {
               {rental.blocks.map((b) => (
                 <div key={b.hours} className="flex justify-between">
                   <dt className="text-ink-500">
-                    {b.count} × {b.hours} h
+                    {t("cmp.rental.block", { count: b.count, hours: b.hours })}
                   </dt>
                   <dd className="font-medium">
                     <Price money={b.price} />
@@ -327,9 +327,7 @@ function StockBookingBox({ listing }: { listing: Listing }) {
       </p>
 
       <p className="mt-3 text-xs text-ink-500">
-        {locale === "fr"
-          ? "Paiement en espèces à notre agence. Aucun frais caché."
-          : "Pay in cash at our office. No hidden fees."}
+        {t("cmp.booking.cashNote")}
       </p>
     </div>
   );

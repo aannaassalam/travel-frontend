@@ -41,8 +41,11 @@ const RESEND_SECONDS = 60;
 
 type Mode = "signin" | "signup" | "forgot";
 
+/** A phone number inside a sentence stays left to right in Arabic (LRI … PDI). */
+const ltr = (s: string) => `\u2066${s}\u2069`;
+
 export default function SignInPage() {
-  const { t, locale } = usePrefs();
+  const { t } = usePrefs();
   const router = useRouter();
 
   const [mode, setMode] = useState<Mode>("signin");
@@ -314,7 +317,7 @@ export default function SignInPage() {
         disabled={busy || cooldown > 0}
         className="font-semibold text-brand-500 hover:underline disabled:text-ink-300 disabled:no-underline"
       >
-        {cooldown > 0 ? `${t("auth.otpResend")} (${cooldown}s)` : t("auth.otpResend")}
+        {cooldown > 0 ? t("pg.login.resendCountdown", { label: t("auth.otpResend"), n: cooldown }) : t("auth.otpResend")}
       </button>
     </div>
   );
@@ -329,9 +332,7 @@ export default function SignInPage() {
                 like the form changed under you. */}
             {mode !== "signin" && (
               <p className="mb-2 text-sm font-semibold text-brand-600">
-                {locale === "fr"
-                  ? `Étape ${sent ? 2 : 1} sur 2`
-                  : `Step ${sent ? 2 : 1} of 2`}
+                {t("pg.login.step", { n: sent ? 2 : 1 })}
               </p>
             )}
             <h1 className="display text-2xl text-brand-900 sm:text-3xl">{heading}</h1>
@@ -418,7 +419,7 @@ export default function SignInPage() {
               <form onSubmit={submitSignUp} noValidate className="mt-8 space-y-4">
                 {banner}
                 <p className="rounded-md bg-brand-50 px-4 py-3 text-sm text-ink-700">
-                  {t("auth.signupOtpBody", { phone: maskPhone(e164 ?? phone) })}
+                  {t("auth.signupOtpBody", { phone: ltr(maskPhone(e164 ?? phone)) })}
                 </p>
                 {codeInput}
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -492,7 +493,7 @@ export default function SignInPage() {
               <form onSubmit={submitReset} noValidate className="mt-8 space-y-4">
                 {banner}
                 <p className="rounded-md bg-brand-50 px-4 py-3 text-sm text-ink-700">
-                  {t("auth.otpBody", { phone: maskPhone(e164 ?? phone) })}
+                  {t("auth.otpBody", { phone: ltr(maskPhone(e164 ?? phone)) })}
                 </p>
                 {codeInput}
                 <PasswordField
@@ -517,7 +518,7 @@ export default function SignInPage() {
             <p className="mt-6 text-sm text-ink-500">
               {mode === "signin" ? (
                 <>
-                  {locale === "fr" ? "Nouveau ici ?" : "New here?"}{" "}
+                  {t("pg.login.newHere")}{" "}
                   <button
                     type="button"
                     onClick={() => go("signup")}
@@ -544,9 +545,7 @@ export default function SignInPage() {
 
             <p className="mt-4 flex items-start gap-2 text-xs text-ink-500">
               <ShieldCheck className="mt-0.5 size-3.5 shrink-0" />
-              {locale === "fr"
-                ? "Nous ne demandons jamais votre code ni votre mot de passe par téléphone ou par SMS."
-                : "We never ask for your code or password by phone or SMS. Do not share them with anyone."}
+              {t("pg.login.neverAsk")}
             </p>
 
             <p className="mt-6 text-sm text-ink-500">
@@ -589,12 +588,10 @@ export default function SignInPage() {
           <div className="absolute inset-0 flex items-end p-10">
             <div className="max-w-sm text-white">
               <p className="display text-2xl leading-tight">
-                {locale === "fr" ? "Votre numéro suffit." : "Your number is enough."}
+                {t("pg.login.panelTitle")}
               </p>
               <p className="mt-3 text-[15px] leading-relaxed text-white/75">
-                {locale === "fr"
-                  ? "Pas besoin d'adresse e-mail. Vos réservations, vos documents et vos demandes sont liés à votre téléphone."
-                  : "No email needed. Your bookings, documents and requests are tied to your phone."}
+                {t("pg.login.panelBody")}
               </p>
             </div>
           </div>

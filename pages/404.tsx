@@ -9,7 +9,7 @@ import { LostWaySpot } from "@/components/art/spots";
  * home — the visitor was looking for something, and they still are.
  */
 export default function NotFound() {
-  const { t, locale } = usePrefs();
+  const { t } = usePrefs();
   return (
     <Layout title={t("common.notFound")} description={t("common.notFoundBody")} noindex>
       <div className="bg-brand-900 py-12">
@@ -25,9 +25,7 @@ export default function NotFound() {
 
       <div className="container-site py-10 text-center">
         <p className="text-[15px] text-ink-500">
-          {locale === "fr"
-            ? "Ou reprenez depuis le début :"
-            : "Or start again from the beginning:"}
+          {t("pg.notFound.startAgain")}
         </p>
         <div className="mt-4 flex flex-wrap justify-center gap-3">
           {[

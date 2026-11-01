@@ -3,25 +3,29 @@ import {
   CURRENCIES,
   Currency,
   DEFAULT_LOCALE,
-  Locale
+  Locale,
+  LOCALES
 } from "@/typescript/interface/domain.interface";
-import { useQuery } from "@tanstack/react-query";
+import { DirectionProvider } from "@radix-ui/react-direction";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { getSiteCurrencies } from "./api";
-import { localized as pickLocalized, translate } from "./i18n";
+import { getSiteCurrencies, updateProfile } from "./api";
+import { dirOf, pickLocale, localized as pickLocalized, translate } from "./i18n";
 import { pickCurrency } from "./money";
 import { Localized } from "@/typescript/interface/domain.interface";
 
 /**
  * Locale, currency, low-data mode, and list or grid on the results pages.
  *
- * §14 "auto-detecting language from IP without an obvious persistent override"
- * is on the avoid list, so there is no detection at all: French is the default
- * and the switcher in the header is the only thing that changes it.
+ * The language: the visitor's pick in the switcher (saved), else on a first
+ * visit the browser's language when it is one of ours, else English
+ * (`pickLocale`, 2026-10-31). Never from IP (§14); only a pick is saved.
  */
 
 type Prefs = {
   locale: Locale;
+  /** "rtl" while Arabic is chosen: for the odd component that must know (a scroller, a slide-in side). */
+  dir: "ltr" | "rtl";
   /** The currency prices are shown in (`pickCurrency`). */
   currency: Currency;
   /** What the currency pickers offer: francs and each currency the office set a rate for. */
@@ -36,7 +40,7 @@ type Prefs = {
   setLowData: (v: boolean) => void;
   setView: (v: ResultsView) => void;
   t: (key: string, vars?: Record<string, string | number>) => string;
-  lz: (field: Localized | undefined) => string;
+  lz: (field: Localized | string | undefined) => string;
 };
 
 export type ResultsView = "list" | "grid";
@@ -46,29 +50,43 @@ const KEY = "ct.prefs";
 const VIEW_KEY = "ct.view";
 const PrefsContext = createContext<Prefs | null>(null);
 
+/**
+ * The language and direction on <html>. _document renders lang="fr" and its
+ * inline script applies the saved or detected language before the first
+ * paint; this keeps it right from then on, so a page is not announced as
+ * French (§BUG-027) or laid out left to right in Arabic.
+ */
+const applyToDocument = (l: Locale) => {
+  document.documentElement.lang = l;
+  document.documentElement.dir = dirOf(l);
+};
+
 export function PrefsProvider({ children }: { children: React.ReactNode }) {
+  // French on the server and first client render (they must agree); the
+  // saved or detected language applies right after mount.
   const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
   // The visitor's own choice, if they made one: what is shown is worked out below.
   const [savedCurrency, setSavedCurrency] = useState<Currency>();
   const [lowData, setLowDataState] = useState(false);
   const [view, setViewState] = useState<ResultsView>();
+  const qc = useQueryClient();
 
   // Read after mount, not during render: the server has no localStorage and a
   // mismatched first paint is a hydration error.
   useEffect(() => {
+    let savedLocale: Locale | undefined;
     try {
       const saved = JSON.parse(localStorage.getItem(KEY) || "{}");
-      if (saved.locale) {
-        setLocaleState(saved.locale);
-        // _document renders lang="fr"; reflect a saved choice on load so an
-        // English user's page is not announced as French (§BUG-027).
-        document.documentElement.lang = saved.locale;
-      }
+      if (LOCALES.includes(saved.locale)) savedLocale = saved.locale;
       if (CURRENCIES.includes(saved.currency)) setSavedCurrency(saved.currency);
       if (saved.lowData) setLowDataState(saved.lowData);
     } catch {
       /* corrupt or unavailable storage just means defaults */
     }
+    // No saved choice: the browser's language, not saved (only a pick is).
+    const l = savedLocale ?? pickLocale([...(navigator.languages ?? []), navigator.language]);
+    setLocaleState(l);
+    applyToDocument(l);
     try {
       const view = sessionStorage.getItem(VIEW_KEY);
       if (view === "list" || view === "grid") setViewState(view);
@@ -90,9 +108,12 @@ export function PrefsProvider({ children }: { children: React.ReactNode }) {
     (l: Locale) => {
       setLocaleState(l);
       persist({ locale: l });
-      document.documentElement.lang = l;
+      applyToDocument(l);
+      // Signed in: the server keeps it for this customer's SMS and e-mails.
+      // Fire and forget: the switch never waits on it or shows its failure.
+      if (qc.getQueryData(["session"])) updateProfile({ locale: l }).catch(() => {});
     },
-    [persist]
+    [persist, qc]
   );
   const setCurrency = useCallback(
     (c: Currency) => {
@@ -140,15 +161,18 @@ export function PrefsProvider({ children }: { children: React.ReactNode }) {
     [locale]
   );
   const lz = useCallback(
-    (field: Localized | undefined) => pickLocalized(field, locale),
+    (field: Localized | string | undefined) => pickLocalized(field, locale),
     [locale]
   );
 
+  const dir = dirOf(locale);
+
   return (
     <PrefsContext.Provider
-      value={{ locale, currency, currencies, rates: fx?.rates as Prefs["rates"], lowData, view, setLocale, setCurrency, setLowData, setView, t, lz }}
+      value={{ locale, dir, currency, currencies, rates: fx?.rates as Prefs["rates"], lowData, view, setLocale, setCurrency, setLowData, setView, t, lz }}
     >
-      {children}
+      {/* Radix menus, selects and popovers read their direction from here. */}
+      <DirectionProvider dir={dir}>{children}</DirectionProvider>
     </PrefsContext.Provider>
   );
 }

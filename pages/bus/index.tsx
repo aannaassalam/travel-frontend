@@ -28,12 +28,8 @@ export default function BusPage({ facets }: Props) {
     <SearchResults
       vertical="BUS"
       heroLabel={t("nav.bus")}
-      title={locale === "fr" ? "Bus et cars en RDC" : "Buses and coaches in the DRC"}
-      description={
-        locale === "fr"
-          ? "Départs tous les jours sur les grandes liaisons : Kinshasa–Matadi, Kinshasa–Kikwit, Lubumbashi–Kolwezi, Goma–Bukavu. Choisissez votre date et l'heure de départ."
-          : "Departures every day on the main routes: Kinshasa–Matadi, Kinshasa–Kikwit, Lubumbashi–Kolwezi, Goma–Bukavu. Choose your date and departure time."
-      }
+      title={t("pg.bus.title")}
+      description={t("pg.bus.description")}
       priceRange={bounds(facets, "BUS")}
       filters={[
         {

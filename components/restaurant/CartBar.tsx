@@ -22,7 +22,7 @@ import { useEffect, useId, useState } from "react";
  * Renders nothing when empty, so it never occupies space it has not earned.
  */
 export default function CartBar() {
-  const { locale, currency } = usePrefs();
+  const { t, locale, currency } = usePrefs();
   const {
     ready,
     lines,
@@ -51,8 +51,6 @@ export default function CartBar() {
     if (!count) setOpen(false);
   }, [count]);
 
-  const itemWord = locale === "fr" ? (count > 1 ? "articles" : "article") : count > 1 ? "items" : "item";
-
   return (
     <>
       {/* Asked, never assumed: the API refuses an order spanning two kitchens,
@@ -67,19 +65,17 @@ export default function CartBar() {
         >
           <div className="w-full max-w-sm rounded-card bg-white p-6 shadow-xl">
             <h2 id="cart-replace-title" className="text-lg font-bold text-brand-900">
-              {locale === "fr" ? "Vider le panier ?" : "Start a new basket?"}
+              {t("cmp.cart.replaceTitle")}
             </h2>
             <p className="mt-2 text-sm text-ink-700">
-              {locale === "fr"
-                ? `Votre panier contient des plats de ${restaurantName}. Une commande ne peut venir que d’un seul restaurant.`
-                : `Your basket has food from ${restaurantName}. One order can only come from one restaurant.`}
+              {t("cmp.cart.replaceBody", { name: restaurantName ?? "" })}
             </p>
             <div className="mt-6 flex justify-end gap-3">
               <button type="button" onClick={cancelReplace} className="btn btn-md btn-outline">
-                {locale === "fr" ? "Garder" : "Keep it"}
+                {t("cmp.cart.keep")}
               </button>
               <button type="button" onClick={confirmReplace} className="btn btn-md btn-dark">
-                {locale === "fr" ? "Vider et ajouter" : "Empty and add"}
+                {t("cmp.cart.emptyAndAdd")}
               </button>
             </div>
           </div>
@@ -129,7 +125,7 @@ export default function CartBar() {
                         <button
                           type="button"
                           onClick={() => setQuantity(l.menuItemId, l.quantity - 1)}
-                          aria-label={locale === "fr" ? `Retirer un ${l.name}` : `Remove one ${l.name}`}
+                          aria-label={t("cmp.cart.removeOne", { name: l.name })}
                           className="grid size-7 place-items-center rounded-md text-brand-900 transition-colors hover:bg-white"
                         >
                           <Minus className="size-3.5" />
@@ -140,7 +136,7 @@ export default function CartBar() {
                         <button
                           type="button"
                           onClick={() => setQuantity(l.menuItemId, l.quantity + 1)}
-                          aria-label={locale === "fr" ? `Ajouter un ${l.name}` : `Add one ${l.name}`}
+                          aria-label={t("cmp.cart.addOne", { name: l.name })}
                           className="grid size-7 place-items-center rounded-md text-brand-900 transition-colors hover:bg-white"
                         >
                           <Plus className="size-3.5" />
@@ -149,14 +145,14 @@ export default function CartBar() {
 
                       {/* The line total, not the unit price — this is the number
                           people are actually adding up in their head. */}
-                      <span className="tnum w-20 shrink-0 text-right text-sm font-bold text-brand-900">
+                      <span className="tnum w-20 shrink-0 text-end text-sm font-bold text-brand-900">
                         {price(multiply(l.unitPrice, l.quantity), currency, locale)}
                       </span>
 
                       <button
                         type="button"
                         onClick={() => remove(l.menuItemId)}
-                        aria-label={locale === "fr" ? `Retirer ${l.name}` : `Remove ${l.name}`}
+                        aria-label={t("cmp.cart.remove", { name: l.name })}
                         className="grid size-8 shrink-0 place-items-center rounded-lg text-ink-400 transition-colors hover:bg-bad-100 hover:text-bad-600"
                       >
                         <Trash2 className="size-4" />
@@ -165,9 +161,7 @@ export default function CartBar() {
                   ))}
                 </ul>
                 <p className="pt-3 text-xs text-ink-500">
-                  {locale === "fr"
-                    ? "Les frais de livraison sont ajoutés au paiement, selon votre zone."
-                    : "Delivery is added at checkout, based on your zone."}
+                  {t("cmp.cart.deliveryNote")}
                 </p>
               </div>
             </div>
@@ -180,7 +174,7 @@ export default function CartBar() {
                 onClick={() => setOpen((o) => !o)}
                 aria-expanded={open}
                 aria-controls={panelId}
-                className="-m-2 flex min-w-0 items-center gap-3 rounded-lg p-2 text-left transition-colors hover:bg-ink-50"
+                className="-m-2 flex min-w-0 items-center gap-3 rounded-lg p-2 text-start transition-colors hover:bg-ink-50"
               >
                 <ChevronUp
                   className={cn(
@@ -193,7 +187,7 @@ export default function CartBar() {
                     {restaurantName}
                   </span>
                   <span className="block text-sm text-ink-500">
-                    {count} {itemWord} ·{" "}
+                    {t(count > 1 ? "cmp.cart.items" : "cmp.cart.item", { n: count })} ·{" "}
                     <span className="font-semibold text-ink-900">
                       {price(subtotal, currency, locale)}
                     </span>
@@ -203,7 +197,7 @@ export default function CartBar() {
 
               <Link href="/restaurants/checkout" className="btn btn-md btn-primary shrink-0">
                 <ShoppingBag className="size-4" />
-                {locale === "fr" ? "Commander" : "Checkout"}
+                {t("cmp.cart.checkout")}
               </Link>
             </div>
           </div>

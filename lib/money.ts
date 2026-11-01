@@ -1,8 +1,10 @@
 import {
   BASE_CURRENCY,
   Currency,
+  Locale,
   Money
 } from "@/typescript/interface/domain.interface";
+import { intlLocale, isRtl } from "./i18n";
 
 /**
  * §5. Money is integer minor units plus an ISO-4217 code. Never a float, never
@@ -85,8 +87,6 @@ export function pickCurrency(
   return !offered || offered.includes(wanted) ? wanted : BASE_CURRENCY;
 }
 
-const LOCALE_FOR_FORMAT: Record<string, string> = { fr: "fr-FR", en: "en-GB" };
-
 /**
  * §6: DRC conventions — space thousands separator, comma decimal — come free
  * from Intl with fr-FR. The number is always Intl's; only the franc sign is
@@ -103,13 +103,18 @@ export function formatMoney(
   // stored value is always exact.
   const fraction = minor % 10 ** digits === 0 ? 0 : digits;
   const options = { minimumFractionDigits: fraction, maximumFractionDigits: fraction };
-  const tag = LOCALE_FOR_FORMAT[locale] ?? "fr-FR";
+  const tag = intlLocale(locale);
   // Francs are written "28 500 FC" ("28,500 FC" in English), as in Kinshasa —
   // not Intl's "28 500 CDF" / "CDF 28,500".
-  if (currency === "CDF") return `${new Intl.NumberFormat(tag, options).format(minor)}\u00a0FC`;
-  return new Intl.NumberFormat(tag, { style: "currency", currency, ...options }).format(
-    minor / 10 ** digits
-  );
+  const text =
+    currency === "CDF"
+      ? `${new Intl.NumberFormat(tag, options).format(minor)}\u00a0FC`
+      : new Intl.NumberFormat(tag, { style: "currency", currency, ...options }).format(
+          minor / 10 ** digits
+        );
+  // In Arabic an amount sits in right-to-left text: isolated left to right
+  // (invisible LRI…PDI marks), "8,600 FC" stays one piece in any sentence.
+  return isRtl(locale as Locale) ? `\u2066${text}\u2069` : text;
 }
 
 /** Resolve then format — the pairing behind nearly every price on the site. */

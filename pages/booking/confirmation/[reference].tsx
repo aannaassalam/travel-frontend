@@ -42,7 +42,7 @@ import { useEffect, useState } from "react";
 export default function ConfirmationPage() {
   const policyTitle = usePolicyTitle();
   const contact = useSiteContact();
-  const { t, locale } = usePrefs();
+  const { t, locale, lz } = usePrefs();
   // Switched off on the server: an online order not paid yet is paid in cash.
   const onlineOffered = useOnlinePayment().offered;
   const { signedIn, isPending: sessionPending } = useSession();
@@ -163,8 +163,9 @@ export default function ConfirmationPage() {
             {/* §10.7: the number is masked even back to its owner — the last
                 three digits are enough to confirm we used the right one. */}
             {/* An online order gets its SMS when it is paid, not before. */}
+            {/* The number isolated (LRI…PDI), so it reads left to right in an Arabic sentence. */}
             {t(unsettled ? "confirm.bodyOnlineWaiting" : "confirm.body", {
-              phone: phone ?? "—"
+              phone: phone ? `\u2066${phone}\u2069` : "—"
             })}
           </p>
           <p className="mt-4 text-sm font-semibold uppercase tracking-wide text-ink-500">
@@ -187,23 +188,21 @@ export default function ConfirmationPage() {
           <div className="mt-6 rounded-card bg-brand-50 p-6 ring-1 ring-brand-100 ring-inset">
             <h2 className="flex items-center gap-2 text-lg font-bold text-brand-900">
               <Bike className="size-5 text-brand-500" />
-              {locale === "fr" ? "Livraison en cours" : "On its way"}
+              {t("pg.confirm.onItsWay")}
             </h2>
             <p className="mt-2 text-[15px] text-ink-900">{order.delivery.address}</p>
             {order.delivery.notes && (
               <p className="mt-1 text-sm text-ink-700">{order.delivery.notes}</p>
             )}
             <p className="mt-3 text-sm text-ink-700">
-              {order.delivery.zoneName}
+              {lz(order.delivery.zoneName)}
               {order.delivery.etaMinutes
-                ? ` · ${locale === "fr" ? "environ" : "about"} ${order.delivery.etaMinutes} min`
+                ? ` · ${t("pg.confirm.eta", { n: order.delivery.etaMinutes })}`
                 : ""}
             </p>
             {isCash && (
               <p className="mt-3 text-sm font-semibold text-ink-900">
-                {locale === "fr"
-                  ? "Payez le livreur en espèces à la réception de la commande."
-                  : "Pay the driver in cash when the food arrives."}
+                {t("pg.confirm.payDriver")}
               </p>
             )}
           </div>
@@ -270,7 +269,7 @@ export default function ConfirmationPage() {
           <div className="mt-6 rounded-card bg-warn-100 p-6 ring-2 ring-warn-600/30 ring-inset">
             <h2 className="flex items-center gap-2 text-lg font-bold text-brand-900">
               <Banknote className="size-5 text-warn-600" />
-              {locale === "fr" ? "Payer en agence" : "Pay at our office"}
+              {t("pg.confirm.payAtOffice")}
             </h2>
             <p className="mt-2 text-[15px] text-ink-900">
               {t("confirm.cashBody", {
@@ -310,17 +309,13 @@ export default function ConfirmationPage() {
             {!unsettled && (
               <li className="flex gap-3">
                 <MessageSquare className="mt-0.5 size-5 shrink-0 text-brand-500" />
-                {locale === "fr"
-                  ? "Une confirmation avec la référence vous a été envoyée."
-                  : "A confirmation with the reference has been sent."}
+                {t("pg.confirm.sent")}
               </li>
             )}
             {!isRide && (
               <li className="flex gap-3">
                 <CalendarPlus className="mt-0.5 size-5 shrink-0 text-brand-500" />
-                {locale === "fr"
-                  ? "Vos documents de voyage sont émis sous 24 heures ouvrées et apparaissent dans votre compte."
-                  : "Your travel documents are issued within 24 working hours and appear in your account."}
+                {t("pg.confirm.documents")}
               </li>
             )}
           </ul>
@@ -384,10 +379,9 @@ export default function ConfirmationPage() {
               <ShieldCheck className="size-5 text-brand-500" />
               {policyTitle}
             </h2>
-            <p className="mt-2 text-sm text-ink-900">« {order.consent.textShown} »</p>
+            <p className="mt-2 text-sm text-ink-900">{t("pg.confirm.quoted", { text: order.consent.textShown })}</p>
             <p className="mt-2 text-xs text-ink-500">
-              {locale === "fr" ? "Accepté le" : "Accepted on"}{" "}
-              {fmtDateTime(order.consent.acceptedAt, locale)} ·{" "}
+              {t("pg.confirm.acceptedOn", { date: fmtDateTime(order.consent.acceptedAt, locale) })} ·{" "}
               {order.consent.policyVersionLabel}
             </p>
           </div>

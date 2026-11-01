@@ -1,3 +1,4 @@
+import { usePrefs } from "@/lib/prefs";
 import { cn } from "@/lib/utils";
 import {
   Select,
@@ -52,7 +53,7 @@ function Shell({
         </label>
         {children}
         {trailing && (
-          <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-ink-300">
+          <span className="pointer-events-none absolute end-4 top-1/2 -translate-y-1/2 text-ink-300">
             {trailing}
           </span>
         )}
@@ -123,6 +124,7 @@ export function PasswordField({
   className,
   ...props
 }: Base & Omit<React.InputHTMLAttributes<HTMLInputElement>, "type">) {
+  const { t } = usePrefs();
   const auto = useId();
   const id = props.id ?? auto;
   const [shown, setShown] = useState(false);
@@ -134,15 +136,15 @@ export function PasswordField({
         type={shown ? "text" : "password"}
         placeholder={props.placeholder ?? " "}
         aria-invalid={Boolean(error)}
-        className="field-input pr-12"
+        className="field-input pe-12"
       />
       <button
         type="button"
         onClick={() => setShown((v) => !v)}
         aria-pressed={shown}
         aria-controls={id}
-        aria-label={shown ? "Hide password" : "Show password"}
-        className="absolute right-1 top-1/2 grid size-11 -translate-y-1/2 place-items-center rounded-lg text-ink-500 transition-colors hover:text-brand-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
+        aria-label={t(shown ? "cmp.password.hide" : "cmp.password.show")}
+        className="absolute end-1 top-1/2 grid size-11 -translate-y-1/2 place-items-center rounded-lg text-ink-500 transition-colors hover:text-brand-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
       >
         {shown ? <EyeOff className="size-[18px]" /> : <Eye className="size-[18px]" />}
       </button>
@@ -298,7 +300,7 @@ export function SelectField({
             the same cascade layer as `.field-input` and were winning — which is
             what put the value on top of the floating label.
           */
-          className="field-input h-auto! w-full cursor-pointer border-0 bg-transparent px-3.5! pt-7! pr-10! pb-2! shadow-none focus-visible:ring-0"
+          className="field-input h-auto! w-full cursor-pointer border-0 bg-transparent px-3.5! pt-7! pe-10! pb-2! shadow-none focus-visible:ring-0"
         >
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>

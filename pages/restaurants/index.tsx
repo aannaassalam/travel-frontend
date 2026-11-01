@@ -37,7 +37,7 @@ const fromSelect = (v: string) => (v === ANY ? "" : v);
  * can have it for the rest of the visit.
  */
 export default function RestaurantsPage() {
-  const { t, locale, view = "list" } = usePrefs();
+  const { t, view = "list" } = usePrefs();
   const router = useRouter();
   const grid = view === "grid";
 
@@ -90,11 +90,8 @@ export default function RestaurantsPage() {
       ...(key === "city" ? { destination: undefined } : {})
     });
 
-  const title = locale === "fr" ? "Restaurants et livraison en RDC" : "Restaurants and delivery in the DRC";
-  const description =
-    locale === "fr"
-      ? "Commandez des plats congolais et continentaux à Kinshasa, Lubumbashi et Goma. Livraison à domicile, paiement en espèces à la livraison."
-      : "Order Congolese and continental food in Kinshasa, Lubumbashi and Goma. Home delivery, cash on delivery.";
+  const title = t("pg.restaurants.title");
+  const description = t("pg.restaurants.description");
 
   return (
     <Layout title={title} description={description}>
@@ -112,7 +109,7 @@ export default function RestaurantsPage() {
               ) : (
                 <span>
                   <strong className="font-semibold text-ink-900">{total}</strong>{" "}
-                  {locale === "fr" ? "restaurants livrent chez vous" : "restaurants deliver to you"}
+                  {t("pg.restaurants.countSuffix")}
                 </span>
               )}
             </div>
@@ -124,17 +121,17 @@ export default function RestaurantsPage() {
               value={toSelect(params.city)}
               onValueChange={(v) => setParam("city", fromSelect(v))}
               options={[
-                { value: ANY, label: locale === "fr" ? "Toutes les villes" : "All cities" },
+                { value: ANY, label: t("pg.restaurants.allCities") },
                 ...cities.map((c) => ({ value: c, label: c }))
               ]}
               triggerClassName="rounded-xl px-4 py-2.5 shadow-xs"
             />
             <InlineSelect
-              ariaLabel={locale === "fr" ? "Cuisine" : "Cuisine"}
+              ariaLabel={t("pg.restaurants.cuisine")}
               value={toSelect(params.cuisine)}
               onValueChange={(v) => setParam("cuisine", fromSelect(v))}
               options={[
-                { value: ANY, label: locale === "fr" ? "Toutes les cuisines" : "All cuisines" },
+                { value: ANY, label: t("pg.restaurants.allCuisines") },
                 ...cuisines.map((c) => ({ value: c, label: c }))
               ]}
               triggerClassName="rounded-xl px-4 py-2.5 shadow-xs"
@@ -181,15 +178,11 @@ export default function RestaurantsPage() {
             <p className="text-lg font-bold text-brand-900">
               {q.q
                 ? t("results.noMatch", { q: q.q })
-                : locale === "fr"
-                  ? "Aucun restaurant ne livre encore ici"
-                  : "No restaurant delivers here yet"}
+                : t("pg.restaurants.emptyTitle")}
             </p>
             {!q.q && (
               <p className="mx-auto mt-2 max-w-md text-sm text-ink-700">
-                {locale === "fr"
-                  ? "Nous ajoutons des cuisines chaque semaine. Essayez une autre ville en attendant."
-                  : "We add kitchens every week. Try another city in the meantime."}
+                {t("pg.restaurants.emptyBody")}
               </p>
             )}
             <button
@@ -199,9 +192,7 @@ export default function RestaurantsPage() {
             >
               {q.q
                 ? t("results.clearSearch")
-                : locale === "fr"
-                  ? "Voir toutes les villes"
-                  : "See all cities"}
+                : t("pg.restaurants.seeAllCities")}
             </button>
           </div>
         ) : (

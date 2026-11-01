@@ -22,18 +22,18 @@ import Image from "next/image";
 import { useRouter } from "next/router";
 
 /** Section headings, in the order MENU_SECTIONS declares them. */
-const SECTION_LABEL: Record<MenuSection, { fr: string; en: string }> = {
-  STARTER: { fr: "Entrées", en: "Starters" },
-  MAIN: { fr: "Plats", en: "Mains" },
-  SIDE: { fr: "Accompagnements", en: "Sides" },
-  DESSERT: { fr: "Desserts", en: "Desserts" },
-  DRINK: { fr: "Boissons", en: "Drinks" }
+const SECTION_KEY: Record<MenuSection, string> = {
+  STARTER: "pg.menu.section.starter",
+  MAIN: "pg.menu.section.main",
+  SIDE: "pg.menu.section.side",
+  DESSERT: "pg.menu.section.dessert",
+  DRINK: "pg.menu.section.drink"
 };
 
 export default function RestaurantPage() {
   const router = useRouter();
   const slug = String(router.query.slug ?? "");
-  const { t, locale, currency } = usePrefs();
+  const { t, locale, currency, lz } = usePrefs();
 
   const { data, isPending, isError } = useQuery({
     queryKey: ["restaurant", slug],
@@ -55,16 +55,14 @@ export default function RestaurantPage() {
       >
         <div className="container-site py-16 text-center text-ink-500">
           {isError
-            ? locale === "fr"
-              ? "Ce restaurant est introuvable."
-              : "That restaurant could not be found."
+            ? t("pg.menu.notFound")
             : t("common.loading")}
         </div>
       </Layout>
     );
   }
 
-  const name = r.name.fr || r.name.en || "";
+  const name = lz(r.name);
   // Grouped here rather than by the API: the endpoint already returns the menu
   // in reading order, so this only has to preserve it.
   const sections = (Object.keys(MENU_SECTIONS) as MenuSection[])
@@ -74,7 +72,7 @@ export default function RestaurantPage() {
   return (
     <Layout
       title={`${name} — ${r.city}`}
-      description={r.description.fr || r.description.en || ""}
+      description={lz(r.description)}
       image={mediaUrl(r.images[0])}
     >
       <div className="container-site py-8">
@@ -89,7 +87,7 @@ export default function RestaurantPage() {
         <div className="mb-8">
           <h1 className="display text-[30px] leading-tight text-brand-900 sm:text-[38px]">{name}</h1>
           <p className="mt-2 max-w-2xl text-base text-ink-700">
-            {r.description.fr || r.description.en}
+            {lz(r.description)}
           </p>
 
           <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-ink-700">
@@ -106,12 +104,12 @@ export default function RestaurantPage() {
             </span>
             <span className="flex items-center gap-1.5">
               <Clock className="size-4 text-brand-500" />
-              {r.openingHours}
+              {lz(r.openingHours)}
             </span>
             {r.phone && (
               <a href={`tel:${r.phone}`} className="flex items-center gap-1.5 hover:underline">
                 <Phone className="size-4 text-brand-500" />
-                {r.phone}
+                <span dir="ltr">{r.phone}</span>
               </a>
             )}
           </div>
@@ -122,7 +120,7 @@ export default function RestaurantPage() {
             <div className="mt-5 rounded-card bg-brand-50 p-5 ring-1 ring-brand-100 ring-inset">
               <h2 className="flex items-center gap-2 text-sm font-bold text-brand-900">
                 <Bike className="size-4" />
-                {locale === "fr" ? "Zones de livraison" : "Delivery zones"}
+                {t("pg.menu.deliveryZones")}
               </h2>
               <ul className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {r.deliveryZones.map((z) => (
@@ -130,11 +128,11 @@ export default function RestaurantPage() {
                     key={z.id}
                     className="flex items-baseline justify-between gap-3 rounded-xl bg-white px-4 py-2.5 text-sm"
                   >
-                    <span className="font-semibold text-ink-900">{z.name}</span>
+                    <span className="font-semibold text-ink-900">{lz(z.name)}</span>
                     <span className="text-ink-700">
                       {price(z.fee, currency, locale)}
-                      <span className="ml-2 text-ink-500">
-                        · {r.prepTimeMinutes + z.etaMinutes} min
+                      <span className="ms-2 text-ink-500">
+                        · {t("pg.menu.minutes", { n: r.prepTimeMinutes + z.etaMinutes })}
                       </span>
                     </span>
                   </li>
@@ -142,9 +140,7 @@ export default function RestaurantPage() {
               </ul>
               {r.deliveryZones.some((z) => z.minOrder) && (
                 <p className="mt-3 text-xs text-ink-500">
-                  {locale === "fr"
-                    ? "Certaines zones ont une commande minimum, indiquée au paiement."
-                    : "Some zones have a minimum order, shown at checkout."}
+                  {t("pg.menu.minOrderNote")}
                 </p>
               )}
             </div>
@@ -160,7 +156,7 @@ export default function RestaurantPage() {
           {sections.map(({ section, items }) => (
             <section key={section}>
               <h2 className="mb-4 text-xl font-bold text-brand-900">
-                {locale === "fr" ? SECTION_LABEL[section].fr : SECTION_LABEL[section].en}
+                {t(SECTION_KEY[section])}
               </h2>
               <ul className="grid gap-4 sm:grid-cols-2">
                 {items.map((item) => (
@@ -202,7 +198,7 @@ export default function RestaurantPage() {
 }
 
 function MenuRow({ item, restaurant }: { item: MenuItem; restaurant: Restaurant }) {
-  const { locale, currency } = usePrefs();
+  const { t, locale, currency, lz } = usePrefs();
   const { lines, add, setQuantity } = useCart();
   const line = lines.find((l) => l.menuItemId === item.id);
   const qty = line?.quantity ?? 0;
@@ -222,22 +218,22 @@ function MenuRow({ item, restaurant }: { item: MenuItem; restaurant: Restaurant 
         </div>
       )}
       <div className="min-w-0 flex-1">
-        <h3 className="font-semibold text-ink-900">{item.name.fr || item.name.en}</h3>
+        <h3 className="font-semibold text-ink-900">{lz(item.name)}</h3>
         <p className="mt-0.5 line-clamp-2 text-sm text-ink-500">
-          {item.description.fr || item.description.en}
+          {lz(item.description)}
         </p>
         <div className="mt-3 flex items-center justify-between gap-3">
           <div>
             <span className="font-bold text-brand-900">
               {price(item.sellPrice, currency, locale)}
             </span>
-            <PromoWas promotion={item.promotion} className="ml-1.5" />
+            <PromoWas promotion={item.promotion} className="ms-1.5" />
             <PromoEnds promotion={item.promotion} className="mt-0.5" />
           </div>
 
           {soldOut ? (
             <span className="rounded-md bg-ink-100 px-2.5 py-1 text-xs font-semibold text-ink-500">
-              {locale === "fr" ? "Épuisé aujourd’hui" : "Sold out today"}
+              {t("pg.menu.soldOut")}
             </span>
           ) : qty === 0 ? (
             <button
@@ -246,14 +242,14 @@ function MenuRow({ item, restaurant }: { item: MenuItem; restaurant: Restaurant 
               className="btn btn-sm btn-dark"
             >
               <Plus className="size-4" />
-              {locale === "fr" ? "Ajouter" : "Add"}
+              {t("pg.menu.add")}
             </button>
           ) : (
             <div className="flex items-center gap-1 rounded-xl bg-brand-50 p-1 ring-1 ring-brand-100 ring-inset">
               <button
                 type="button"
                 onClick={() => setQuantity(item.id, qty - 1)}
-                aria-label={locale === "fr" ? "Retirer un" : "Remove one"}
+                aria-label={t("pg.menu.removeOne")}
                 className="grid size-8 place-items-center rounded-lg text-brand-900 transition-colors hover:bg-white"
               >
                 <Minus className="size-4" />
@@ -264,7 +260,7 @@ function MenuRow({ item, restaurant }: { item: MenuItem; restaurant: Restaurant 
               <button
                 type="button"
                 onClick={() => add(item, restaurant)}
-                aria-label={locale === "fr" ? "Ajouter un" : "Add one"}
+                aria-label={t("pg.menu.addOne")}
                 className="grid size-8 place-items-center rounded-lg text-brand-900 transition-colors hover:bg-white"
               >
                 <Plus className="size-4" />

@@ -6,6 +6,7 @@ import { mediaUrl } from "@/lib/media";
 import { multiply } from "@/lib/money";
 import { usePrefs } from "@/lib/prefs";
 import { durationLabel } from "@/lib/rental";
+import { FALLBACK } from "@/lib/i18n";
 import { fmtKm } from "@/lib/transfers";
 import { usePolicyNotice, usePolicyTitle } from "@/lib/siteContent";
 import { cn } from "@/lib/utils";
@@ -191,7 +192,7 @@ export function Summary({ children }: { children?: React.ReactNode }) {
               {selection.rentalBlocks.map((b) => (
                 <div key={b.hours} className="flex justify-between gap-4">
                   <dt className="text-ink-500">
-                    {b.count} × {b.hours} h
+                    {t("cmp.rental.block", { count: b.count, hours: b.hours })}
                   </dt>
                   <dd className="font-medium">
                     <Price money={b.price} />
@@ -219,7 +220,7 @@ export function Summary({ children }: { children?: React.ReactNode }) {
               ) : selection.transfer.hours ? (
                 <div className="flex justify-between gap-4">
                   <dt className="text-ink-500">{t("transfer.hours")}</dt>
-                  <dd className="font-medium">{selection.transfer.hours} h</dd>
+                  <dd className="font-medium">{t("rental.hoursShort", { n: selection.transfer.hours })}</dd>
                 </div>
               ) : null}
               <div className="flex justify-between gap-4">
@@ -276,8 +277,9 @@ export function Summary({ children }: { children?: React.ReactNode }) {
  * The consent sentence the office has published — the one the server stores
  * with the order as "the text the customer was shown" — and which version it
  * is. It used to be a copy built into this site, so editing the policy in the
- * admin changed what was recorded but not what was read. Same choice of
- * language as the server makes: the visitor's, else French.
+ * admin changed what was recorded but not what was read. The site's fallback
+ * chain (as /terms): the visitor's language, then English or French. The office
+ * writes it in those two, which is what the server records for the others.
  */
 const NO_REFUND_KEY = ["policy", "NO_REFUND"];
 const POLICY_PATIENCE_MS = 30_000;
@@ -316,7 +318,7 @@ export function useNoRefundPolicy() {
     // time for nothing: asked again by itself, slow became twice as slow.
     retry: (failures, e) => failures < 1 && !(e instanceof ApiError && e.code === "TIMEOUT")
   });
-  const from = data?.bodies[locale] ? locale : "fr";
+  const from = FALLBACK[locale].find((l) => data?.bodies[l]) ?? "fr";
   const sentence = data?.bodies[from];
   const versionId = data?.versions?.[from];
   return {
@@ -347,9 +349,9 @@ export function useNoRefundPolicy() {
         // Answered in another language than the one on screen: the server has
         // no text in this one (any more), so it is the other that applies —
         // and keeping ours would have the same old sentence refused for ever.
-        if (p.locale !== locale) {
-          delete bodies[locale];
-          delete versions[locale];
+        if (p.locale !== from) {
+          delete bodies[from];
+          delete versions[from];
         }
         return { ...old, bodies, versions };
       });
@@ -422,7 +424,7 @@ export function ConsentBox({
           </span>
         </label>
       )}
-      <p id="consent-help" className="mt-2 pl-8 text-xs text-ink-500">
+      <p id="consent-help" className="mt-2 ps-8 text-xs text-ink-500">
         {/* In a new tab: a checkout form is not a page to navigate away
             from — the restaurant one keeps what was typed nowhere else. */}
         <Link
@@ -435,7 +437,7 @@ export function ConsentBox({
         </Link>
       </p>
       {error && (
-        <p role="alert" className="mt-2 pl-8 text-sm font-semibold text-bad-600">
+        <p role="alert" className="mt-2 ps-8 text-sm font-semibold text-bad-600">
           {t("policy.consentRequired")}
         </p>
       )}

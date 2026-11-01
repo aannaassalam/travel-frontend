@@ -46,7 +46,7 @@ export default function Pager({ page, pages, total }: { page: number; pages: num
     <nav aria-label={t("results.pages")} className="col-span-full flex flex-col items-center gap-3 py-2">
       <p className="text-sm text-ink-500">{t("results.showing", { from, to, total })}</p>
       <ul className="flex flex-wrap items-center justify-center gap-1.5">
-        <li>{step(page - 1, t("results.prev"), <ChevronLeft className="size-4" aria-hidden />, "prev")}</li>
+        <li>{step(page - 1, t("results.prev"), <ChevronLeft className="size-4 rtl:-scale-x-100" aria-hidden />, "prev")}</li>
         {pageItems(page, pages).map((n, i) =>
           n === "gap" ? (
             <li key={`gap-${i}`} aria-hidden className="px-1 text-ink-500">
@@ -66,7 +66,7 @@ export default function Pager({ page, pages, total }: { page: number; pages: num
             </li>
           )
         )}
-        <li>{step(page + 1, t("results.next"), <ChevronRight className="size-4" aria-hidden />, "next")}</li>
+        <li>{step(page + 1, t("results.next"), <ChevronRight className="size-4 rtl:-scale-x-100" aria-hidden />, "next")}</li>
       </ul>
     </nav>
   );

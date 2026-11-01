@@ -264,7 +264,7 @@ export default function PaymentStep() {
                 </span>
               </label>
               {errors.terms && (
-                <p role="alert" className="mt-2 pl-7 text-sm font-semibold text-bad-600">
+                <p role="alert" className="mt-2 ps-7 text-sm font-semibold text-bad-600">
                   {t("err.required")}
                 </p>
               )}
@@ -396,9 +396,7 @@ export default function PaymentStep() {
                 </button>
                 {blocked && (
                   <p id="consent-required" className="text-sm text-ink-500">
-                    {locale === "fr"
-                      ? "Cochez les deux cases pour continuer."
-                      : "Tick both boxes to continue."}
+                    {t("pg.payment.tickBoth")}
                   </p>
                 )}
               </div>

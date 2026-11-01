@@ -115,20 +115,21 @@ export function hasPrice(money: Money | number | undefined): boolean {
 
 /** §5: never leave the settlement currency ambiguous — that is what disputes are made of. */
 export function SettlementNote({ money }: { money: Money | number | undefined }) {
-  const { currency, locale } = usePrefs();
+  const { currency, locale, t } = usePrefs();
   const note = settlementNote(money, currency, locale);
   if (!note) return null;
   return (
     <p className="text-xs text-ink-500">
-      {locale === "fr" ? "Vous serez débité de " : "You will be charged "}
+      {t("price.chargedPrefix")}{" "}
       <strong className="font-semibold text-ink-700">{note}</strong>
     </p>
   );
 }
 
 export function Stars({ n, className }: { n: number; className?: string }) {
+  const { t } = usePrefs();
   return (
-    <span className={cn("inline-flex items-center gap-0.5", className)} aria-label={`${n} étoiles`}>
+    <span className={cn("inline-flex items-center gap-0.5", className)} aria-label={t("stars.label", { n })}>
       {Array.from({ length: n }, (_, i) => (
         <Star key={i} className="size-3.5 fill-accent-500 text-accent-500" aria-hidden="true" />
       ))}
@@ -145,7 +146,7 @@ export function RatingBadge({
   count?: number;
   size?: "sm" | "md";
 }) {
-  const { t, locale } = usePrefs();
+  const { t } = usePrefs();
   if (!rating) {
     return <span className="text-xs text-ink-500">{t("listing.noReviews")}</span>;
   }
@@ -153,17 +154,17 @@ export function RatingBadge({
   // for itself rather than being called "Good".
   const label =
     rating >= 4.5
-      ? locale === "fr" ? "Exceptionnel" : "Exceptional"
+      ? t("rating.exceptional")
       : rating >= 4.2
-        ? locale === "fr" ? "Très bien" : "Very good"
+        ? t("rating.veryGood")
         : rating >= 3.5
-          ? locale === "fr" ? "Bien" : "Good"
+          ? t("rating.good")
           : "";
   return (
     <span className="inline-flex items-center gap-2">
       <span
         className={cn(
-          "tnum rounded-lg rounded-bl-sm bg-brand-900 font-bold text-white shadow-xs",
+          "tnum rounded-lg rounded-es-sm bg-brand-900 font-bold text-white shadow-xs",
           size === "sm" ? "px-1.5 py-1 text-xs" : "px-2.5 py-1.5 text-sm"
         )}
       >
@@ -283,7 +284,7 @@ export function SectionHeading({
           className="group inline-flex items-center gap-1.5 text-sm font-semibold text-brand-600 transition-colors hover:text-brand-900"
         >
           {cta}
-          <ChevronRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+          <ChevronRight className="size-4 transition-transform group-hover:translate-x-0.5 rtl:-scale-x-100 rtl:group-hover:-translate-x-0.5" />
         </Link>
       )}
     </div>
@@ -291,8 +292,9 @@ export function SectionHeading({
 }
 
 export function Breadcrumbs({ items }: { items: { label: string; href?: string }[] }) {
+  const { t } = usePrefs();
   return (
-    <nav aria-label="Fil d'Ariane" className="mb-4 text-sm text-ink-500">
+    <nav aria-label={t("common.breadcrumb")} className="mb-4 text-sm text-ink-500">
       <ol className="flex flex-wrap items-center gap-1">
         {items.map((item, i) => (
           <li key={i} className="flex items-center gap-1">
@@ -303,7 +305,7 @@ export function Breadcrumbs({ items }: { items: { label: string; href?: string }
             ) : (
               <span className="text-ink-700">{item.label}</span>
             )}
-            {i < items.length - 1 && <ChevronRight className="size-3.5" aria-hidden="true" />}
+            {i < items.length - 1 && <ChevronRight className="size-3.5 rtl:-scale-x-100" aria-hidden="true" />}
           </li>
         ))}
       </ol>

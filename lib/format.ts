@@ -1,14 +1,14 @@
 import { Locale } from "@/typescript/interface/domain.interface";
+import { intlLocale, translate } from "./i18n";
 
 /**
- * §6 formatting. Everything goes through Intl — DRC conventions (DD/MM/YYYY,
- * space thousands separator, comma decimal) come free from fr-FR.
+ * §6 formatting. Everything goes through Intl with the locale's tag
+ * (`intlLocale`) — DRC conventions (DD/MM/YYYY, space thousands separator,
+ * comma decimal) come free from fr-FR.
  *
  * §8: timestamps are ISO 8601 with offset. DRC spans UTC+1 and UTC+2, so a
  * naive local time is a wrong time for half the country.
  */
-
-const tag = (locale: Locale) => (locale === "en" ? "en-GB" : "fr-FR");
 
 /**
  * A missing or unreadable time renders as nothing. Intl throws on an invalid
@@ -22,7 +22,7 @@ const fmt = (
 ) => {
   const date = iso ? new Date(iso) : null;
   return date && !Number.isNaN(date.getTime())
-    ? new Intl.DateTimeFormat(tag(locale), options).format(date)
+    ? new Intl.DateTimeFormat(intlLocale(locale), options).format(date)
     : "";
 };
 
@@ -62,10 +62,10 @@ export function formatMinutes(total: number, locale: Locale = "fr") {
   const h = Math.floor((total % 1440) / 60);
   const m = total % 60;
   const parts: string[] = [];
-  if (days) parts.push(locale === "fr" ? `${days} j` : `${days}d`);
-  if (h) parts.push(locale === "fr" ? `${h} h` : `${h}h`);
-  if (m) parts.push(locale === "fr" ? `${m} min` : `${m}m`);
-  return parts.join(" ") || (locale === "fr" ? "0 min" : "0m");
+  if (days) parts.push(translate(locale, "time.days", { n: days }));
+  if (h) parts.push(translate(locale, "time.hours", { n: h }));
+  if (m) parts.push(translate(locale, "time.minutes", { n: m }));
+  return parts.join(" ") || translate(locale, "time.minutes", { n: 0 });
 }
 
 /**

@@ -5,6 +5,7 @@ import {
   SelectItem,
   SelectTrigger
 } from "@/components/ui/select";
+import { usePrefs } from "@/lib/prefs";
 import { cn } from "@/lib/utils";
 import { AlertCircle } from "lucide-react";
 import { useId } from "react";
@@ -55,11 +56,14 @@ export function PhoneField({
   helper?: string;
   autoFocus?: boolean;
 }) {
+  const { t } = usePrefs();
   const id = useId();
   return (
     <div>
       <span className="eyebrow mb-2 block text-brand-600">{label}</span>
+      {/* Left to right in every language: the dial code then the number, as it is dialled. */}
       <div
+        dir="ltr"
         className="flex items-stretch gap-2"
         data-invalid={Boolean(error) || undefined}
       >
@@ -69,7 +73,7 @@ export function PhoneField({
         >
           <SelectTrigger
             id={`${id}-country`}
-            aria-label={`${label} - country`}
+            aria-label={t("cmp.phone.country", { label })}
             className={cn(
               TRIGGER_H,
               "w-32 shrink-0 justify-between rounded-xl border-0 bg-white px-3 text-[15px] font-semibold text-ink-900 shadow-xs ring-1 ring-ink-100 ring-inset focus-visible:ring-2 focus-visible:ring-brand-500"
@@ -86,8 +90,8 @@ export function PhoneField({
               <SelectItem key={c.code} value={c.code}>
                 {/* The open list has room for the name, which is what
                     disambiguates the countries sharing a dial code. */}
-                <span className="mr-2">{c.flag}</span>
-                <span className="tnum mr-2 font-semibold">{c.dial}</span>
+                <span className="me-2">{c.flag}</span>
+                <span dir="ltr" className="tnum me-2 font-semibold">{c.dial}</span>
                 <span className="text-ink-500">{c.name}</span>
               </SelectItem>
             ))}

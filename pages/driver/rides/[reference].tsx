@@ -64,7 +64,7 @@ export default function DriverRidePage() {
         href="/driver/rides"
         className="inline-flex min-h-12 items-center gap-2 text-sm font-semibold text-brand-700"
       >
-        <ArrowLeft className="size-4" aria-hidden="true" />
+        <ArrowLeft className="size-4 rtl:-scale-x-100" aria-hidden="true" />
         {t("driver.rides")}
       </Link>
 
@@ -136,7 +136,7 @@ export default function DriverRidePage() {
                 <dd className="font-semibold text-ink-900">
                   {customer?.name}
                   {customer?.phone && (
-                    <a href={`tel:${dial(customer.phone)}`} className="ml-2 font-normal text-brand-700 underline">
+                    <a href={`tel:${dial(customer.phone)}`} className="ms-2 font-normal text-brand-700 underline" dir="ltr">
                       {customer.phone}
                     </a>
                   )}
@@ -216,7 +216,7 @@ export default function DriverRidePage() {
               <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-ink-500">
                 {t("steps.history")}
               </h2>
-              <ol className="relative space-y-3 border-l-2 border-ink-100 pl-5">
+              <ol className="relative space-y-3 border-s-2 border-ink-100 ps-5">
                 {ride.timeline.map((e, i) => (
                   <li key={i}>
                     <p className="text-sm font-semibold text-ink-900">

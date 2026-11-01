@@ -113,7 +113,7 @@ export function LocationField({
         <ul
           id={`${id}-list`}
           role="listbox"
-          className="motion-settle absolute left-0 top-[calc(100%+0.75rem)] z-50 max-h-72 w-[min(20rem,80vw)] overflow-y-auto rounded-xl bg-white p-1.5 shadow-lg ring-1 ring-ink-100 ring-inset"
+          className="motion-settle absolute start-0 top-[calc(100%+0.75rem)] z-50 max-h-72 w-[min(20rem,80vw)] overflow-y-auto rounded-xl bg-white p-1.5 shadow-lg ring-1 ring-ink-100 ring-inset"
         >
           {matches.map((o, i) => (
             <li

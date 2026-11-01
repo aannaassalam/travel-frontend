@@ -102,7 +102,7 @@ export function PlaceField({
   return (
     // data-place-field / data-pick-on-map: where the map picker hands focus back (see MapPicker).
     <div ref={box} className="relative" data-place-field>
-      <div className="field flex items-center gap-2 pr-2" data-filled={text ? true : undefined}>
+      <div className="field flex items-center gap-2 pe-2" data-filled={text ? true : undefined}>
         <label htmlFor={id} className="field-label">
           {label}
         </label>
@@ -161,7 +161,7 @@ export function PlaceField({
       </div>
 
       {open && (listed || onLocate || noMatch) && (
-        <div className="motion-settle absolute left-0 top-[calc(100%+0.5rem)] z-50 max-h-80 w-full overflow-y-auto rounded-xl bg-white p-1.5 shadow-lg ring-1 ring-ink-100 ring-inset">
+        <div className="motion-settle absolute start-0 top-[calc(100%+0.5rem)] z-50 max-h-80 w-full overflow-y-auto rounded-xl bg-white p-1.5 shadow-lg ring-1 ring-ink-100 ring-inset">
           {onLocate && (
             // A button, not an option: it opens the map rather than choosing a value.
             <button
@@ -171,7 +171,7 @@ export function PlaceField({
                 setOpen(false);
                 onLocate();
               }}
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-brand-700 hover:bg-brand-50"
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-start text-sm font-semibold text-brand-700 hover:bg-brand-50"
             >
               <LocateFixed className="size-4 shrink-0" aria-hidden="true" />
               {t("transfer.myLocation")}
@@ -219,7 +219,7 @@ export function PlaceField({
                 setOpen(false);
                 onPickOnMap();
               }}
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm text-ink-700 hover:bg-brand-50"
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-start text-sm text-ink-700 hover:bg-brand-50"
             >
               <MapPinned className="size-4 shrink-0 text-brand-700" aria-hidden="true" />
               {t("transfer.noMatch")}

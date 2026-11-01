@@ -80,7 +80,7 @@ function VehicleTypes({ city, categories }: { city: string; categories: Transfer
                 {c.luggage ? ` · ${c.luggage}` : ""}
               </span>
             </span>
-            <span className="ml-auto text-right text-sm font-semibold text-brand-900">
+            <span className="ms-auto text-end text-sm font-semibold text-brand-900">
               {has(c.pricePerKm) && (
                 <span className="block">{t("transfer.perKm", { price: price(c.pricePerKm, currency, locale) })}</span>
               )}
@@ -368,7 +368,7 @@ export default function TransfersPage() {
     Array.from({ length: n - from + 1 }, (_, i) => ({ value: String(from + i), label: String(from + i) }));
 
   return (
-    <Layout title={t("transfer.title")} description={t("transfer.description")}>
+    <Layout title={t("pg.transfers.title")} description={t("transfer.description")}>
       <div className="bg-brand-900 text-white">
         <div className="container-site py-10 sm:py-14">
           <p className="eyebrow mb-3 flex items-center gap-2 text-accent-500">
@@ -376,7 +376,7 @@ export default function TransfersPage() {
             {t("nav.transfers")}
           </p>
           <h1 className="display max-w-2xl text-[30px] leading-tight sm:text-[40px]">
-            {t("transfer.title")}
+            {t("pg.transfers.title")}
           </h1>
           <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-white/75">{t("transfer.intro")}</p>
         </div>
@@ -416,7 +416,7 @@ export default function TransfersPage() {
                     aria-pressed={mode === m}
                     onClick={() => changeMode(m)}
                     className={cn(
-                      "rounded-xl p-4 text-left ring-1 ring-inset transition-colors",
+                      "rounded-xl p-4 text-start ring-1 ring-inset transition-colors",
                       mode === m ? "bg-brand-50 ring-2 ring-brand-500" : "bg-white ring-ink-100 hover:bg-ink-50"
                     )}
                   >
@@ -476,7 +476,7 @@ export default function TransfersPage() {
                     label={t("transfer.hours")}
                     value={String(hours)}
                     onValueChange={(v) => setHours(Number(v))}
-                    options={count(HOURS_MAX).map((o) => ({ ...o, label: `${o.label} h` }))}
+                    options={count(HOURS_MAX).map((o) => ({ ...o, label: t("pg.transfers.hoursOption", { n: o.label }) }))}
                   />
                 )}
                 {pickError && (
@@ -595,7 +595,7 @@ export default function TransfersPage() {
                               onClick={() => setCategoryId(q.categoryId)}
                               className={cn(
                                 // Wraps: on a phone the price drops under the name instead of squeezing it.
-                                "flex w-full flex-wrap items-center gap-4 rounded-xl p-4 text-left ring-1 ring-inset transition-colors",
+                                "flex w-full flex-wrap items-center gap-4 rounded-xl p-4 text-start ring-1 ring-inset transition-colors",
                                 chosen ? "bg-brand-50 ring-2 ring-brand-500" : "bg-white ring-ink-100 hover:bg-ink-50",
                                 !q.available && "cursor-not-allowed opacity-60"
                               )}
@@ -626,7 +626,7 @@ export default function TransfersPage() {
                                   </span>
                                 )}
                               </span>
-                              <span className="ml-auto shrink-0 text-right">
+                              <span className="ms-auto shrink-0 text-end">
                                 <Price money={q.price} className="block text-lg font-bold text-brand-900" />
                                 <span className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-brand-700">
                                   {chosen && <Check className="size-3.5" aria-hidden="true" />}

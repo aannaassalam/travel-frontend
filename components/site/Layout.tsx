@@ -41,7 +41,7 @@ export default function Layout({
   transparentHeader?: boolean;
   jsonLd?: object | object[];
 }) {
-  const { locale } = usePrefs();
+  const { locale, t } = usePrefs();
   const router = useRouter();
   const path = router.asPath.split(/[?#]/)[0];
   const canonical = `${SITE}${path === "/" ? "" : path}`;
@@ -97,9 +97,9 @@ export default function Layout({
 
       <a
         href="#contenu"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-white focus:px-4 focus:py-2 focus:font-semibold focus:text-brand-900"
+        className="sr-only focus:not-sr-only focus:absolute focus:start-4 focus:top-4 focus:z-50 focus:rounded focus:bg-white focus:px-4 focus:py-2 focus:font-semibold focus:text-brand-900"
       >
-        Aller au contenu
+        {t("common.skipToContent")}
       </a>
       <Header transparent={transparentHeader} />
       {/* Not in the Tab order: back to top hands focus to it, unoutlined. */}
@@ -117,13 +117,13 @@ export default function Layout({
 }
 
 /**
- * Back to the top, once a page has been scrolled about a screen. Bottom right,
- * clear of a phone's home bar. Smooth, or instant under reduced motion: the
- * page's own scroll-behavior decides (globals.css).
+ * Back to the top, once a page has been scrolled about a screen. Bottom right
+ * (left in Arabic), clear of a phone's home bar. Smooth, or instant under
+ * reduced motion: the page's own scroll-behavior decides (globals.css).
  *
  * Over the restaurant basket bar it sits above it, and in the layer just under
  * it, so the basket's opened list covers it rather than the reverse — its
- * remove buttons are on the same right-hand edge.
+ * remove buttons are on the same edge.
  */
 function BackToTop() {
   const { t } = usePrefs();
@@ -172,7 +172,7 @@ function BackToTop() {
       aria-label={t("common.backToTop")}
       title={t("common.backToTop")}
       className={cn(
-        "fixed right-[calc(1rem+env(safe-area-inset-right))] grid size-12 place-items-center rounded-full bg-brand-900 text-white shadow-lg ring-1 ring-white/20 transition-colors hover:bg-brand-700",
+        "fixed end-[calc(1rem+env(safe-area-inset-right))] rtl:end-[calc(1rem+env(safe-area-inset-left))] grid size-12 place-items-center rounded-full bg-brand-900 text-white shadow-lg ring-1 ring-white/20 transition-colors hover:bg-brand-700",
         overBasket
           ? "bottom-[calc(6rem+env(safe-area-inset-bottom))] z-20"
           : "bottom-[calc(1rem+env(safe-area-inset-bottom))] z-30",

@@ -78,7 +78,7 @@ export default function BookingDetail() {
               <div className="rounded-card bg-warn-100 p-6 ring-2 ring-warn-600/30 ring-inset">
                 <h3 className="flex items-center gap-2 font-bold text-brand-900">
                   <Banknote className="size-5 text-warn-600" />
-                  {locale === "fr" ? "Paiement en agence" : "Cash payment"}
+                  {t("pg.booking.cashTitle")}
                 </h3>
                 <p className="mt-2 text-[15px] text-ink-900">
                   {t("confirm.cashBody", {
@@ -99,7 +99,7 @@ export default function BookingDetail() {
                       {/* §10.5: masked by default. The full number never leaves
                           the server, and nothing on this page needs it. */}
                       {tr.documentNumberMasked && (
-                        <span className="ml-2 text-sm text-ink-500">
+                        <span className="ms-2 text-sm text-ink-500">
                           {tr.documentType} ••••{tr.documentNumberMasked.slice(-3)}
                         </span>
                       )}
@@ -130,9 +130,9 @@ export default function BookingDetail() {
                   <ShieldCheck className="size-5 text-brand-500" />
                   {policyTitle}
                 </h3>
-                <p className="mt-2 text-sm text-ink-900">« {order.consent.textShown} »</p>
+                <p className="mt-2 text-sm text-ink-900">{t("pg.confirm.quoted", { text: order.consent.textShown })}</p>
                 <p className="mt-2 text-xs text-ink-500">
-                  {locale === "fr" ? "Accepté le" : "Accepted on"}{" "}
+                  {t("pg.booking.acceptedOn")}{" "}
                   {fmtDateTime(order.consent.acceptedAt, locale)} ·{" "}
                   {order.consent.policyVersionLabel}
                 </p>
@@ -150,6 +150,7 @@ export default function BookingDetail() {
                 <a
                   href={`tel:${dial(contact.phone)}`}
                   className="btn btn-sm btn-dark"
+                  dir="ltr"
                 >
                   {contact.phone}
                 </a>

@@ -1,3 +1,4 @@
+import { localized } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
 import { siteText, usePolicyNotice, useSiteFooter } from "@/lib/siteContent";
 import { MapPin, MessageCircle, Phone, ShieldCheck , Mail } from "lucide-react";
@@ -7,13 +8,6 @@ import { dial, officeLines, officeTitle, useSiteContact, waLink } from "@/lib/co
 import { VERTICAL_NAV } from "./Header";
 import { useOnlinePayment } from "@/lib/payments";
 
-/**
- * §9.1 — how one can pay, named plainly. Online it is MaxiCash's page, which
- * takes cards and mobile money: named as it does, not as a list of brands this
- * site cannot vouch for. With online payment off, cash and nothing else.
- */
-const ONLINE_METHODS = ["MaxiCash", "Carte bancaire", "Mobile money"];
-
 export default function Footer() {
   const contact = useSiteContact();
   // The line under the logo, the reminder and the copyright line are the
@@ -21,7 +15,15 @@ export default function Footer() {
   const footer = useSiteFooter();
   const notice = usePolicyNotice();
   const { t, locale, lowData, setLowData } = usePrefs();
-  const paymentMethods = [...(useOnlinePayment().offered ? ONLINE_METHODS : []), "Espèces"];
+  /*
+   * §9.1 — how one can pay, named plainly. Online it is MaxiCash's page, which
+   * takes cards and mobile money: named as it does, not as a list of brands this
+   * site cannot vouch for. With online payment off, cash and nothing else.
+   */
+  const paymentMethods = [
+    ...(useOnlinePayment().offered ? ["MaxiCash", t("checkout.card"), t("checkout.mobileMoney")] : []),
+    t("footer.cash")
+  ];
 
   /*
    * `wash-dark` rather than flat brand-900: it is the treatment the hero and
@@ -36,7 +38,7 @@ export default function Footer() {
           {/* Room here for the full lockup, tagline and all. */}
           <Brand variant="full" />
           <p className="display max-w-xs text-[17px] leading-snug text-white/90">
-            {siteText(footer?.tagline, locale, t("brand.tagline"))}
+            {siteText(footer?.tagline, locale, "brand.tagline")}
           </p>
           {/* Read from Settings, not hardcoded: the office moves and changes
               numbers, and neither should need a developer (§15). With several
@@ -50,7 +52,7 @@ export default function Footer() {
               {contact.phone && (
                 <li className="flex gap-2">
                   <Phone className="mt-0.5 size-4 shrink-0 text-accent-500" />
-                  <a href={`tel:${dial(contact.phone)}`} className="hover:underline">
+                  <a href={`tel:${dial(contact.phone)}`} dir="ltr" className="hover:underline">
                     {contact.phone}
                   </a>
                 </li>
@@ -71,7 +73,7 @@ export default function Footer() {
               {contact.email && (
                 <li className="flex gap-2">
                   <Mail className="mt-0.5 size-4 shrink-0 text-accent-500" />
-                  <a href={`mailto:${contact.email}`} className="hover:underline">
+                  <a href={`mailto:${contact.email}`} dir="ltr" className="hover:underline">
                     {contact.email}
                   </a>
                 </li>
@@ -177,12 +179,13 @@ export default function Footer() {
                 <li key={office.id}>
                   <p className="mb-2 font-semibold text-white">{officeTitle(office)}</p>
                   <ul className="space-y-2 text-sm text-white/70">
-                    {officeLines(office).map(({ Icon, text, href, external }) => (
+                    {officeLines(office).map(({ Icon, text, href, external, dir }) => (
                       <li key={text} className="flex gap-2">
                         <Icon className="mt-0.5 size-4 shrink-0 text-accent-500" />
                         {href ? (
                           <a
                             href={href}
+                            dir={dir}
                             className="hover:underline"
                             {...(external
                               ? { target: "_blank", rel: "noopener noreferrer" }
@@ -208,7 +211,7 @@ export default function Footer() {
           <div className="flex flex-wrap items-center gap-2">
             {/* Its own line on a phone: inline, the label ate the row and left the
                 first chip stranded on the end of it. */}
-            <span className="eyebrow w-full text-white/60 sm:mr-1 sm:w-auto">
+            <span className="eyebrow w-full text-white/60 sm:me-1 sm:w-auto">
               {t("footer.payments")}
             </span>
             {paymentMethods.map((p) => (
@@ -229,7 +232,7 @@ export default function Footer() {
 
           <p className="text-xs text-white/50">
             © {new Date().getFullYear()}{" "}
-            {siteText(footer?.copyright, locale, `Flexi Agency. ${t("footer.rights")}`)}
+            {localized(footer?.copyright, locale) || `Flexi Agency. ${t("footer.rights")}`}
           </p>
         </div>
       </div>

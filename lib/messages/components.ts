@@ -1,0 +1,177 @@
+/**
+ * Strings moved out of components/** (catalog, search, checkout, restaurant, transfers, account, driver, ui, Seo, art) that were written inline per language.
+ *
+ * French and English here; the other languages have one file each (./es.ts …)
+ * holding every key. Use {name} for values: t("key", { name }).
+ */
+export const fr = {
+  // catalog: cards (RestaurantCard)
+  "cmp.minutes": "{n} min",
+  // catalog: Carousel, Gallery, Lightbox
+  "cmp.carousel.keysHint": "Utilisez les flèches du clavier pour faire défiler.",
+  "cmp.gallery.photos": "Photos",
+  "cmp.lightbox.prev": "Photo précédente",
+  "cmp.lightbox.next": "Photo suivante",
+  // catalog: cards, ListingDetail
+  "cmp.car.automatic": "Automatique",
+  "cmp.car.manual": "Manuelle",
+  "cmp.activity.max": "Max {n}",
+  "cmp.property.HOUSE_SALE": "Maison à vendre",
+  "cmp.property.LAND_SALE": "Terrain à vendre",
+  "cmp.property.APARTMENT_RENT": "Appartement à louer",
+  "cmp.property.HOUSE_RENT": "Maison à louer",
+  "cmp.property.LAND_RENT": "Terrain à louer",
+  "cmp.property.underOffer": "Sous offre",
+  "cmp.restaurant.feeFrom": "dès {price}",
+  // catalog: ListingDetail
+  "cmp.cityInDrc": "{city}, RDC",
+  "cmp.car.model": "Modèle",
+  "cmp.car.mileage": "Kilométrage",
+  "cmp.car.driver": "Chauffeur",
+  "cmp.car.deposit": "Caution",
+  "cmp.car.insurance": "Assurance",
+  "cmp.car.pickupPoints": "Points de retrait",
+  "cmp.activity.groupSize": "Participants",
+  "cmp.listing.similar": "Autres offres similaires",
+  // catalog: BookingBox
+  "cmp.rental.block": "{count} × {hours} h",
+  "cmp.booking.cashNote": "Paiement en espèces à notre agence. Aucun frais caché.",
+  // catalog: LeadForm
+  "cmp.lead.failedCall": "Votre demande n'a pas pu être envoyée. Appelez-nous au {phone}.",
+  "cmp.lead.failed": "Votre demande n'a pas pu être envoyée. Veuillez réessayer.",
+  "cmp.lead.privacy": "Nous n'utilisons votre numéro que pour cette demande. Aucune somme n'est prélevée à cette étape.",
+  // catalog: EmptyState, RecentlyViewed
+  "cmp.empty.outside": "Hors de notre réseau",
+  "cmp.empty.outsideBody": "Nous ne desservons pas encore {place}. Dites-nous ce dont vous avez besoin : nous travaillons avec des partenaires locaux et nous revenons vers vous avec un prix ferme.",
+  "cmp.empty.point1": "Nous achetons le stock à l'avance : ce qui n'est pas listé n'est pas encore acheté.",
+  "cmp.empty.point2": "Une demande n'engage à rien et ne prélève rien.",
+  "cmp.empty.point3": "Réponse sous 24 heures ouvrées, par téléphone ou WhatsApp.",
+  "cmp.recent.title": "Vus récemment",
+  // catalog: SearchResults
+  "cmp.results.unreachable": "Le catalogue est momentanément injoignable. Réessayez dans un instant.",
+  "cmp.results.notFinding": "Vous ne trouvez pas ce que vous cherchez ?",
+  // search: SearchWidget. roomsShort: "ch." = chambres (rooms), abbreviated
+  "cmp.search.roomsShort": "{n} ch.",
+  "cmp.search.allListings": "Tous les biens",
+  "cmp.search.anyCabin": "Toutes",
+  "cmp.search.eitherDriver": "Peu importe",
+  "cmp.search.withDriver": "Avec chauffeur",
+  "cmp.search.anyBudget": "Tous budgets",
+  "cmp.search.budgetMonthly": "≤ {price} / mois",
+  "cmp.search.unserviced": "Nous ne desservons pas encore {place}. Envoyez-nous votre demande et nous revenons vers vous.",
+  "cmp.search.recent": "Recherches récentes",
+  // restaurant: CartBar
+  "cmp.cart.replaceTitle": "Vider le panier ?",
+  "cmp.cart.replaceBody": "Votre panier contient des plats de {name}. Une commande ne peut venir que d’un seul restaurant.",
+  "cmp.cart.keep": "Garder",
+  "cmp.cart.emptyAndAdd": "Vider et ajouter",
+  "cmp.cart.removeOne": "Retirer un {name}",
+  "cmp.cart.addOne": "Ajouter un {name}",
+  "cmp.cart.remove": "Retirer {name}",
+  "cmp.cart.deliveryNote": "Les frais de livraison sont ajoutés au paiement, selon votre zone.",
+  "cmp.cart.item": "{n} article",
+  "cmp.cart.items": "{n} articles",
+  "cmp.cart.checkout": "Commander",
+  // account: order
+  "cmp.doc.ETICKET": "Billet électronique",
+  "cmp.doc.VOUCHER": "Voucher",
+  "cmp.doc.INVOICE": "Facture",
+  "cmp.doc.noneForRide": "Aucun document n'est émis pour une course.",
+  "cmp.doc.notYet": "Vos documents apparaîtront ici dès leur émission.",
+  "cmp.doc.download": "Télécharger",
+  "cmp.doc.downloadFailed": "Téléchargement impossible pour le moment. Réessayez.",
+  // ui: DatePicker
+  "cmp.date.open": "Ouvrir le calendrier",
+  "cmp.date.placeholder": "jj/mm/aaaa",
+  // ui: field (English only before: French added)
+  "cmp.password.show": "Afficher le mot de passe",
+  "cmp.password.hide": "Masquer le mot de passe",
+  // ui: PhoneField (English only before: French added)
+  "cmp.phone.country": "{label} - pays"
+};
+
+export const en: Record<keyof typeof fr, string> = {
+  // catalog: cards (RestaurantCard)
+  "cmp.minutes": "{n} min",
+  // catalog: Carousel, Gallery, Lightbox
+  "cmp.carousel.keysHint": "Use the arrow keys to scroll.",
+  "cmp.gallery.photos": "Photos",
+  "cmp.lightbox.prev": "Previous photo",
+  "cmp.lightbox.next": "Next photo",
+  // catalog: cards, ListingDetail
+  "cmp.car.automatic": "Automatic",
+  "cmp.car.manual": "Manual",
+  "cmp.activity.max": "Max {n}",
+  "cmp.property.HOUSE_SALE": "House for sale",
+  "cmp.property.LAND_SALE": "Land for sale",
+  "cmp.property.APARTMENT_RENT": "Apartment to rent",
+  "cmp.property.HOUSE_RENT": "House to rent",
+  "cmp.property.LAND_RENT": "Land to rent",
+  "cmp.property.underOffer": "Under offer",
+  "cmp.restaurant.feeFrom": "from {price}",
+  // catalog: ListingDetail
+  "cmp.cityInDrc": "{city}, RDC",
+  "cmp.car.model": "Model",
+  "cmp.car.mileage": "Mileage",
+  "cmp.car.driver": "Driver",
+  "cmp.car.deposit": "Deposit",
+  "cmp.car.insurance": "Insurance",
+  "cmp.car.pickupPoints": "Pick-up points",
+  "cmp.activity.groupSize": "Group size",
+  "cmp.listing.similar": "Other similar offers",
+  // catalog: BookingBox
+  "cmp.rental.block": "{count} × {hours} h",
+  "cmp.booking.cashNote": "Pay in cash at our office. No hidden fees.",
+  // catalog: LeadForm
+  "cmp.lead.failedCall": "Your request could not be sent. Call us on {phone}.",
+  "cmp.lead.failed": "Your request could not be sent. Please try again.",
+  "cmp.lead.privacy": "We use your number only for this request. Nothing is charged at this stage.",
+  // catalog: EmptyState, RecentlyViewed
+  "cmp.empty.outside": "Outside our network",
+  "cmp.empty.outsideBody": "We do not serve {place} yet. Tell us what you need — we work with local partners and will come back to you with a firm price.",
+  "cmp.empty.point1": "We buy stock in advance: what is not listed has not been bought yet.",
+  "cmp.empty.point2": "A request commits you to nothing and charges nothing.",
+  "cmp.empty.point3": "We reply within 24 working hours, by phone or WhatsApp.",
+  "cmp.recent.title": "Recently viewed",
+  // catalog: SearchResults
+  "cmp.results.unreachable": "The catalogue is briefly unreachable. Try again in a moment.",
+  "cmp.results.notFinding": "Not finding what you need?",
+  // search: SearchWidget. roomsShort: "ch." = chambres (rooms), abbreviated
+  "cmp.search.roomsShort": "{n} ch.",
+  "cmp.search.allListings": "All listings",
+  "cmp.search.anyCabin": "Any",
+  "cmp.search.eitherDriver": "Either",
+  "cmp.search.withDriver": "With driver",
+  "cmp.search.anyBudget": "Any budget",
+  "cmp.search.budgetMonthly": "≤ {price} / month",
+  "cmp.search.unserviced": "We do not serve {place} yet. Send us the request and we will come back to you.",
+  "cmp.search.recent": "Recent searches",
+  // restaurant: CartBar
+  "cmp.cart.replaceTitle": "Start a new basket?",
+  "cmp.cart.replaceBody": "Your basket has food from {name}. One order can only come from one restaurant.",
+  "cmp.cart.keep": "Keep it",
+  "cmp.cart.emptyAndAdd": "Empty and add",
+  "cmp.cart.removeOne": "Remove one {name}",
+  "cmp.cart.addOne": "Add one {name}",
+  "cmp.cart.remove": "Remove {name}",
+  "cmp.cart.deliveryNote": "Delivery is added at checkout, based on your zone.",
+  "cmp.cart.item": "{n} item",
+  "cmp.cart.items": "{n} items",
+  "cmp.cart.checkout": "Checkout",
+  // account: order
+  "cmp.doc.ETICKET": "E-ticket",
+  "cmp.doc.VOUCHER": "Voucher",
+  "cmp.doc.INVOICE": "Invoice",
+  "cmp.doc.noneForRide": "No documents are issued for a ride.",
+  "cmp.doc.notYet": "Your documents will appear here once issued.",
+  "cmp.doc.download": "Download",
+  "cmp.doc.downloadFailed": "Could not download right now. Please try again.",
+  // ui: DatePicker
+  "cmp.date.open": "Open the calendar",
+  "cmp.date.placeholder": "dd/mm/yyyy",
+  // ui: field (English only before: French added)
+  "cmp.password.show": "Show password",
+  "cmp.password.hide": "Hide password",
+  // ui: PhoneField (English only before: French added)
+  "cmp.phone.country": "{label} - country"
+};

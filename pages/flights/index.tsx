@@ -22,17 +22,13 @@ const bounds = (facets: Facets, key: string): [number, number] =>
   facets.priceBounds[key] ?? [0, 3_000_000]; // francs (about 1 000 $)
 
 export default function FlightsPage({ facets }: Props) {
-  const { t, locale } = usePrefs();
+  const { t } = usePrefs();
   return (
     <SearchResults
       vertical="FLIGHT"
       heroLabel={t("nav.flights")}
-      title={locale === "fr" ? "Vols intérieurs en RDC" : "Domestic flights in the DRC"}
-      description={
-        locale === "fr"
-          ? "Vols entre Kinshasa, Lubumbashi, Goma, Bukavu et Kisangani : choisissez votre date et l'heure du vol. Tarifs adulte, enfant et bébé, paiement à notre agence."
-          : "Flights between Kinshasa, Lubumbashi, Goma, Bukavu and Kisangani: choose your date and flight time. Adult, child and baby fares, pay at our office."
-      }
+      title={t("pg.flights.title")}
+      description={t("pg.flights.description")}
       priceRange={bounds(facets, "FLIGHT")}
       filters={[
         {

@@ -1,3 +1,4 @@
+import { usePrefs } from "@/lib/prefs";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -32,6 +33,7 @@ export default function Brand({
   variant?: "light" | "dark" | "full";
   compact?: boolean;
 }) {
+  const { t } = usePrefs();
   // Intrinsic sizes of the generated files. next/image needs the true ratio,
   // not a placeholder — a wrong one reserves the wrong space and the header
   // shifts as the image decodes.
@@ -43,7 +45,7 @@ export default function Brand({
     <Link
       href="/"
       className="flex shrink-0 items-center"
-      aria-label="Flexi Agency — accueil"
+      aria-label={t("brand.homeLink")}
     >
       <Image
         src={src}

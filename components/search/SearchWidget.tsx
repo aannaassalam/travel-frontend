@@ -40,13 +40,8 @@ const TABS: { vertical: Vertical; key: string; Icon: typeof Plane }[] = [
   { vertical: "ACTIVITY", key: "nav.activities", Icon: Compass }
 ];
 
-const PROPERTY_TYPES = [
-  { value: "HOUSE_SALE", fr: "Maison à vendre", en: "House for sale" },
-  { value: "LAND_SALE", fr: "Terrain à vendre", en: "Land for sale" },
-  { value: "APARTMENT_RENT", fr: "Appartement à louer", en: "Apartment to rent" },
-  { value: "HOUSE_RENT", fr: "Maison à louer", en: "House to rent" },
-  { value: "LAND_RENT", fr: "Terrain à louer", en: "Land to rent" }
-];
+/** Labelled `cmp.property.<type>`, as on the cards. */
+const PROPERTY_TYPES = ["HOUSE_SALE", "LAND_SALE", "APARTMENT_RENT", "HOUSE_RENT", "LAND_RENT"];
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -239,7 +234,7 @@ export default function SearchWidget({
           {form.adults} {t(Number(form.adults) > 1 ? "common.adults" : "common.adult")}
           {Number(form.children) > 0 &&
             ` · ${form.children} ${t(Number(form.children) > 1 ? "common.children" : "common.child")}`}
-          {vertical === "HOTEL" && ` · ${form.rooms} ch.`}
+          {vertical === "HOTEL" && ` · ${t("cmp.search.roomsShort", { n: form.rooms })}`}
         </span>
       </summary>
       <div className="absolute inset-x-0 top-full z-20 mt-1 space-y-4 rounded-card bg-white p-5 shadow-lg ring-1 ring-ink-100 ring-inset">
@@ -321,7 +316,7 @@ export default function SearchWidget({
             "rounded-xl2 bg-white p-2.5 shadow-xl ring-1 ring-brand-900/5",
             // Square only the corner the active tab sits on. With no tabs there
             // is nothing to dock into, so the panel keeps all four.
-            showTabs && "rounded-tl-none"
+            showTabs && "rounded-ss-none"
           )}
         >
           <div className="flex flex-col gap-1.5 md:flex-row">
@@ -371,11 +366,8 @@ export default function SearchWidget({
                   value={toSelect(form.propertyType)}
                   onValueChange={(v) => set("propertyType", fromSelect(v))}
                   options={[
-                    { value: ANY, label: locale === "fr" ? "Tous les biens" : "All listings" },
-                    ...PROPERTY_TYPES.map((p) => ({
-                      value: p.value,
-                      label: locale === "fr" ? p.fr : p.en
-                    }))
+                    { value: ANY, label: t("cmp.search.allListings") },
+                    ...PROPERTY_TYPES.map((p) => ({ value: p, label: t(`cmp.property.${p}`) }))
                   ]}
                   triggerClassName={selectTriggerCls}
                 />
@@ -440,7 +432,7 @@ export default function SearchWidget({
                   value={toSelect(form.cabin)}
                   onValueChange={(v) => set("cabin", fromSelect(v))}
                   options={[
-                    { value: ANY, label: locale === "fr" ? "Toutes" : "Any" },
+                    { value: ANY, label: t("cmp.search.anyCabin") },
                     { value: "ECONOMY", label: t("cabin.ECONOMY") },
                     { value: "BUSINESS", label: t("cabin.BUSINESS") }
                   ]}
@@ -450,15 +442,15 @@ export default function SearchWidget({
             )}
 
             {vertical === "CAR" && (
-              <Field as="div" label={locale === "fr" ? "Chauffeur" : "Driver"}>
+              <Field as="div" label={t("cmp.car.driver")}>
                 <InlineSelect
-                  ariaLabel={locale === "fr" ? "Chauffeur" : "Driver"}
+                  ariaLabel={t("cmp.car.driver")}
                   value={toSelect(form.withDriver)}
                   onValueChange={(v) => set("withDriver", fromSelect(v))}
                   options={[
-                    { value: ANY, label: locale === "fr" ? "Peu importe" : "Either" },
-                    { value: "true", label: locale === "fr" ? "Avec chauffeur" : "With driver" },
-                    { value: "false", label: locale === "fr" ? "Sans chauffeur" : "Self-drive" }
+                    { value: ANY, label: t("cmp.search.eitherDriver") },
+                    { value: "true", label: t("cmp.search.withDriver") },
+                    { value: "false", label: t("car.selfDrive") }
                   ]}
                   triggerClassName={selectTriggerCls}
                 />
@@ -474,10 +466,10 @@ export default function SearchWidget({
                   // In francs, like every price and `maxPrice` (about 2 000 $ a
                   // month, 10 000, 200 000 and 500 000 $).
                   options={[
-                    { value: ANY, label: locale === "fr" ? "Tous budgets" : "Any budget" },
+                    { value: ANY, label: t("cmp.search.anyBudget") },
                     {
                       value: "6000000",
-                      label: `≤ ${formatMoney(6_000_000, "CDF", locale)} / ${locale === "fr" ? "mois" : "month"}`
+                      label: t("cmp.search.budgetMonthly", { price: formatMoney(6_000_000, "CDF", locale) })
                     },
                     { value: "30000000", label: `≤ ${formatMoney(30_000_000, "CDF", locale)}` },
                     { value: "600000000", label: `≤ ${formatMoney(600_000_000, "CDF", locale)}` },
@@ -505,9 +497,7 @@ export default function SearchWidget({
             <p className="mt-2.5 flex items-start gap-2 rounded-lg bg-white/10 px-3.5 py-2.5 text-sm text-white/85 ring-1 ring-white/15 ring-inset">
               <MapPinOff className="mt-0.5 size-4 shrink-0 text-accent-500" />
               <span>
-                {locale === "fr"
-                  ? `Nous ne desservons pas encore ${originUnknown ? form.origin : form.destination}. Envoyez-nous votre demande et nous revenons vers vous.`
-                  : `We do not serve ${originUnknown ? form.origin : form.destination} yet. Send us the request and we will come back to you.`}
+                {t("cmp.search.unserviced", { place: originUnknown ? form.origin : form.destination })}
               </span>
             </p>
           )}
@@ -520,9 +510,9 @@ export default function SearchWidget({
           <div className="mt-5 flex flex-wrap items-center gap-2">
             {recent.length > 0 ? (
               <>
-                <span className="eyebrow mr-1 flex items-center gap-1.5 text-white/60">
+                <span className="eyebrow me-1 flex items-center gap-1.5 text-white/60">
                   <History className="size-3.5" />
-                  {locale === "fr" ? "Recherches récentes" : "Recent searches"}
+                  {t("cmp.search.recent")}
                 </span>
                 {recent.map((r) => (
                   <Link
@@ -536,9 +526,9 @@ export default function SearchWidget({
               </>
             ) : (
               <>
-                <span className="eyebrow mr-1 flex items-center gap-1.5 text-white/60">
+                <span className="eyebrow me-1 flex items-center gap-1.5 text-white/60">
                   <TrendingUp className="size-3.5" />
-                  {locale === "fr" ? "Destinations populaires" : "Popular destinations"}
+                  {t("home.destinations")}
                 </span>
                 {/* The office's own list, ordered by its `sortOrder` — so the
                     busiest cities lead, and a new one appears here the moment

@@ -1,3 +1,4 @@
+import { PROPERTY_LABEL } from "@/components/catalog/cards";
 import SearchResults from "@/components/catalog/SearchResults";
 import { Facets, getFacets, safely } from "@/lib/api";
 import { usePrefs } from "@/lib/prefs";
@@ -21,36 +22,22 @@ const EMPTY_FACETS: Facets = {
 const bounds = (facets: Facets, key: string): [number, number] =>
   facets.priceBounds[key] ?? [0, 3_000_000]; // francs (about 1 000 $)
 
-export const PROPERTY_OPTIONS = [
-  { value: "HOUSE_SALE", fr: "Maison à vendre", en: "House for sale" },
-  { value: "LAND_SALE", fr: "Terrain à vendre", en: "Land for sale" },
-  { value: "APARTMENT_RENT", fr: "Appartement à louer", en: "Apartment to rent" },
-  { value: "HOUSE_RENT", fr: "Maison à louer", en: "House to rent" },
-  { value: "LAND_RENT", fr: "Terrain à louer", en: "Land to rent" }
-];
-
 export default function PropertyPage({ facets }: Props) {
-  const { t, locale } = usePrefs();
+  const { t } = usePrefs();
   return (
     <SearchResults
       vertical="PROPERTY"
       heroLabel={t("nav.property")}
-      title={locale === "fr" ? "Immobilier en RDC" : "Property in the DRC"}
-      description={
-        locale === "fr"
-          ? "Maisons, appartements et terrains à vendre ou à louer à Kinshasa, Lubumbashi, Goma et Matadi. Contact direct avec notre agent, sans réservation en ligne."
-          : "Houses, apartments and land for sale or rent in Kinshasa, Lubumbashi, Goma and Matadi. Direct contact with our agent, no online booking."
-      }
+      title={t("pg.property.title")}
+      description={t("pg.property.description")}
       priceRange={bounds(facets, "PROPERTY")}
       filters={[
         {
           key: "propertyType",
           label: t("search.propertyType"),
           type: "radio",
-          options: PROPERTY_OPTIONS.map((o) => ({
-            value: o.value,
-            label: locale === "fr" ? o.fr : o.en
-          }))
+          // The card labels' keys, in their order.
+          options: Object.entries(PROPERTY_LABEL).map(([value, key]) => ({ value, label: t(key) }))
         },
         {
           key: "bedrooms",

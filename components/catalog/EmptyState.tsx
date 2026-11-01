@@ -33,7 +33,7 @@ export default function EmptyState({
    */
   unservicedPlace?: string;
 }) {
-  const { t, locale } = usePrefs();
+  const { t } = usePrefs();
 
   return (
     <div className="space-y-8">
@@ -42,36 +42,17 @@ export default function EmptyState({
           <NoResultsSpot className="mb-4 w-36 text-brand-900" />
           <p className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-brand-700">
             <SearchX className="size-4" />
-            {unservicedPlace
-              ? locale === "fr"
-                ? "Hors de notre réseau"
-                : "Outside our network"
-              : t("empty.title")}
+            {unservicedPlace ? t("cmp.empty.outside") : t("empty.title")}
           </p>
           <h2 className="mt-4 text-2xl font-bold text-brand-900">{t("rtb.title")}</h2>
           <p className="mt-2 max-w-md text-[15px] text-ink-700">
-            {unservicedPlace
-              ? locale === "fr"
-                ? `Nous ne desservons pas encore ${unservicedPlace}. Dites-nous ce dont vous avez besoin : nous travaillons avec des partenaires locaux et nous revenons vers vous avec un prix ferme.`
-                : `We do not serve ${unservicedPlace} yet. Tell us what you need — we work with local partners and will come back to you with a firm price.`
-              : t("empty.body")}
+            {unservicedPlace ? t("cmp.empty.outsideBody", { place: unservicedPlace }) : t("empty.body")}
           </p>
           <ul className="mt-4 space-y-2 text-sm text-ink-700">
-            {(locale === "fr"
-              ? [
-                  "Nous achetons le stock à l'avance : ce qui n'est pas listé n'est pas encore acheté.",
-                  "Une demande n'engage à rien et ne prélève rien.",
-                  "Réponse sous 24 heures ouvrées, par téléphone ou WhatsApp."
-                ]
-              : [
-                  "We buy stock in advance: what is not listed has not been bought yet.",
-                  "A request commits you to nothing and charges nothing.",
-                  "We reply within 24 working hours, by phone or WhatsApp."
-                ]
-            ).map((line) => (
-              <li key={line} className="flex gap-2">
+            {["cmp.empty.point1", "cmp.empty.point2", "cmp.empty.point3"].map((key) => (
+              <li key={key} className="flex gap-2">
                 <span className="mt-2 size-1.5 shrink-0 rounded-full bg-accent-500" />
-                {line}
+                {t(key)}
               </li>
             ))}
           </ul>

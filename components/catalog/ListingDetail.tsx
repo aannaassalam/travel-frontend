@@ -5,6 +5,7 @@ import { carTypeLabel, detailHref, VERTICAL_SLUGS } from "@/lib/catalog";
 import { mediaUrl, mediaUrls } from "@/lib/media";
 import { baseMinor, fromBase, price } from "@/lib/money";
 import { formatMinutes } from "@/lib/format";
+import { tagLabel } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
 import { dayName, isRoute, WEEK_ORDER } from "@/lib/routes";
 import { BASE_CURRENCY, Listing } from "@/typescript/interface/domain.interface";
@@ -57,6 +58,7 @@ export default function ListingDetail(built: { listing: Listing; related: Listin
   const { t, locale, lz, currency, rates } = usePrefs();
   useRecordView(listing.slug);
   const a = listing.attributes;
+  const tag = (word: string) => tagLabel(locale, listing, word);
   const verticalLabel = {
     FLIGHT: t("nav.flights"),
     BUS: t("nav.bus"),
@@ -70,7 +72,8 @@ export default function ListingDetail(built: { listing: Listing; related: Listin
   }[listing.vertical];
   // The nearest thing a listing has to an address: an activity's meeting
   // point, a car's first pick-up point, otherwise the city alone.
-  const place = [a.meetingPoint ?? a.pickupLocations?.[0], listing.city]
+  const pickup = a.pickupLocations?.[0];
+  const place = [lz(a.meetingPoint ?? (pickup && tag(pickup))), listing.city]
     .filter(Boolean)
     .join(", ");
 
@@ -122,7 +125,7 @@ export default function ListingDetail(built: { listing: Listing; related: Listin
             <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
               <span className="flex items-center gap-1.5 text-brand-500">
                 <MapPin className="size-4" />
-                {listing.city}, RDC
+                {t("cmp.cityInDrc", { city: listing.city })}
               </span>
               <RatingBadge rating={listing.rating} count={listing.reviewCount} size="sm" />
             </p>
@@ -220,17 +223,17 @@ export default function ListingDetail(built: { listing: Listing; related: Listin
                     {a.routeStops.join(" → ")}
                   </p>
                 ) : null}
-                {a.baggage && (
+                {lz(a.baggage) && (
                   <p className="mt-4 flex items-center gap-2 text-sm text-ink-700">
                     <Luggage className="size-4 text-ink-500" />
                     <strong className="font-semibold">{t("listing.baggage")} :</strong>{" "}
-                    {a.baggage}
+                    {lz(a.baggage)}
                   </p>
                 )}
-                {a.fareRules && <p className="mt-2 text-sm text-ink-500">{a.fareRules}</p>}
+                {lz(a.fareRules) && <p className="mt-2 text-sm text-ink-500">{lz(a.fareRules)}</p>}
                 <dl className="mt-5 grid gap-3 sm:grid-cols-3">
                   <Spec label={t("route.agency")} value={a.operator} />
-                  <Spec label={t("results.category")} value={a.vehicleClass} />
+                  <Spec label={t("results.category")} value={a.vehicleClass && tag(a.vehicleClass)} />
                 </dl>
               </section>
             )}
@@ -243,7 +246,7 @@ export default function ListingDetail(built: { listing: Listing; related: Listin
                 </h2>
                 <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   <Spec
-                    label={locale === "fr" ? "Modèle" : "Model"}
+                    label={t("cmp.car.model")}
                     value={`${a.make ?? ""} ${a.model ?? ""} ${a.year ?? ""}`.trim()}
                     Icon={Settings2}
                   />
@@ -258,20 +261,18 @@ export default function ListingDetail(built: { listing: Listing; related: Listin
                     label={t("results.transmission")}
                     value={
                       a.transmission
-                        ? a.transmission === "AUTOMATIC"
-                          ? locale === "fr" ? "Automatique" : "Automatic"
-                          : locale === "fr" ? "Manuelle" : "Manual"
+                        ? t(a.transmission === "AUTOMATIC" ? "cmp.car.automatic" : "cmp.car.manual")
                         : undefined
                     }
                     Icon={Settings2}
                   />
                   <Spec
-                    label={locale === "fr" ? "Kilométrage" : "Mileage"}
-                    value={a.mileageLimit}
+                    label={t("cmp.car.mileage")}
+                    value={lz(a.mileageLimit)}
                     Icon={Gauge}
                   />
                   <Spec
-                    label={locale === "fr" ? "Chauffeur" : "Driver"}
+                    label={t("cmp.car.driver")}
                     value={
                       typeof a.withDriver === "boolean"
                         ? t(a.withDriver ? "car.driverIncluded" : "car.selfDrive")
@@ -280,18 +281,18 @@ export default function ListingDetail(built: { listing: Listing; related: Listin
                     Icon={Users}
                   />
                   <Spec
-                    label={locale === "fr" ? "Caution" : "Deposit"}
+                    label={t("cmp.car.deposit")}
                     value={a.deposit ? price(fromBase(a.deposit, rates), currency, locale) : undefined}
                   />
                   <Spec
-                    label={locale === "fr" ? "Assurance" : "Insurance"}
-                    value={a.insuranceTerms}
+                    label={t("cmp.car.insurance")}
+                    value={lz(a.insuranceTerms)}
                   />
                 </dl>
                 {a.pickupLocations?.length ? (
                   <div className="mt-5">
                     <h3 className="mb-2 font-bold text-brand-900">
-                      {locale === "fr" ? "Points de retrait" : "Pick-up points"}
+                      {t("cmp.car.pickupPoints")}
                     </h3>
                     <ul className="flex flex-wrap gap-2">
                       {a.pickupLocations.map((p) => (
@@ -300,7 +301,7 @@ export default function ListingDetail(built: { listing: Listing; related: Listin
                           className="flex items-center gap-1.5 rounded bg-ink-50 px-2.5 py-1.5 text-sm text-ink-700"
                         >
                           <MapPin className="size-3.5 text-ink-500" />
-                          {p}
+                          {tag(p)}
                         </li>
                       ))}
                     </ul>
@@ -320,7 +321,7 @@ export default function ListingDetail(built: { listing: Listing; related: Listin
                       Icon={Clock}
                     />
                     <Spec
-                      label={locale === "fr" ? "Participants" : "Group size"}
+                      label={t("cmp.activity.groupSize")}
                       value={
                         a.minParticipants && a.maxParticipants
                           ? `${a.minParticipants}–${a.maxParticipants}`
@@ -330,7 +331,7 @@ export default function ListingDetail(built: { listing: Listing; related: Listin
                     />
                     <Spec
                       label={t("listing.languages")}
-                      value={a.languages?.join(", ")}
+                      value={a.languages?.map(tag).join(", ")}
                       Icon={Languages}
                     />
                   </dl>
@@ -347,7 +348,7 @@ export default function ListingDetail(built: { listing: Listing; related: Listin
                           {a.inclusions.map((i) => (
                             <li key={i} className="flex gap-2 text-sm text-ink-700">
                               <Check className="mt-0.5 size-4 shrink-0 text-ok-600" />
-                              {i}
+                              {tag(i)}
                             </li>
                           ))}
                         </ul>
@@ -362,7 +363,7 @@ export default function ListingDetail(built: { listing: Listing; related: Listin
                           {a.exclusions.map((i) => (
                             <li key={i} className="flex gap-2 text-sm text-ink-500">
                               <X className="mt-0.5 size-4 shrink-0 text-ink-300" />
-                              {i}
+                              {tag(i)}
                             </li>
                           ))}
                         </ul>
@@ -371,14 +372,14 @@ export default function ListingDetail(built: { listing: Listing; related: Listin
                   </section>
                 )}
 
-                {a.meetingPoint && (
+                {lz(a.meetingPoint) && (
                   <section>
                     <h2 className="mb-2 text-lg font-bold text-brand-900">
                       {t("listing.meetingPoint")}
                     </h2>
                     <p className="flex items-center gap-2 text-[15px] text-ink-700">
                       <MapPin className="size-4 text-brand-500" />
-                      {a.meetingPoint}
+                      {lz(a.meetingPoint)}
                     </p>
                   </section>
                 )}
@@ -433,7 +434,7 @@ export default function ListingDetail(built: { listing: Listing; related: Listin
         {related.length > 0 && (
           <section className="mt-14">
             <h2 className="mb-5 text-xl font-bold text-brand-900">
-              {locale === "fr" ? "Autres offres similaires" : "Other similar offers"}
+              {t("cmp.listing.similar")}
             </h2>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {related.map((r) => (

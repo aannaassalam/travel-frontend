@@ -228,10 +228,10 @@ export function StatusTimeline({ order }: { order: Order }) {
   const key = (event: string) =>
     ride && event === "CASH_RECEIVED" ? "ev.CASH_RECEIVED_RIDE" : `ev.${event}`;
   return (
-    <ol className="relative space-y-3 border-l-2 border-ink-100 pl-6">
+    <ol className="relative space-y-3 border-s-2 border-ink-100 ps-6">
       {order.timeline.map((entry, i) => (
         <li key={i} className="relative">
-          <span className="absolute -left-[31px] top-0.5 bg-white">
+          <span className="absolute -start-[31px] top-0.5 bg-white">
             <CheckCircle2 className="size-5 text-ink-300" />
           </span>
           <p className="font-semibold text-ink-900">
@@ -272,7 +272,7 @@ const deliveryMoney = (d: OrderDelivery, charged: Currency): Money => {
 
 /** Every figure in the currency the order was charged in, whatever is picked now. */
 export function OrderItems({ order }: { order: Order }) {
-  const { t, locale } = usePrefs();
+  const { t, locale, lz } = usePrefs();
   const charged = order.chargedCurrency;
   return (
     <ul className="divide-y divide-ink-100/70">
@@ -363,8 +363,8 @@ export function OrderItems({ order }: { order: Order }) {
         <li className="flex flex-wrap justify-between gap-3 py-3">
           <p className="font-semibold text-ink-900">
             {t("order.delivery")}
-            {order.delivery.zoneName && (
-              <span className="font-normal text-ink-500"> · {order.delivery.zoneName}</span>
+            {lz(order.delivery.zoneName) && (
+              <span className="font-normal text-ink-500"> · {lz(order.delivery.zoneName)}</span>
             )}
           </p>
           <p className="font-bold text-brand-900">
@@ -382,14 +382,15 @@ export function OrderItems({ order }: { order: Order }) {
   );
 }
 
+/** The label key of each document kind. */
 const DOCUMENT_KINDS = {
-  ETICKET: { fr: "Billet électronique", en: "E-ticket" },
-  VOUCHER: { fr: "Voucher", en: "Voucher" },
-  INVOICE: { fr: "Facture", en: "Invoice" }
+  ETICKET: "cmp.doc.ETICKET",
+  VOUCHER: "cmp.doc.VOUCHER",
+  INVOICE: "cmp.doc.INVOICE"
 } as const;
 
 export function OrderDocuments({ order }: { order: Order }) {
-  const { locale } = usePrefs();
+  const { t } = usePrefs();
   const [busy, setBusy] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -412,13 +413,7 @@ export function OrderDocuments({ order }: { order: Order }) {
     return (
       <p className="text-sm text-ink-500">
         {/* A ride issues no ticket (see orderSteps): no documents to wait for. */}
-        {order.items.some((i) => i.ride)
-          ? locale === "fr"
-            ? "Aucun document n'est émis pour une course."
-            : "No documents are issued for a ride."
-          : locale === "fr"
-            ? "Vos documents apparaîtront ici dès leur émission."
-            : "Your documents will appear here once issued."}
+        {t(order.items.some((i) => i.ride) ? "cmp.doc.noneForRide" : "cmp.doc.notYet")}
       </p>
     );
   }
@@ -436,7 +431,7 @@ export function OrderDocuments({ order }: { order: Order }) {
             type="button"
             onClick={() => download(doc.id)}
             disabled={busy === doc.id}
-            className="flex w-full items-center gap-3 rounded-xl p-4 ring-1 ring-ink-100 ring-inset text-left hover:bg-ink-50 disabled:opacity-60"
+            className="flex w-full items-center gap-3 rounded-xl p-4 ring-1 ring-ink-100 ring-inset text-start hover:bg-ink-50 disabled:opacity-60"
           >
             <FileText className="size-5 shrink-0 text-brand-500" />
             <span className="min-w-0 flex-1">
@@ -444,19 +439,17 @@ export function OrderDocuments({ order }: { order: Order }) {
                 {doc.fileName}
               </span>
               <span className="block text-xs text-ink-500">
-                {DOCUMENT_KINDS[doc.kind]?.[locale === "fr" ? "fr" : "en"] ?? doc.kind}
+                {DOCUMENT_KINDS[doc.kind] ? t(DOCUMENT_KINDS[doc.kind]) : doc.kind}
               </span>
             </span>
             <Download className="size-4 shrink-0 text-ink-500" />
-            <span className="sr-only">{locale === "fr" ? "Télécharger" : "Download"}</span>
+            <span className="sr-only">{t("cmp.doc.download")}</span>
           </button>
         </li>
       ))}
       {failed && (
         <li role="alert" className="text-sm text-bad-600">
-          {locale === "fr"
-            ? "Téléchargement impossible pour le moment. Réessayez."
-            : "Could not download right now. Please try again."}
+          {t("cmp.doc.downloadFailed")}
         </li>
       )}
     </ul>

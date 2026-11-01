@@ -25,7 +25,7 @@ export default function Lightbox({
   index: number | null;
   onChange: (index: number | null) => void;
 }) {
-  const { locale } = usePrefs();
+  const { t, dir } = usePrefs();
   const touchX = useRef<number | null>(null);
   const n = images.length;
   // During the close animation `index` is already null; keeping the last one
@@ -47,8 +47,10 @@ export default function Lightbox({
         // Radix warns on every open unless the absence is stated explicitly.
         aria-describedby={undefined}
         onKeyDown={(e) => {
-          if (e.key === "ArrowLeft") step(-1);
-          if (e.key === "ArrowRight") step(1);
+          // Right to left, the next photo is the one on the left.
+          const next = dir === "rtl" ? -1 : 1;
+          if (e.key === "ArrowLeft") step(-next);
+          if (e.key === "ArrowRight") step(next);
         }}
         onTouchStart={(e) => {
           touchX.current = e.touches[0].clientX;
@@ -57,7 +59,7 @@ export default function Lightbox({
           if (touchX.current === null) return;
           const dx = e.changedTouches[0].clientX - touchX.current;
           touchX.current = null;
-          if (Math.abs(dx) > 40) step(dx < 0 ? 1 : -1);
+          if (Math.abs(dx) > 40) step(dx < 0 !== (dir === "rtl") ? 1 : -1);
         }}
       >
         <DialogTitle className="sr-only">{alt}</DialogTitle>
@@ -68,7 +70,7 @@ export default function Lightbox({
           <button
             type="button"
             onClick={() => onChange(null)}
-            aria-label={locale === "fr" ? "Fermer" : "Close"}
+            aria-label={t("common.close")}
             className="grid size-11 place-items-center rounded-full bg-white/20 ring-1 ring-white/40 hover:bg-white/35"
           >
             <X className="size-6" />
@@ -104,20 +106,18 @@ export default function Lightbox({
             <button
               type="button"
               onClick={() => step(-1)}
-              aria-label={
-                locale === "fr" ? "Photo précédente" : "Previous photo"
-              }
-              className="absolute top-1/2 left-3 grid size-11 -translate-y-1/2 place-items-center rounded-full bg-white/20 ring-1 ring-white/40 hover:bg-white/35"
+              aria-label={t("cmp.lightbox.prev")}
+              className="absolute top-1/2 start-3 grid size-11 -translate-y-1/2 place-items-center rounded-full bg-white/20 ring-1 ring-white/40 hover:bg-white/35"
             >
-              <ChevronLeft className="size-6" />
+              <ChevronLeft className="size-6 rtl:-scale-x-100" />
             </button>
             <button
               type="button"
               onClick={() => step(1)}
-              aria-label={locale === "fr" ? "Photo suivante" : "Next photo"}
-              className="absolute top-1/2 right-3 grid size-11 -translate-y-1/2 place-items-center rounded-full bg-white/20 ring-1 ring-white/40 hover:bg-white/35"
+              aria-label={t("cmp.lightbox.next")}
+              className="absolute top-1/2 end-3 grid size-11 -translate-y-1/2 place-items-center rounded-full bg-white/20 ring-1 ring-white/40 hover:bg-white/35"
             >
-              <ChevronRight className="size-6" />
+              <ChevronRight className="size-6 rtl:-scale-x-100" />
             </button>
           </>
         )}

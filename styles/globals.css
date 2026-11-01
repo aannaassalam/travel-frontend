@@ -399,6 +399,11 @@
   h2 {
     letter-spacing: -0.018em;
   }
+  /* Arabic letters join: any tracking (headlines, eyebrows, chips, tracking-*)
+     pulls the word apart, so it has none. */
+  :lang(ar) {
+    letter-spacing: normal !important;
+  }
   /* §11.5 WCAG AA: focus must always be visible, never removed for looks. */
   :focus-visible {
     outline: 3px solid var(--color-accent-500);
@@ -744,7 +749,7 @@
 
 @utility field-label {
   position: absolute;
-  left: 0.875rem;
+  inset-inline-start: 0.875rem;
   top: 50%;
   transform: translateY(-50%);
   transform-origin: left center;
@@ -752,6 +757,10 @@
   font-size: var(--text-base);
   pointer-events: none;
   transition: all 0.2s var(--ease-out-soft);
+  /* It shrinks toward the side it starts on. */
+  [dir="rtl"] & {
+    transform-origin: right center;
+  }
   .field:focus-within &,
   .field:has(:not(:placeholder-shown)) &,
   .field[data-filled="true"] & {

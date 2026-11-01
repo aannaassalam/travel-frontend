@@ -212,9 +212,7 @@ export default function SearchResults({
                 <AlertTriangle className="mx-auto mb-3 size-8 text-bad-600" />
                 <p className="font-bold text-brand-900">{t("common.error")}</p>
                 <p className="mx-auto mt-1 max-w-sm text-sm text-ink-700">
-                  {locale === "fr"
-                    ? "Le catalogue est momentanément injoignable. Réessayez dans un instant."
-                    : "The catalogue is briefly unreachable. Try again in a moment."}
+                  {t("cmp.results.unreachable")}
                 </p>
                 <button
                   type="button"
@@ -291,9 +289,7 @@ export default function SearchResults({
                   className="col-span-full rounded-card bg-brand-50 p-6 ring-1 ring-brand-100 ring-inset lg:p-8"
                 >
                   <h2 className="text-lg font-bold text-brand-900">
-                    {locale === "fr"
-                      ? "Vous ne trouvez pas ce que vous cherchez ?"
-                      : "Not finding what you need?"}
+                    {t("cmp.results.notFinding")}
                   </h2>
                   <p className="mb-5 mt-1 max-w-2xl text-sm text-ink-700">{t("empty.body")}</p>
                   <div className="rounded-xl bg-white p-6">

@@ -80,15 +80,21 @@ export default function BookingsPage() {
                           ) : (
                             <>
                               {fmtDate(`${order.travelDate.slice(0, 10)}T12:00:00`, locale)}
-                              {order.items[0]?.endDate
-                                ? ` → ${fmtDate(`${order.items[0].endDate}T12:00:00`, locale)}`
-                                : ""}
+                              {order.items[0]?.endDate ? (
+                                <>
+                                  {" "}
+                                  <span className="inline-block rtl:-scale-x-100">→</span>{" "}
+                                  {fmtDate(`${order.items[0].endDate}T12:00:00`, locale)}
+                                </>
+                              ) : (
+                                ""
+                              )}
                             </>
                           )}
                         </p>
                       )}
                     </div>
-                    <div className="text-right">
+                    <div className="text-end">
                       <p className="text-lg font-bold text-brand-900">
                         <Price money={order.total} charged={order.chargedCurrency} />
                       </p>

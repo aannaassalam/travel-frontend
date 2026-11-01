@@ -76,7 +76,7 @@ export default function AccountDashboard() {
                 className="inline-flex items-center gap-1 text-sm font-semibold text-brand-500 hover:underline"
               >
                 {t("home.viewAll")}
-                <ArrowRight className="size-4" />
+                <ArrowRight className="size-4 rtl:-scale-x-100" />
               </Link>
             </div>
 
@@ -132,7 +132,7 @@ export default function AccountDashboard() {
             <Link href="/contact" className="font-semibold text-brand-500 underline">
               {t("account.support")}
             </Link>
-            {locale === "fr" ? "." : "."}
+            {t("pg.account.cancelNoteEnd")}
           </p>
         </div>
       )}

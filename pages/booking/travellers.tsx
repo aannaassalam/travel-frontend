@@ -67,9 +67,7 @@ export default function TravellersStep() {
                 {t("checkout.step1")}
               </h1>
               <p className="mb-5 text-sm text-ink-500">
-                {locale === "fr"
-                  ? "Les noms doivent correspondre exactement à la pièce d'identité présentée au départ."
-                  : "Names must match the identity document presented at departure exactly."}
+                {t("pg.travellers.namesMatch")}
               </p>
 
               <div className="space-y-6">
@@ -118,13 +116,13 @@ export default function TravellersStep() {
                             options={[
                               {
                                 value: "PASSPORT",
-                                label: locale === "fr" ? "Passeport" : "Passport"
+                                label: t("pg.travellers.docPassport")
                               },
                               {
                                 value: "ID",
-                                label: locale === "fr" ? "Carte d'identité" : "National ID"
+                                label: t("pg.travellers.docId")
                               },
-                              { value: "OTHER", label: locale === "fr" ? "Autre" : "Other" }
+                              { value: "OTHER", label: t("pg.travellers.docOther") }
                             ]}
                           />
                           <div className="sm:col-span-2">

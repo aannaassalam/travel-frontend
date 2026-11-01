@@ -1,6 +1,14 @@
 import { getSiteContact, Office, SiteContact } from "@/lib/api";
+import { usePrefs } from "@/lib/prefs";
 import { useQuery } from "@tanstack/react-query";
 import { Clock, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
+
+/** The contact as shown: the office hours, typed per language, in the visitor's. */
+export type ShownOffice = Omit<Office, "hours"> & { hours: string };
+export type ShownContact = Omit<SiteContact, "officeHours" | "offices"> & {
+  officeHours: string;
+  offices: ShownOffice[];
+};
 
 /**
  * The office's contact details, as the whole site should read them.
@@ -18,7 +26,7 @@ import { Clock, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
  * fall back to, and a fabricated one ("+243 81 000 00 00") shown to customers
  * is worse than none. Consumers hide the line when it is empty.
  */
-const FALLBACK: SiteContact = {
+const FALLBACK: ShownContact = {
   companyName: "Flexi Agency",
   email: "",
   phone: "",
@@ -48,7 +56,7 @@ export const officeTitle = (o: Office) => o.name || o.city;
 export const mapsLink = (geo?: { lat: number; lng: number }) =>
   geo ? `https://www.google.com/maps?q=${geo.lat},${geo.lng}` : undefined;
 
-export const officeLines = (o: Office) =>
+export const officeLines = (o: ShownOffice) =>
   [
     {
       Icon: MapPin,
@@ -57,18 +65,21 @@ export const officeLines = (o: Office) =>
       href: mapsLink(o.geo),
       external: true
     },
-    { Icon: Phone, text: o.phone, href: `tel:${dial(o.phone)}` },
+    // Phone numbers and e-mail addresses stay left to right on an Arabic page.
+    { Icon: Phone, text: o.phone, href: `tel:${dial(o.phone)}`, dir: "ltr" as const },
     {
       Icon: MessageCircle,
       text: o.whatsapp && `WhatsApp — ${o.whatsapp}`,
       href: waLink(o.whatsapp),
-      external: true
+      external: true,
+      dir: "ltr" as const
     },
-    { Icon: Mail, text: o.email, href: `mailto:${o.email}` },
+    { Icon: Mail, text: o.email, href: `mailto:${o.email}`, dir: "ltr" as const },
     { Icon: Clock, text: o.hours }
   ].filter((line) => line.text);
 
-export function useSiteContact(): SiteContact {
+export function useSiteContact(): ShownContact {
+  const { lz } = usePrefs();
   const { data } = useQuery({
     queryKey: ["site-contact"],
     queryFn: ({ signal }) => getSiteContact({ signal }),
@@ -89,7 +100,7 @@ export function useSiteContact(): SiteContact {
     streetAddress: c.streetAddress || FALLBACK.streetAddress,
     city: c.city || FALLBACK.city,
     country: c.country || FALLBACK.country,
-    officeHours: c.officeHours || FALLBACK.officeHours,
-    offices: c.offices ?? []
+    officeHours: lz(c.officeHours) || FALLBACK.officeHours,
+    offices: (c.offices ?? []).map((o) => ({ ...o, hours: lz(o.hours) }))
   };
 }

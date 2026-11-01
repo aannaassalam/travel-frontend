@@ -22,7 +22,7 @@ import { useEffect, useState } from "react";
  * screen once the money is safely through.
  */
 export default function ContactStep() {
-  const { t, locale } = usePrefs();
+  const { t } = usePrefs();
   const router = useRouter();
   const { ready, selection, travellers, contact, update, expired } = useCheckout();
 
@@ -139,9 +139,7 @@ export default function ContactStep() {
                   helper={
                     errors.email
                       ? undefined
-                      : locale === "fr"
-                        ? "Facultatif — la confirmation part par SMS de toute façon."
-                        : "Optional — the confirmation goes by SMS regardless."
+                      : t("pg.bookContact.emailHelper")
                   }
                 />
               </div>
@@ -164,33 +162,17 @@ export default function ContactStep() {
               <Info className="mt-0.5 size-4 shrink-0 text-brand-500" />
               <div className="min-w-0 text-sm">
                 <p className="font-semibold text-ink-900">
-                  {locale === "fr"
-                    ? "Votre confirmation part par SMS à ce numéro."
-                    : "Your confirmation goes by SMS to this number."}
+                  {t("pg.bookContact.smsTitle")}
                 </p>
                 <p className="mt-1 text-ink-500">
-                  {locale === "fr"
-                    ? "La référence suffit pour retrouver la réservation. Vous pourrez créer un compte avec ce même numéro juste après le paiement."
-                    : "The reference is all you need to find the booking again. You can create an account with this same number right after payment."}
+                  {t("pg.bookContact.smsBody")}
                 </p>
                 <p className="mt-2 text-ink-500">
-                  {locale === "fr" ? (
-                    <>
-                      Déjà client ?{" "}
-                      <Link href="/login" className="font-semibold text-brand-500 hover:underline">
-                        Connectez-vous
-                      </Link>{" "}
-                      pour réutiliser vos coordonnées.
-                    </>
-                  ) : (
-                    <>
-                      Already a customer?{" "}
-                      <Link href="/login" className="font-semibold text-brand-500 hover:underline">
-                        Sign in
-                      </Link>{" "}
-                      to reuse your details.
-                    </>
-                  )}
+                  {t("pg.bookContact.signInBefore")}{" "}
+                  <Link href="/login" className="font-semibold text-brand-500 hover:underline">
+                    {t("pg.bookContact.signInLink")}
+                  </Link>{" "}
+                  {t("pg.bookContact.signInAfter")}
                 </p>
               </div>
             </div>

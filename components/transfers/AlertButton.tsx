@@ -62,7 +62,8 @@ export function AlertButton({
             className="btn btn-md btn-dark mt-3 w-full sm:w-auto"
           >
             <PhoneCall className="size-4" aria-hidden="true" />
-            {t("ride.alertCall", { phone: callNumber })}
+            {/* The number isolated (LRI…PDI), so it reads left to right in an Arabic sentence. */}
+            {t("ride.alertCall", { phone: `\u2066${callNumber}\u2069` })}
           </a>
         )}
       </div>
@@ -91,7 +92,7 @@ export function AlertButton({
           {phone && (
             <>
               {" "}
-              <a href={`tel:${dial(phone)}`} className="underline">
+              <a href={`tel:${dial(phone)}`} className="underline" dir="ltr">
                 {phone}
               </a>
             </>

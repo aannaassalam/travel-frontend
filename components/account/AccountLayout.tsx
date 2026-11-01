@@ -1,4 +1,5 @@
 import Layout from "@/components/site/Layout";
+import { LOCALE_NAMES } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
 import { useLogout, useSession } from "@/lib/session";
 import { InlineSelect } from "@/components/ui/InlineSelect";
@@ -114,10 +115,7 @@ export default function AccountLayout({
                 ariaLabel={t("common.language")}
                 value={locale}
                 onValueChange={(v) => setLocale(v as Locale)}
-                options={ENABLED_LOCALES.map((l) => ({
-                  value: l,
-                  label: l === "fr" ? "Français" : "English"
-                }))}
+                options={ENABLED_LOCALES.map((l) => ({ value: l, label: LOCALE_NAMES[l] }))}
                 triggerClassName="w-full justify-between"
               />
             </div>

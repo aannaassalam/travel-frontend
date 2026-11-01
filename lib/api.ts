@@ -43,8 +43,14 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Every call asks for the office's texts in all languages (`i18n=1`); without it
+ * the API sends them as one French string, for app builds from before.
+ */
+export const withI18n = (path: string) => `${path}${path.includes("?") ? "&" : "?"}i18n=1`;
+
 export async function get<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(`${API_BASE}${withI18n(path)}`, {
     ...init,
     // The session is an httpOnly cookie (§7.3 forbids localStorage for tokens),
     // so it only travels if credentials are sent.
@@ -236,7 +242,7 @@ export async function createOrder(
   draft: OrderDraft,
   idempotencyKey: string
 ): Promise<Order> {
-  const res = await fetch(`${API_BASE}/orders`, {
+  const res = await fetch(`${API_BASE}${withI18n("/orders")}`, {
     method: "POST",
     // The session cookie decides whether a phone that belongs to an account is
     // the caller's own (ACCOUNT_EXISTS otherwise), so it has to travel.
@@ -433,7 +439,7 @@ export interface CustomerSession {
 }
 
 export async function post<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(`${API_BASE}${withI18n(path)}`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
@@ -463,7 +469,8 @@ export const requestOtp = (phone: string) =>
  * the password the customer chose, and opens a 7-day session cookie.
  *
  * This is the ONLY time an SMS is needed to get in. Every later sign-in is
- * /auth/login.
+ * /auth/login. `locale` (here, on login and PATCH /auth/me) is the language in
+ * use: the server keeps it for the customer's SMS and e-mails.
  */
 export const verifyOtp = (input: {
   phone: string;
@@ -471,10 +478,11 @@ export const verifyOtp = (input: {
   firstName?: string;
   lastName?: string;
   password?: string;
+  locale?: Locale;
 }) => post<{ customer: CustomerSession }>("/auth/otp/verify", input).then((r) => r.customer);
 
 /** POST /auth/login — the everyday way in: phone + password, no SMS. */
-export const login = (input: { phone: string; password: string }) =>
+export const login = (input: { phone: string; password: string; locale?: Locale }) =>
   post<{ customer: CustomerSession }>("/auth/login", input).then((r) => r.customer);
 
 /**
@@ -494,6 +502,7 @@ export async function updateProfile(patch: {
   firstName?: string;
   lastName?: string;
   email?: string;
+  locale?: Locale;
 }): Promise<CustomerSession> {
   const res = await fetch(`${API_BASE}/auth/me`, {
     method: "PATCH",
@@ -636,7 +645,8 @@ export interface Office {
   phone: string;
   whatsapp: string;
   email: string;
-  hours: string;
+  /** Plain (French) text from an older API. */
+  hours: Localized | string;
   geo?: { lat: number; lng: number };
   isPrimary: boolean;
 }
@@ -649,7 +659,7 @@ export interface SiteContact {
   streetAddress: string;
   city: string;
   country: string;
-  officeHours: string;
+  officeHours: Localized | string;
   /** Every office. The single fields above are the primary one's when this is set. */
   offices: Office[];
 }

@@ -9,6 +9,7 @@ import Layout, { SITE } from "@/components/site/Layout";
 import { getListing, getSlugs, notFoundOrKeep, safely } from "@/lib/api";
 import { propertySizes, sqm } from "@/lib/catalog";
 import { dial, useSiteContact, waLink } from "@/lib/contact";
+import { tagLabel } from "@/lib/i18n";
 import { mediaUrl, mediaUrls } from "@/lib/media";
 import { usePrefs } from "@/lib/prefs";
 import { Listing } from "@/typescript/interface/domain.interface";
@@ -48,7 +49,7 @@ export default function PropertyDetail(built: Props) {
     staleTime: 30_000
   });
   const { listing, related } = data ?? built;
-  const { t, locale, lz } = usePrefs();
+  const { t, lz, locale } = usePrefs();
   const contact = useSiteContact();
   useRecordView(listing.slug);
   const a = listing.attributes;
@@ -85,17 +86,17 @@ export default function PropertyDetail(built: Props) {
         <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
           <div>
             <span className="mb-2 inline-block rounded bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-700">
-              {PROPERTY_LABEL[a.propertyType ?? "HOUSE_SALE"][locale === "en" ? "en" : "fr"]}
+              {t(PROPERTY_LABEL[a.propertyType ?? "HOUSE_SALE"])}
             </span>
             <h1 className="display text-2xl leading-tight text-brand-900 sm:text-3xl">
               {lz(listing.title)}
             </h1>
             <p className="mt-2 flex items-center gap-1.5 text-sm text-brand-500">
               <MapPin className="size-4" />
-              {listing.city}, RDC
+              {t("pg.propertyListing.cityCountry", { city: listing.city })}
             </p>
           </div>
-          <div className="sm:text-right">
+          <div className="sm:text-end">
             <PromoWas promotion={listing.promotion} />
             <Price money={listing.sellPrice} className="block text-3xl font-bold text-brand-900" />
             <p className="text-sm text-ink-500">
@@ -117,7 +118,7 @@ export default function PropertyDetail(built: Props) {
                 {a.bathrooms ? (
                   <Fact
                     Icon={Bath}
-                    label={locale === "fr" ? "Salles d'eau" : "Bathrooms"}
+                    label={t("pg.propertyListing.bathrooms")}
                     value={String(a.bathrooms)}
                   />
                 ) : null}
@@ -127,7 +128,7 @@ export default function PropertyDetail(built: Props) {
                     key={s.kind}
                     Icon={s.kind === "plot" ? Ruler : Maximize}
                     label={t(`property.${s.kind}`)}
-                    value={sqm(s.sqm)}
+                    value={sqm(s.sqm, locale)}
                   />
                 ))}
               </ul>
@@ -159,24 +160,22 @@ export default function PropertyDetail(built: Props) {
                   {a.features.map((f) => (
                     <li key={f} className="flex items-center gap-2 text-[15px] text-ink-700">
                       <Check className="size-4 shrink-0 text-ok-600" />
-                      {f}
+                      {tagLabel(locale, listing, f)}
                     </li>
                   ))}
                 </ul>
               </section>
             )}
 
-            {a.titleDeedStatus && (
+            {lz(a.titleDeedStatus) && (
               <section className="rounded-card bg-ink-50 p-6 ring-1 ring-ink-100 ring-inset">
                 <h2 className="mb-2 flex items-center gap-2 text-lg font-bold text-brand-900">
                   <FileCheck2 className="size-5 text-brand-500" />
-                  {locale === "fr" ? "Situation juridique" : "Legal status"}
+                  {t("pg.propertyListing.legalTitle")}
                 </h2>
-                <p className="text-[15px] text-ink-700">{a.titleDeedStatus}</p>
+                <p className="text-[15px] text-ink-700">{lz(a.titleDeedStatus)}</p>
                 <p className="mt-2 text-sm text-ink-500">
-                  {locale === "fr"
-                    ? "Les documents originaux sont consultables chez le notaire avant toute transaction. Nous vous accompagnons à la vérification."
-                    : "Original documents can be inspected at the notary before any transaction. We accompany you to the verification."}
+                  {t("pg.propertyListing.legalBody")}
                 </p>
               </section>
             )}
@@ -196,9 +195,7 @@ export default function PropertyDetail(built: Props) {
                 />
                 <div className="flex flex-wrap items-center justify-between gap-3 p-4">
                   <p className="text-sm text-ink-500">
-                    {locale === "fr"
-                      ? "L'adresse exacte est communiquée à la prise de rendez-vous."
-                      : "The exact address is given when a viewing is arranged."}
+                    {t("pg.propertyListing.addressNote")}
                   </p>
                   {listing.geo && (
                     <a
@@ -207,7 +204,7 @@ export default function PropertyDetail(built: Props) {
                       rel="noreferrer noopener"
                       className="text-sm font-semibold text-brand-500 underline"
                     >
-                      {locale === "fr" ? "Ouvrir la carte" : "Open the map"}
+                      {t("pg.propertyListing.openMap")}
                     </a>
                   )}
                 </div>
@@ -251,17 +248,11 @@ export default function PropertyDetail(built: Props) {
                 vertical="PROPERTY"
                 listingLabel={lz(listing.title)}
                 compact
-                defaultMessage={
-                  locale === "fr"
-                    ? `Bonjour, je souhaite des informations sur : ${lz(listing.title)}.`
-                    : `Hello, I would like information about: ${lz(listing.title)}.`
-                }
+                defaultMessage={t("pg.propertyListing.defaultMessage", { title: lz(listing.title) })}
               />
 
               <p className="mt-3 text-xs text-ink-500">
-                {locale === "fr"
-                  ? "Aucun paiement en ligne pour l'immobilier. Tout se traite avec notre agent."
-                  : "No online payment for property. Everything is handled with our agent."}
+                {t("pg.propertyListing.noOnlinePayment")}
               </p>
             </div>
           </aside>
@@ -272,7 +263,7 @@ export default function PropertyDetail(built: Props) {
         {related.length > 0 && (
           <section className="mt-14">
             <h2 className="mb-5 text-xl font-bold text-brand-900">
-              {locale === "fr" ? "Biens similaires" : "Similar listings"}
+              {t("pg.propertyListing.similar")}
             </h2>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {related.map((r) => (

@@ -68,7 +68,7 @@ export default function Gallery({
         <button
           type="button"
           onClick={() => setOpen(current)}
-          className="absolute bottom-3 right-3 inline-flex items-center gap-2 rounded-md bg-white px-3 py-2 text-sm font-semibold text-brand-900 shadow-md hover:bg-ink-50"
+          className="absolute bottom-3 end-3 inline-flex items-center gap-2 rounded-md bg-white px-3 py-2 text-sm font-semibold text-brand-900 shadow-md hover:bg-ink-50"
         >
           <Images className="size-4" />
           {resolved.length === 1
@@ -118,7 +118,7 @@ export default function Gallery({
  * threading state back to the hero.
  */
 export function PhotoGrid({ images, alt }: { images: string[]; alt: string }) {
-  const { lowData } = usePrefs();
+  const { t, lowData } = usePrefs();
   const [open, setOpen] = useState<number | null>(null);
   const resolved = mediaUrls(images);
   // One photo is the hero already; nothing to add. Low-data mode shows the
@@ -126,8 +126,7 @@ export function PhotoGrid({ images, alt }: { images: string[]; alt: string }) {
   if (lowData || resolved.length < 2) return null;
   return (
     <section>
-      {/* One word, the same in both languages. */}
-      <h2 className="mb-3 text-xl font-bold text-brand-900">Photos</h2>
+      <h2 className="mb-3 text-xl font-bold text-brand-900">{t("cmp.gallery.photos")}</h2>
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
         {resolved.map((src, i) => (
           <button

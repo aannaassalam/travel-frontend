@@ -28,12 +28,8 @@ export default function CarsPage({ facets }: Props) {
     <SearchResults
       vertical="CAR"
       heroLabel={t("nav.cars")}
-      title={locale === "fr" ? "Location de voitures en RDC" : "Car hire in the DRC"}
-      description={
-        locale === "fr"
-          ? "Voitures avec ou sans chauffeur à Kinshasa, Lubumbashi et Goma. 4x4, berlines, minibus et transferts aéroport."
-          : "Cars with or without a driver in Kinshasa, Lubumbashi and Goma. 4x4s, saloons, minibuses and airport transfers."
-      }
+      title={t("pg.cars.title")}
+      description={t("pg.cars.description")}
       priceRange={bounds(facets, "CAR")}
       filters={[
         // The office's fixed list, not what happens to be on sale: the type is
@@ -55,17 +51,17 @@ export default function CarsPage({ facets }: Props) {
           label: t("results.transmission"),
           type: "radio",
           options: [
-            { value: "AUTOMATIC", label: locale === "fr" ? "Automatique" : "Automatic" },
-            { value: "MANUAL", label: locale === "fr" ? "Manuelle" : "Manual" }
+            { value: "AUTOMATIC", label: t("pg.cars.automatic") },
+            { value: "MANUAL", label: t("pg.cars.manual") }
           ]
         },
         {
           key: "withDriver",
-          label: locale === "fr" ? "Chauffeur" : "Driver",
+          label: t("pg.cars.driver"),
           type: "radio",
           options: [
-            { value: "true", label: locale === "fr" ? "Avec chauffeur" : "With driver" },
-            { value: "false", label: locale === "fr" ? "Sans chauffeur" : "Self-drive" }
+            { value: "true", label: t("pg.cars.withDriver") },
+            { value: "false", label: t("car.selfDrive") }
           ]
         }
       ]}

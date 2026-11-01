@@ -87,7 +87,7 @@ export default function ResultsSearch({ className }: { className?: string }) {
 
   return (
     <div className={`relative ${className ?? ""}`}>
-      <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-ink-500" />
+      <Search className="pointer-events-none absolute start-3.5 top-1/2 size-4 -translate-y-1/2 text-ink-500" />
       <input
         type="search"
         value={value}
@@ -96,7 +96,7 @@ export default function ResultsSearch({ className }: { className?: string }) {
         aria-label={t("results.search")}
         maxLength={80}
         autoComplete="off"
-        className="w-full rounded-xl border border-ink-100 bg-white py-2.5 pl-10 pr-10 text-sm font-medium text-ink-900 shadow-xs placeholder:text-ink-500 focus:border-brand-500 focus:outline-none [&::-webkit-search-cancel-button]:appearance-none"
+        className="w-full rounded-xl border border-ink-100 bg-white py-2.5 ps-10 pe-10 text-sm font-medium text-ink-900 shadow-xs placeholder:text-ink-500 focus:border-brand-500 focus:outline-none [&::-webkit-search-cancel-button]:appearance-none"
       />
       {value && (
         <button
@@ -106,7 +106,7 @@ export default function ResultsSearch({ className }: { className?: string }) {
             apply("");
           }}
           aria-label={t("results.clearSearch")}
-          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-ink-500 hover:bg-ink-50 hover:text-ink-900"
+          className="absolute end-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-ink-500 hover:bg-ink-50 hover:text-ink-900"
         >
           <X className="size-4" />
         </button>

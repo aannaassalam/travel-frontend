@@ -10,7 +10,7 @@ import {
 import { get, post } from "./api";
 import { cityGeo } from "./catalog";
 import { fmtDate } from "./format";
-import { localized } from "./i18n";
+import { intlLocale, localized } from "./i18n";
 
 /**
  * Transfers: a ride with a driver from A to B, or a driver by the hour.
@@ -262,12 +262,14 @@ export const isoAt = (date: string, time: string) => `${date}T${time}`;
 export const fmtAt = (at: string, locale: Locale) =>
   `${fmtDate(`${at.slice(0, 10)}T12:00:00`, locale)} · ${at.slice(11, 16)}`;
 
-/** Kilometres with one decimal, the way the server rounds them. */
+/** Kilometres with one decimal, the way the server rounds them, with the language's unit ("km", "كم"). */
 export const fmtKm = (km: number, locale: Locale) =>
-  `${km.toLocaleString(locale === "en" ? "en-GB" : "fr-FR", {
+  new Intl.NumberFormat(intlLocale(locale), {
+    style: "unit",
+    unit: "kilometer",
     minimumFractionDigits: 0,
     maximumFractionDigits: 1
-  })} km`;
+  }).format(km);
 
 /** GeoJSON [lng, lat] pairs → Leaflet [lat, lng]. */
 export const routeLatLng = (route?: [number, number][]): [number, number][] =>

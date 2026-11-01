@@ -1,30 +1,37 @@
 import {
-  DEFAULT_LOCALE,
   Localized,
-  Locale
+  Locale,
+  LOCALES
 } from "@/typescript/interface/domain.interface";
 
 /**
  * §6. UI strings live here; listing content lives in `Localized` fields on the
- * documents themselves. Fallback order is requested locale → French → raw.
- * Never English by default.
+ * documents themselves. Fallback order: see FALLBACK below.
  *
  * ponytail: plain `{name}` interpolation instead of full ICU MessageFormat.
  * Nothing on the public site currently needs plurals or gender selects — the
- * one count string ("N résultats") is handled by `plural()` below. Swap in
+ * one count string ("N résultats") is handled by `resultsLabel()` below. Swap in
  * @formatjs/intl-messageformat the first time a real ICU select is needed;
  * `t()` is the only call site that changes.
  */
 
 type Dict = Record<string, string>;
 
+import * as componentMessages from "./messages/components";
+import * as pageMessages from "./messages/pages";
+import ar from "./messages/ar";
+import es from "./messages/es";
+import pt from "./messages/pt";
+import ru from "./messages/ru";
+import zh from "./messages/zh";
+
 const fr: Dict = {
   "brand.name": "Flexi Agency",
   "brand.tagline": "Vols, hôtels, transferts et immobilier en RDC",
 
-  "nav.flights": "Vols",
+  "nav.flights": "Billets Avion",
   "nav.hotels": "Hôtels",
-  "nav.bus": "Bus",
+  "nav.bus": "Billets Bus",
   "nav.cars": "Location Voitures",
   "nav.activities": "Événements & Tourisme",
   "nav.property": "Immobilier",
@@ -104,6 +111,8 @@ const fr: Dict = {
   "promotions.empty": "Aucune promotion en ce moment.",
   "promotions.offers": "Offres",
 
+  // A language with more plural forms adds results.title.two / .few / .many
+  // (Intl.PluralRules names, see resultsLabel); results.titleOne gets {n} too.
   "results.title": "{n} résultats",
   "results.titleOne": "1 résultat",
   "results.titleZero": "Aucun résultat",
@@ -204,6 +213,7 @@ const fr: Dict = {
   "rental.hours": "Pour {n} heures",
   "rental.cheapest": "Vous payez la combinaison de tarifs la moins chère pour la durée choisie.",
   "rental.time": "Heure",
+  "rental.hoursShort": "{n} h",
   "rental.pickupTime": "Heure de prise en charge",
   "rental.returnTime": "Heure de restitution",
 
@@ -599,6 +609,7 @@ const fr: Dict = {
   "footer.rights": "Tous droits réservés.",
   "footer.lowData": "Mode économie de données",
   "footer.offices": "Nos bureaux",
+  "footer.cash": "Espèces",
 
   "common.currency": "Devise",
   "common.language": "Langue",
@@ -628,8 +639,20 @@ const fr: Dict = {
     "Cette page n'existe pas ou l'offre n'est plus disponible.",
   "common.backHome": "Retour à l'accueil",
   "common.backToTop": "Revenir en haut de la page",
+  "common.skipToContent": "Aller au contenu",
+  "common.breadcrumb": "Fil d'Ariane",
+  "brand.homeLink": "Flexi Agency — accueil",
+  "price.chargedPrefix": "Vous serez débité de",
+  "rating.exceptional": "Exceptionnel",
+  "rating.veryGood": "Très bien",
+  "rating.good": "Bien",
+  "stars.label": "Étoiles : {n}",
+  // Durations as a results card writes them: "2 h 35 min", "1 j 3 h".
+  "time.days": "{n} j",
+  "time.hours": "{n} h",
+  "time.minutes": "{n} min",
 
-  "nav.transfers": "Transferts",
+  "nav.transfers": "Taxis & Transferts",
   "order.delivery": "Livraison",
 
   "transfer.title": "Transferts avec chauffeur en RDC",
@@ -799,9 +822,9 @@ const fr: Dict = {
 const en: Dict = {
   "brand.tagline": "Flights, hotels, transfers and property in the DRC",
 
-  "nav.flights": "Flights",
+  "nav.flights": "Flight Tickets",
   "nav.hotels": "Hotels",
-  "nav.bus": "Bus",
+  "nav.bus": "Bus Tickets",
   "nav.cars": "Car Rental",
   "nav.activities": "Activities & Tours",
   "nav.property": "Properties",
@@ -981,6 +1004,7 @@ const en: Dict = {
   "rental.hours": "For {n} hours",
   "rental.cheapest": "You pay the cheapest mix of these rates for the length you choose.",
   "rental.time": "Time",
+  "rental.hoursShort": "{n} h",
   "rental.pickupTime": "Pick-up time",
   "rental.returnTime": "Return time",
 
@@ -1366,6 +1390,7 @@ const en: Dict = {
   "footer.rights": "All rights reserved.",
   "footer.lowData": "Low-data mode",
   "footer.offices": "Our offices",
+  "footer.cash": "Cash",
 
   "common.currency": "Currency",
   "common.language": "Language",
@@ -1394,8 +1419,19 @@ const en: Dict = {
   "common.notFoundBody": "This page does not exist, or the offer has ended.",
   "common.backHome": "Back to home",
   "common.backToTop": "Back to top",
+  "common.skipToContent": "Skip to content",
+  "common.breadcrumb": "Breadcrumb",
+  "brand.homeLink": "Flexi Agency — home",
+  "price.chargedPrefix": "You will be charged",
+  "rating.exceptional": "Exceptional",
+  "rating.veryGood": "Very good",
+  "rating.good": "Good",
+  "stars.label": "Stars: {n}",
+  "time.days": "{n}d",
+  "time.hours": "{n}h",
+  "time.minutes": "{n}m",
 
-  "nav.transfers": "Transfers",
+  "nav.transfers": "Taxis & Transfers",
   "order.delivery": "Delivery",
 
   "transfer.title": "Chauffeur-driven transfers in the DRC",
@@ -1555,32 +1591,113 @@ const en: Dict = {
   "err.required": "This field is required."
 };
 
-const CATALOGUES: Record<Locale, Dict> = { fr, en, pt: {}, es: {} };
+const CATALOGUES: Record<Locale, Dict> = {
+  fr: { ...fr, ...componentMessages.fr, ...pageMessages.fr },
+  en: { ...en, ...componentMessages.en, ...pageMessages.en },
+  pt,
+  es,
+  zh,
+  ar,
+  ru
+};
 
-/** Requested locale → French → the key itself. Never English by default. */
+/**
+ * Where a missing string or content field is looked for next: French and
+ * English fall back on each other; the other languages on English first, a
+ * better guess than French for someone reading Chinese or Russian.
+ */
+export const FALLBACK: Record<Locale, Locale[]> = {
+  fr: ["fr", "en"],
+  en: ["en", "fr"],
+  pt: ["pt", "en", "fr"],
+  es: ["es", "en", "fr"],
+  zh: ["zh", "en", "fr"],
+  ar: ["ar", "en", "fr"],
+  ru: ["ru", "en", "fr"]
+};
+
+/**
+ * Requested locale, then its fallbacks (see FALLBACK), then the key itself.
+ * A locale that is not one of ours reads English's chain.
+ */
 export function translate(
   locale: Locale,
   key: string,
   vars?: Record<string, string | number>
 ): string {
-  const raw =
-    CATALOGUES[locale]?.[key] ?? CATALOGUES[DEFAULT_LOCALE][key] ?? key;
+  const chain = FALLBACK[locale] ?? FALLBACK.en;
+  const raw = chain.map((l) => CATALOGUES[l]?.[key]).find((v) => v !== undefined) ?? key;
   if (!vars) return raw;
   return raw.replace(/\{(\w+)\}/g, (m, k) =>
     k in vars ? String(vars[k]) : m
   );
 }
 
-/** Same fallback chain for content fields stored per locale on a document. */
-export function localized(field: Localized | undefined, locale: Locale): string {
+/**
+ * Same fallback chain for content fields stored per locale on a document. A
+ * plain string is a field from before it was per language (or an older API):
+ * French text, shown as it is.
+ */
+export function localized(field: Localized | string | undefined, locale: Locale): string {
   if (!field) return "";
-  return field[locale] || field[DEFAULT_LOCALE] || Object.values(field)[0] || "";
+  if (typeof field === "string") return field;
+  const chain = FALLBACK[locale] ?? FALLBACK.en;
+  return chain.map((l) => field[l]).find(Boolean) || Object.values(field).find(Boolean) || "";
 }
 
-/** The only count-dependent string on the public site. */
+/** Picker names, each in its own language. */
+export const LOCALE_NAMES: Record<Locale, string> = {
+  fr: "Français",
+  en: "English",
+  pt: "Português",
+  es: "Español",
+  zh: "中文",
+  ar: "العربية",
+  ru: "Русский"
+};
+
+/**
+ * A first visit, with no saved choice: the first of the browser's languages
+ * that is one of ours, by its primary subtag ("pt-BR" is pt, "zh-TW" zh),
+ * else English. pages/_document.tsx does the same before the first paint.
+ */
+export const pickLocale = (tags: readonly string[]): Locale =>
+  (tags
+    .map((tag) => String(tag).toLowerCase().split(/[-_]/)[0])
+    .find((l) => LOCALES.includes(l as Locale)) as Locale | undefined) ?? "en";
+
+/** Written right to left (also read by pages/_document.tsx before the first paint). */
+export const isRtl = (locale: Locale) => locale === "ar";
+export const dirOf = (locale: Locale): "rtl" | "ltr" => (isRtl(locale) ? "rtl" : "ltr");
+
+/**
+ * The tag every Intl formatter gets. Arabic keeps Latin digits, so prices and
+ * dates read as on the receipts; Portuguese is the European/African one.
+ */
+const INTL_TAG: Record<Locale, string> = {
+  fr: "fr-FR",
+  en: "en-GB",
+  pt: "pt-PT",
+  es: "es",
+  zh: "zh-CN",
+  ar: "ar-u-nu-latn",
+  ru: "ru-RU"
+};
+export const intlLocale = (locale: Locale | string) => INTL_TAG[locale as Locale] ?? INTL_TAG.en;
+
+/**
+ * The only count-dependent string on the public site. The form is the
+ * language's own (Russian one/few/many, Arabic two/few/many…): its file's
+ * results.titleOne or results.title.<form> when it has one, else results.title.
+ * A language with no wording yet reads the fallback's, singular included.
+ */
 export function resultsLabel(locale: Locale, n: number): string {
   if (n === 0) return translate(locale, "results.titleZero");
-  if (n === 1) return translate(locale, "results.titleOne");
+  const own = CATALOGUES[locale];
+  const form = new Intl.PluralRules(intlLocale(locale)).select(n);
+  const key = form === "one" ? "results.titleOne" : `results.title.${form}`;
+  if (key in own) return translate(locale, key, { n });
+  if (n === 1 && !("results.title" in own)) return translate(locale, "results.titleOne", { n });
   return translate(locale, "results.title", { n });
 }
 
@@ -1596,8 +1713,8 @@ export function resultsLabel(locale: Locale, n: number): string {
  *
  * Only English is mapped, and only where the word actually differs. Anything
  * unmapped passes through as typed, which is the right failure: an amenity the
- * office adds tomorrow shows up in French rather than as a blank row. pt/es
- * fall back to French, matching `translate`.
+ * office adds tomorrow shows up in French rather than as a blank row. The
+ * other languages get the English words, matching `translate`'s fallback.
  *
  * ponytail: a lookup table, not a data model. If the office needs to translate
  * its own vocabulary, these fields have to become codes carrying a `Localized`
@@ -1630,5 +1747,23 @@ const CATALOGUE_EN: Record<string, string> = {
  * Identical in both languages (Restaurant, Bar, SUV, Minibus) needs no entry.
  */
 export function facetLabel(locale: Locale, value: string): string {
-  return locale === "en" ? CATALOGUE_EN[value] ?? value : value;
+  return locale === "fr" ? value : CATALOGUE_EN[value] ?? value;
+}
+
+/**
+ * A word from one item's list (an amenity, a cuisine, a feature…): the
+ * office's own translation on that item, in the visitor's language or its
+ * fallbacks, else `facetLabel`, else the word. The chain stops at French: the
+ * French is the word itself, and the built-in mapping is a better guess for
+ * an English reader. Filter sidebars, over many items, keep `facetLabel`.
+ */
+export function tagLabel(
+  locale: Locale,
+  item: { tagTranslations?: Record<string, Localized> } | undefined,
+  word: string
+): string {
+  const own = item?.tagTranslations?.[word];
+  const chain = FALLBACK[locale] ?? FALLBACK.en;
+  const typed = own && chain.slice(0, chain.indexOf("fr")).map((l) => own[l]).find(Boolean);
+  return typed || facetLabel(locale, word);
 }

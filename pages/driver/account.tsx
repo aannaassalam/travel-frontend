@@ -70,7 +70,11 @@ export default function DriverAccountPage() {
       {driver && (
         <div className="surface mt-5 p-5">
           <p className="text-lg font-bold text-ink-900">{driver.name}</p>
-          {driver.phone && <p className="tnum text-sm text-ink-700">{driver.phone}</p>}
+          {driver.phone && (
+            <p className="tnum text-sm text-ink-700">
+              <span dir="ltr">{driver.phone}</span>
+            </p>
+          )}
           {driver.city && <p className="text-sm text-ink-500">{driver.city}</p>}
           <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
             <div>

@@ -14,7 +14,7 @@ import { carTypeLabel, detailHref, hotelHref, propertySizes, restaurantHref, sqm
 import { mediaUrl } from "@/lib/media";
 import { baseMinor, formatMoney, price, resolve } from "@/lib/money";
 import { fmtDateLong, formatMinutes } from "@/lib/format";
-import { facetLabel } from "@/lib/i18n";
+import { tagLabel } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
 import { rateLabel, ratesOf } from "@/lib/rental";
 import { usePolicyShort } from "@/lib/siteContent";
@@ -202,7 +202,7 @@ function PriceRail({
   const { t } = usePrefs();
   const soldOut = available !== undefined && available <= 0;
   return (
-    <div className="flex shrink-0 flex-col justify-end gap-3 bg-ink-50/60 p-5 sm:w-60 sm:text-right">
+    <div className="flex shrink-0 flex-col justify-end gap-3 bg-ink-50/60 p-5 sm:w-60 sm:text-end">
       {/* A car's rate list takes the row on a phone, its stock badge below. */}
       <div
         className={cn(
@@ -230,7 +230,7 @@ function PriceRail({
         className={cn("btn btn-md w-full", soldOut ? "btn-outline" : "btn-primary")}
       >
         {soldOut ? (soldOutCta ?? t("empty.cta")) : cta}
-        <ArrowRight className="size-4" />
+        <ArrowRight className="size-4 rtl:-scale-x-100" />
       </Link>
     </div>
   );
@@ -298,7 +298,7 @@ export function RouteRow({ listing }: { listing: Listing }) {
           />
           {a.vehicleClass ? (
             <span className="rounded bg-ink-50 px-2 py-1 text-xs font-medium text-ink-700">
-              {a.vehicleClass}
+              {tagLabel(locale, listing, a.vehicleClass)}
             </span>
           ) : null}
           {isFlight && a.cabin ? (
@@ -395,21 +395,19 @@ export function CarRow({ listing }: { listing: Listing }) {
           {a.transmission && (
             <li className="flex items-center gap-1.5">
               <Settings2 className="size-4 text-ink-500" />
-              {a.transmission === "AUTOMATIC"
-                ? locale === "fr" ? "Automatique" : "Automatic"
-                : locale === "fr" ? "Manuelle" : "Manual"}
+              {t(a.transmission === "AUTOMATIC" ? "cmp.car.automatic" : "cmp.car.manual")}
             </li>
           )}
-          {a.mileageLimit && (
+          {lz(a.mileageLimit) && (
             <li className="flex items-center gap-1.5">
               <Gauge className="size-4 text-ink-500" />
-              {a.mileageLimit}
+              {lz(a.mileageLimit)}
             </li>
           )}
           {a.pickupLocations?.[0] && (
             <li className="flex items-center gap-1.5">
               <MapPin className="size-4 text-ink-500" />
-              {a.pickupLocations[0]}
+              {tagLabel(locale, listing, a.pickupLocations[0])}
             </li>
           )}
         </ul>
@@ -452,14 +450,14 @@ function CarRates({ listing, className }: { listing: Listing; className?: string
         {rates.map((r) => (
           <div key={r.hours} className="flex flex-wrap items-baseline justify-between gap-x-3">
             <dt className="text-sm text-ink-500">{rateLabel(r.hours, t)}</dt>
-            <dd className="ml-auto text-right">
-              <PromoWas promotion={r.promotion} className="mr-1.5" />
+            <dd className="ms-auto text-end">
+              <PromoWas promotion={r.promotion} className="me-1.5" />
               <Price money={r.price} className="text-[15px] font-bold text-brand-900" />
             </dd>
           </div>
         ))}
       </dl>
-      <PromoEnds promotion={rates.find((r) => r.promotion)?.promotion} className="text-right" />
+      <PromoEnds promotion={rates.find((r) => r.promotion)?.promotion} className="text-end" />
     </div>
   );
 }
@@ -484,7 +482,7 @@ function PromoHint({ listing }: { listing: Listing }) {
   return (
     <>
       <p className="mt-1 text-xs font-semibold text-bad-600">
-        <span className="mr-1.5 rounded bg-bad-600 px-1.5 py-0.5 text-[11px] font-bold leading-none text-white">
+        <span className="me-1.5 rounded bg-bad-600 px-1.5 py-0.5 text-[11px] font-bold leading-none text-white">
           {t("promo.off", { n: o.discountPercent })}
         </span>
         {which}
@@ -521,7 +519,7 @@ export function ActivityRow({ listing }: { listing: Listing }) {
           {a.maxParticipants && (
             <li className="flex items-center gap-1.5">
               <UserRound className="size-4 text-ink-500" />
-              {locale === "fr" ? "Max" : "Max"} {a.maxParticipants}
+              {t("cmp.activity.max", { n: a.maxParticipants })}
             </li>
           )}
         </ul>
@@ -566,8 +564,8 @@ export function HotelRow({ hotel }: { hotel: Hotel }) {
         <p className="line-clamp-2 text-sm text-ink-500">{lz(hotel.description)}</p>
         <ul className="flex flex-wrap gap-1.5">
           {hotel.amenities.slice(0, 5).map((a) => (
-            <li key={facetLabel(locale, a)} className="rounded bg-ink-50 px-2 py-1 text-xs font-medium text-ink-700">
-              {facetLabel(locale, a)}
+            <li key={a} className="rounded bg-ink-50 px-2 py-1 text-xs font-medium text-ink-700">
+              {tagLabel(locale, hotel, a)}
             </li>
           ))}
         </ul>
@@ -605,7 +603,7 @@ export function PropertyRow({ listing }: { listing: Listing }) {
         <div className="flex flex-wrap items-center gap-2">
           <VerticalChip
             vertical="PROPERTY"
-            label={PROPERTY_LABEL[a.propertyType ?? "HOUSE_SALE"][locale === "en" ? "en" : "fr"]}
+            label={t(PROPERTY_LABEL[a.propertyType ?? "HOUSE_SALE"])}
           />
           {a.availabilityStatus === "UNDER_OFFER" && <UnderOffer />}
         </div>
@@ -638,7 +636,7 @@ export function PropertyRow({ listing }: { listing: Listing }) {
           ))}
         </ul>
       </div>
-      <div className="flex shrink-0 flex-col justify-end gap-3 bg-ink-50/60 p-5 sm:w-60 sm:text-right">
+      <div className="flex shrink-0 flex-col justify-end gap-3 bg-ink-50/60 p-5 sm:w-60 sm:text-end">
         <div>
           <PromoWas promotion={listing.promotion} />
           {/* Nine digits and up ("1 256 850 000 FC") are wider than the
@@ -663,7 +661,7 @@ export function PropertyRow({ listing }: { listing: Listing }) {
           className="btn btn-md btn-dark w-full h-auto! min-h-11 whitespace-normal! py-2.5 text-center leading-tight"
         >
           {t("listing.enquire")}
-          <ArrowRight className="size-4 shrink-0" />
+          <ArrowRight className="size-4 shrink-0 rtl:-scale-x-100" />
         </Link>
       </div>
     </article>
@@ -678,20 +676,21 @@ const sizeText = (
 
 /** A property with an offer on it: still listed, and said so plainly. */
 function UnderOffer({ className }: { className?: string }) {
-  const { locale } = usePrefs();
+  const { t } = usePrefs();
   return (
     <span className={cn("rounded bg-warn-100 px-2 py-1 text-xs font-semibold text-warn-600", className)}>
-      {locale === "fr" ? "Sous offre" : "Under offer"}
+      {t("cmp.property.underOffer")}
     </span>
   );
 }
 
-export const PROPERTY_LABEL: Record<string, { fr: string; en: string }> = {
-  HOUSE_SALE: { fr: "Maison à vendre", en: "House for sale" },
-  LAND_SALE: { fr: "Terrain à vendre", en: "Land for sale" },
-  APARTMENT_RENT: { fr: "Appartement à louer", en: "Apartment to rent" },
-  HOUSE_RENT: { fr: "Maison à louer", en: "House to rent" },
-  LAND_RENT: { fr: "Terrain à louer", en: "Land to rent" }
+/** The label key of each property type: `t(PROPERTY_LABEL[type])`. */
+export const PROPERTY_LABEL: Record<string, string> = {
+  HOUSE_SALE: "cmp.property.HOUSE_SALE",
+  LAND_SALE: "cmp.property.LAND_SALE",
+  APARTMENT_RENT: "cmp.property.APARTMENT_RENT",
+  HOUSE_RENT: "cmp.property.HOUSE_RENT",
+  LAND_RENT: "cmp.property.LAND_RENT"
 };
 
 /* ------------------------------------------------------------- grid tiles */
@@ -707,7 +706,7 @@ export const PROPERTY_LABEL: Record<string, { fr: string; en: string }> = {
  */
 function NonRefundable({ className }: { className?: string }) {
   const short = usePolicyShort();
-  return <span className={cn("text-right text-[11px] text-ink-300", className)}>{short}</span>;
+  return <span className={cn("text-end text-[11px] text-ink-300", className)}>{short}</span>;
 }
 
 /** Homepage / cross-sell tile, and a car or activity in the results grid. */
@@ -723,10 +722,10 @@ export function DealTile({ listing }: { listing: Listing }) {
           className="absolute inset-0 bg-linear-to-t from-brand-900/55 via-brand-900/5 to-transparent"
           aria-hidden
         />
-        <span className="absolute left-4 top-4 shadow-xs backdrop-blur-sm">
+        <span className="absolute start-4 top-4 shadow-xs backdrop-blur-sm">
           <VerticalChip vertical={listing.vertical} label={listing.city} />
         </span>
-        <div className="absolute bottom-3 right-3">
+        <div className="absolute bottom-3 end-3">
           <Scarcity
             available={listing.available}
             noun={listing.vertical === "FLIGHT" ? "seat" : "unit"}
@@ -777,7 +776,7 @@ export function RouteTile({ listing }: { listing: Listing }) {
     <article className={TILE}>
       <div className="relative">
         <Thumb src={mediaUrl(listing.images[0])} alt={lz(listing.title)} className="aspect-4/3" />
-        <span className="absolute left-4 top-4 shadow-xs backdrop-blur-sm">
+        <span className="absolute start-4 top-4 shadow-xs backdrop-blur-sm">
           <VerticalChip
             vertical={listing.vertical}
             label={a.operator ?? ""}
@@ -844,7 +843,7 @@ export function HotelTile({ hotel }: { hotel: Hotel }) {
           className="absolute inset-0 bg-linear-to-t from-brand-900/55 via-brand-900/5 to-transparent"
           aria-hidden
         />
-        <span className="absolute left-4 top-4 rounded-md bg-white/95 px-2 py-1 shadow-xs backdrop-blur-sm">
+        <span className="absolute start-4 top-4 rounded-md bg-white/95 px-2 py-1 shadow-xs backdrop-blur-sm">
           <Stars n={hotel.stars} />
         </span>
       </div>
@@ -890,7 +889,7 @@ export function HotelTile({ hotel }: { hotel: Hotel }) {
 }
 
 export function PropertyTile({ listing }: { listing: Listing }) {
-  const { t, locale, lz } = usePrefs();
+  const { t, lz } = usePrefs();
   const a = listing.attributes;
   return (
     <article className={TILE}>
@@ -900,11 +899,11 @@ export function PropertyTile({ listing }: { listing: Listing }) {
           className="absolute inset-0 bg-linear-to-t from-brand-900/55 via-brand-900/5 to-transparent"
           aria-hidden
         />
-        <span className="eyebrow absolute left-4 top-4 rounded-md bg-white/95 px-2 py-1 text-brand-700 shadow-xs backdrop-blur-sm">
-          {PROPERTY_LABEL[a.propertyType ?? "HOUSE_SALE"][locale === "en" ? "en" : "fr"]}
+        <span className="eyebrow absolute start-4 top-4 rounded-md bg-white/95 px-2 py-1 text-brand-700 shadow-xs backdrop-blur-sm">
+          {t(PROPERTY_LABEL[a.propertyType ?? "HOUSE_SALE"])}
         </span>
         {a.availabilityStatus === "UNDER_OFFER" && (
-          <UnderOffer className="absolute bottom-3 right-3 shadow-xs" />
+          <UnderOffer className="absolute bottom-3 end-3 shadow-xs" />
         )}
       </div>
       <div className="flex flex-1 flex-col gap-2 p-5">
@@ -963,7 +962,7 @@ export function DestinationTile({
         <p className="eyebrow text-accent-500">{city.province}</p>
         <p className="display mt-1 text-[22px] leading-tight">{city.name}</p>
         <span className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-white/80 transition-colors group-hover:text-white">
-          <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+          <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5 rtl:-scale-x-100 rtl:group-hover:-translate-x-0.5" />
         </span>
       </div>
     </Link>
@@ -1007,7 +1006,7 @@ export function ResultRow({ listing }: { listing: Listing }) {
 
 /** A tile in the grid; with `row`, the same card laid out image-left for the list. */
 export function RestaurantCard({ restaurant: r, row }: { restaurant: Restaurant; row?: boolean }) {
-  const { currency, locale } = usePrefs();
+  const { t, lz, currency, locale } = usePrefs();
   // Cheapest active zone: the number a customer weighs before tapping in.
   const cheapestFee = r.deliveryZones.length
     ? r.deliveryZones.reduce((a, b) => (baseMinor(a.fee) <= baseMinor(b.fee) ? a : b))
@@ -1035,7 +1034,7 @@ export function RestaurantCard({ restaurant: r, row }: { restaurant: Restaurant;
       <div className="flex min-w-0 flex-1 flex-col gap-2 p-5">
         <CardKind kind="RESTAURANT" />
         <div className="flex items-start justify-between gap-3">
-          <h2 className="text-lg font-bold text-brand-900">{r.name.fr || r.name.en}</h2>
+          <h2 className="text-lg font-bold text-brand-900">{lz(r.name)}</h2>
           {r.rating ? (
             <span className="flex shrink-0 items-center gap-1 text-sm font-semibold text-ink-700">
               <Star className="size-4 fill-accent-500 text-accent-500" />
@@ -1044,23 +1043,23 @@ export function RestaurantCard({ restaurant: r, row }: { restaurant: Restaurant;
           ) : null}
         </div>
         <p className="text-sm text-ink-500">
-          {r.cuisines.join(" · ")}
+          {r.cuisines.map((c) => tagLabel(locale, r, c)).join(" · ")}
           {r.cuisines.length ? " · " : ""}
           {r.city}
         </p>
-        <p className="line-clamp-2 text-sm text-ink-500">{r.description.fr || r.description.en}</p>
+        <p className="line-clamp-2 text-sm text-ink-500">{lz(r.description)}</p>
         <PromoItem promotion={r.promotion} />
 
         <div className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-1 pt-3 text-sm text-ink-700">
           {cheapestFee && (
             <span className="flex items-center gap-1.5">
               <Bike className="size-4 text-brand-500" />
-              {locale === "fr" ? "dès" : "from"} {price(cheapestFee.fee, currency, locale)}
+              {t("cmp.restaurant.feeFrom", { price: price(cheapestFee.fee, currency, locale) })}
             </span>
           )}
           <span className="flex items-center gap-1.5">
             <Clock className="size-4 text-brand-500" />
-            {r.prepTimeMinutes + (cheapestFee?.etaMinutes ?? 0)} min
+            {t("cmp.minutes", { n: r.prepTimeMinutes + (cheapestFee?.etaMinutes ?? 0) })}
           </span>
         </div>
       </div>

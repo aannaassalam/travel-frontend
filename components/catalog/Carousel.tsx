@@ -6,9 +6,15 @@ import { Children, useCallback, useEffect, useRef, useState } from "react";
 
 const AUTOPLAY_MS = 4500;
 
+/** Right to left, scrollLeft is 0 at the start and negative going on (the spec, and every current browser). */
+const isRtl = (el: HTMLElement) => getComputedStyle(el).direction === "rtl";
+
+/** How far the rail has scrolled from its start edge, whichever side that is. */
+const fromStart = (el: HTMLElement) => Math.abs(el.scrollLeft);
+
 /** A bit less than a full viewport, so the next card peeks in and the rail never looks like it has ended. */
 const page = (el: HTMLElement, direction: -1 | 1) =>
-  el.scrollBy({ left: direction * el.clientWidth * 0.82, behavior: "smooth" });
+  el.scrollBy({ left: (isRtl(el) ? -direction : direction) * el.clientWidth * 0.82, behavior: "smooth" });
 
 /**
  * Horizontal rail with its own heading row.
@@ -65,17 +71,17 @@ export default function Carousel({
   const hold = useRef({ pointer: false, focus: false, finger: false, lifted: 0 });
   const [atStart, setAtStart] = useState(true);
   const [atEnd, setAtEnd] = useState(true);
-  const { locale } = usePrefs();
+  const { t } = usePrefs();
 
   const sync = useCallback(() => {
     const el = ref.current;
     if (!el) return;
-    // The rail rests at scrollLeft === paddingLeft, not 0: scroll-snap parks the
-    // first card against the snapport edge, which excludes the container's own
-    // padding. Comparing against 0 left the "back" arrow permanently enabled.
-    const padLeft = parseFloat(getComputedStyle(el).paddingLeft) || 0;
-    setAtStart(el.scrollLeft <= padLeft + 4);
-    setAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 4);
+    // The rail rests at its start padding from the edge, not 0: scroll-snap parks
+    // the first card against the snapport edge, which excludes the container's
+    // own padding. Comparing against 0 left the "back" arrow permanently enabled.
+    const padStart = parseFloat(getComputedStyle(el).paddingInlineStart) || 0;
+    setAtStart(fromStart(el) <= padStart + 4);
+    setAtEnd(fromStart(el) + el.clientWidth >= el.scrollWidth - 4);
   }, []);
 
   useEffect(() => {
@@ -113,7 +119,7 @@ export default function Carousel({
       const h = hold.current;
       if (!el || reduce.matches || document.hidden || h.pointer || h.focus || h.finger) return;
       if (Date.now() - h.lifted < AUTOPLAY_MS) return;
-      if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 4) el.scrollTo({ left: 0, behavior: "smooth" });
+      if (fromStart(el) + el.clientWidth >= el.scrollWidth - 4) el.scrollTo({ left: 0, behavior: "smooth" });
       else page(el, 1);
     }, AUTOPLAY_MS);
     return () => window.clearInterval(timer);
@@ -189,7 +195,7 @@ export default function Carousel({
                 )}
               >
                 {cta}
-                <ChevronRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+                <ChevronRight className="size-4 transition-transform group-hover:translate-x-0.5 rtl:-scale-x-100 rtl:group-hover:-translate-x-0.5" />
               </Link>
             )}
             {scrollable && (
@@ -202,7 +208,7 @@ export default function Carousel({
                   disabled={atStart}
                   className={arrow}
                 >
-                  <ChevronLeft className="size-5" />
+                  <ChevronLeft className="size-5 rtl:-scale-x-100" />
                 </button>
                 <button
                   type="button"
@@ -212,7 +218,7 @@ export default function Carousel({
                   disabled={atEnd}
                   className={arrow}
                 >
-                  <ChevronRight className="size-5" />
+                  <ChevronRight className="size-5 rtl:-scale-x-100" />
                 </button>
               </div>
             )}
@@ -241,9 +247,7 @@ export default function Carousel({
       </div>
 
       <p className="sr-only">
-        {locale === "fr"
-          ? "Utilisez les flèches du clavier pour faire défiler."
-          : "Use the arrow keys to scroll."}
+        {t("cmp.carousel.keysHint")}
       </p>
     </div>
   );

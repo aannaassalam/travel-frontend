@@ -14,71 +14,21 @@ const ICONS = [PackageCheck, Banknote, Users, MapPin];
 const BANNER = "/img/hero-river.svg";
 
 /**
- * The wording this page shipped with. The office edits its own in the admin's
- * "Website content" screen; this is what shows until it has, and whenever the
- * API cannot be reached while the page is being built.
+ * The wording this page shipped with (message keys). The office edits its own
+ * in the admin's "Website content" screen; this is what shows until it has,
+ * and whenever the API cannot be reached while the page is being built.
  */
 const BUILT_IN = {
-  fr: {
-    title: "Une agence congolaise, avec du stock bien réel",
-    intro:
-      "Flexi Agency réserve des vols, des hôtels, des bus, des voitures et des excursions en République démocratique du Congo, et met en relation acheteurs et vendeurs de biens immobiliers.",
-    sections: [
-      {
-        title: "Nous achetons avant de vendre",
-        body: "Nous ne sommes pas un moteur de recherche branché sur un système de réservation mondial. Nous achetons des places, des chambres, des journées de véhicule et des créneaux d'excursion à l'avance, et nous les revendons. C'est notre argent qui est engagé, ce qui nous oblige à n'afficher que du stock réel."
-      },
-      {
-        title: "Payer comme on paie ici",
-        body: "Vous réservez en ligne et vous réglez en espèces à notre agence, avec la référence reçue par SMS. La réservation est maintenue 48 heures, le temps de passer nous voir."
-      },
-      {
-        title: "Une équipe joignable",
-        body: "Un bureau physique à Gombe, un numéro qui répond, un WhatsApp lu. Dans un marché où la réputation circule par les réseaux personnels, c'est ce qui compte le plus."
-      },
-      {
-        title: "La RDC, pas le monde entier",
-        body: "Nous couvrons Kinshasa, le Katanga, les Kivus, le Kasaï et le Kongo-Central. Nous préférons bien connaître huit villes plutôt que mal en connaître deux cents."
-      }
-    ],
-    listTitle: "Ce que nous ne faisons pas",
-    listItems: [
-      "Nous ne cachons pas nos conditions d'annulation : 80 % du montant payé est remboursable après déduction des frais de dossier, et nous vous le disons avant que vous payiez, pas après.",
-      "Nous n'affichons pas de faux compteurs d'urgence. Quand il reste trois places, c'est qu'il en reste trois.",
-      "Nous ne révélons aucun frais à la dernière étape. Le prix affiché est le prix payé.",
-      "Nous ne vendons pas vos données et n'utilisons pas de traceurs publicitaires."
-    ]
-  },
-  en: {
-    title: "A Congolese agency, with genuinely real stock",
-    intro:
-      "Flexi Agency books flights, hotels, buses, cars and tours across the Democratic Republic of the Congo, and connects buyers and sellers of property.",
-    sections: [
-      {
-        title: "We buy before we sell",
-        body: "We are not a search engine plugged into a global reservation system. We buy seats, rooms, vehicle-days and tour slots in advance, and resell them. It is our own money at risk, which forces us to list only real stock."
-      },
-      {
-        title: "Paying the way people pay here",
-        body: "You book online and pay in cash at our office, with the reference sent by SMS. The booking is held for 48 hours, time enough to come and see us."
-      },
-      {
-        title: "A team you can reach",
-        body: "A physical office in Gombe, a number that answers, a WhatsApp that gets read. In a market where reputation travels through personal networks, that matters most."
-      },
-      {
-        title: "The DRC, not the whole world",
-        body: "We cover Kinshasa, Katanga, the Kivus, Kasaï and Kongo-Central. We would rather know eight cities well than two hundred badly."
-      }
-    ],
-    listTitle: "What we do not do",
-    listItems: [
-      "We do not hide our cancellation terms: 80% of the amount paid is refundable after deducting processing fees, and we tell you before you pay, not after.",
-      "We do not run fake urgency counters. When three seats are left, three seats are left.",
-      "We do not reveal a fee at the last step. The price shown is the price paid.",
-      "We do not sell your data and use no advertising trackers."
-    ]
-  }
+  title: "pg.about.title",
+  intro: "pg.about.intro",
+  sections: [
+    { title: "pg.about.buy.title", body: "pg.about.buy.body" },
+    { title: "pg.about.pay.title", body: "pg.about.pay.body" },
+    { title: "pg.about.team.title", body: "pg.about.team.body" },
+    { title: "pg.about.drc.title", body: "pg.about.drc.body" }
+  ],
+  listTitle: "pg.about.listTitle",
+  listItems: ["pg.about.not.terms", "pg.about.not.urgency", "pg.about.not.fees", "pg.about.not.data"]
 };
 
 interface Props {
@@ -100,7 +50,13 @@ export default function AboutPage({ about }: Props) {
         listTitle: localized(about.listTitle, locale),
         listItems: about.listItems.map((line) => localized(line, locale)).filter(Boolean)
       }
-    : BUILT_IN[locale === "en" ? "en" : "fr"];
+    : {
+        title: t(BUILT_IN.title),
+        intro: t(BUILT_IN.intro),
+        sections: BUILT_IN.sections.map((s) => ({ title: t(s.title), body: t(s.body) })),
+        listTitle: t(BUILT_IN.listTitle),
+        listItems: BUILT_IN.listItems.map((k) => t(k))
+      };
   const banner = about?.image ? mediaUrl(about.image) : BANNER;
 
   return (

@@ -17,7 +17,7 @@ import { DealTile, HotelTile, PropertyTile } from "./cards";
  * no heading.
  */
 export default function RecentlyViewed({ excludeSlug }: { excludeSlug?: string }) {
-  const { locale } = usePrefs();
+  const { t } = usePrefs();
   const [slugs, setSlugs] = useState<string[]>([]);
 
   useEffect(() => {
@@ -65,9 +65,7 @@ export default function RecentlyViewed({ excludeSlug }: { excludeSlug?: string }
 
   return (
     <section className="mt-16">
-      <SectionHeading
-        title={locale === "fr" ? "Vus récemment" : "Recently viewed"}
-      />
+      <SectionHeading title={t("cmp.recent.title")} />
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {items.map((item) =>
           "roomTypes" in item ? (

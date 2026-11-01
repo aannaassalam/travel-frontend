@@ -1,3 +1,4 @@
+import { LOCALE_NAMES } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
 import { useSession } from "@/lib/session";
 import { InlineSelect } from "@/components/ui/InlineSelect";
@@ -42,13 +43,6 @@ export const VERTICAL_NAV = [
   { href: "/property", key: "nav.property", Icon: Building2 },
   { href: "/activities", key: "nav.activities", Icon: Compass }
 ];
-
-const LOCALE_LABEL: Record<Locale, string> = {
-  fr: "Français",
-  en: "English",
-  pt: "Português",
-  es: "Español"
-};
 
 /**
  * §11.2 header. Booking.com's shape — brand left, currency/language/account
@@ -119,7 +113,7 @@ export default function Header({ transparent = false }: { transparent?: boolean 
                 ariaLabel={t("common.language")}
                 value={locale}
                 onValueChange={(v) => setLocale(v as Locale)}
-                options={ENABLED_LOCALES.map((l) => ({ value: l, label: LOCALE_LABEL[l] }))}
+                options={ENABLED_LOCALES.map((l) => ({ value: l, label: LOCALE_NAMES[l] }))}
               />
             </div>
 
@@ -154,7 +148,9 @@ export default function Header({ transparent = false }: { transparent?: boolean 
 
         <nav
           aria-label={t("footer.services")}
-          className="container-site hidden items-center gap-0.5 pb-2.5 lg:flex"
+          // Wraps to a second row where a language's names are longer than
+          // the screen (Spanish, Russian on a laptop), never off the side.
+          className="container-site hidden flex-wrap items-center gap-0.5 pb-2.5 lg:flex"
         >
           {VERTICAL_NAV.map(({ href, key, Icon }) => (
             <Link
@@ -163,14 +159,16 @@ export default function Header({ transparent = false }: { transparent?: boolean 
               aria-current={isActive(href) ? "page" : undefined}
               // Underline rather than a pill: it is quieter, and it keeps the
               // amber CTA as the only strongly filled thing in the chrome.
-              className={`relative flex items-center gap-2 rounded-lg px-3.5 py-2.5 text-sm font-semibold transition-colors ${
+              // Tighter and without icons below xl, where the eight names
+              // ("Taxis & Transferts"…) would not fit on one row.
+              className={`relative flex items-center gap-2 rounded-lg px-2.5 py-2.5 text-sm font-semibold whitespace-nowrap transition-colors xl:px-3.5 ${
                 isActive(href) ? "text-white" : "text-white/70 hover:bg-white/10 hover:text-white"
               }`}
             >
-              <Icon className="size-4" />
+              <Icon className="hidden size-4 xl:block" />
               {t(key)}
               {isActive(href) && (
-                <span className="absolute inset-x-3.5 -bottom-0.5 h-0.5 rounded-full bg-accent-500" />
+                <span className="absolute inset-x-2.5 -bottom-0.5 h-0.5 rounded-full bg-accent-500 xl:inset-x-3.5" />
               )}
             </Link>
           ))}
@@ -246,7 +244,7 @@ export default function Header({ transparent = false }: { transparent?: boolean 
                   ariaLabel={t("common.language")}
                   value={locale}
                   onValueChange={(v) => setLocale(v as Locale)}
-                  options={ENABLED_LOCALES.map((l) => ({ value: l, label: LOCALE_LABEL[l] }))}
+                  options={ENABLED_LOCALES.map((l) => ({ value: l, label: LOCALE_NAMES[l] }))}
                   triggerClassName="rounded-lg bg-white/10 px-3 py-2 ring-1 ring-white/15 ring-inset"
                 />
               </label>

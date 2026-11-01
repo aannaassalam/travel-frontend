@@ -237,7 +237,7 @@ export default function MapPicker({
             disabled={locating || !ready}
             aria-busy={locating}
             // Clear of the map's credit line, which must stay readable.
-            className="absolute right-3 bottom-8 z-1000 flex h-11 items-center gap-2 rounded-full bg-white px-4 text-sm font-bold text-brand-700 shadow-md ring-1 ring-ink-100 ring-inset hover:bg-brand-50 disabled:opacity-70"
+            className="absolute end-3 bottom-8 z-1000 flex h-11 items-center gap-2 rounded-full bg-white px-4 text-sm font-bold text-brand-700 shadow-md ring-1 ring-ink-100 ring-inset hover:bg-brand-50 disabled:opacity-70"
           >
             {locating ? (
               <Loader2 className="size-4 animate-spin" aria-hidden="true" />

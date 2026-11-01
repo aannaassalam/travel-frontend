@@ -86,7 +86,10 @@ const DAY_NAMES: Record<Locale, string[]> = {
   fr: ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"],
   en: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
   pt: ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"],
-  es: ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
+  es: ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"],
+  zh: ["周日", "周一", "周二", "周三", "周四", "周五", "周六"],
+  ar: ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"],
+  ru: ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"]
 };
 
 export const dayName = (day: number, locale: Locale) => (DAY_NAMES[locale] ?? DAY_NAMES.fr)[day];
