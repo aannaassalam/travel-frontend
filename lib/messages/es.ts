@@ -908,6 +908,7 @@ const messages: Record<string, string> = {
   "pg.hotels.title": "Hoteles en la RDC",
   "pg.hotels.description": "Habitaciones compradas por adelantado en Kinshasa, Lubumbashi, Goma, Bukavu y Matadi. Precios en USD, CDF o EUR, pago en efectivo en nuestra oficina.",
   "pg.hotels.stars": "{n} estrellas",
+  "pg.hotels.star1": "1 estrella",
   "pg.hotel.meal.roomOnly": "Solo alojamiento",
   "pg.hotel.meal.breakfast": "Desayuno incluido",
   "pg.hotel.meal.halfBoard": "Media pensión",

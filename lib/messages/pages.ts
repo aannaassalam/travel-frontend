@@ -223,6 +223,7 @@ export const fr = {
   "pg.hotels.description":
     "Chambres achetées à l'avance à Kinshasa, Lubumbashi, Goma, Bukavu et Matadi. Prix en USD, CDF ou EUR, paiement en espèces à notre agence.",
   "pg.hotels.stars": "{n} étoiles",
+  "pg.hotels.star1": "1 étoile",
   // pages/hotels/hotel/[slug]
   "pg.hotel.meal.roomOnly": "Sans repas",
   "pg.hotel.meal.breakfast": "Petit-déjeuner inclus",
@@ -530,6 +531,7 @@ export const en: Record<keyof typeof fr, string> = {
   "pg.hotels.description":
     "Rooms bought in advance in Kinshasa, Lubumbashi, Goma, Bukavu and Matadi. Prices in USD, CDF or EUR, pay in cash at our office.",
   "pg.hotels.stars": "{n} stars",
+  "pg.hotels.star1": "1 star",
   // pages/hotels/hotel/[slug]
   "pg.hotel.meal.roomOnly": "Room only",
   "pg.hotel.meal.breakfast": "Breakfast included",

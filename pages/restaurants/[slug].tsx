@@ -1,5 +1,6 @@
 import CartBar from "@/components/restaurant/CartBar";
 import Gallery, { PhotoGrid } from "@/components/catalog/Gallery";
+import Lightbox from "@/components/catalog/Lightbox";
 import ListingVideo from "@/components/catalog/ListingVideo";
 import LocationMap from "@/components/catalog/LocationMap";
 import Reviews from "@/components/catalog/Reviews";
@@ -7,7 +8,7 @@ import { Breadcrumbs, PromoEnds, PromoWas } from "@/components/site/bits";
 import Layout from "@/components/site/Layout";
 import { getRestaurant } from "@/lib/api";
 import { useCart } from "@/lib/cart";
-import { mediaUrl } from "@/lib/media";
+import { mediaUrl, mediaUrls } from "@/lib/media";
 import { price } from "@/lib/money";
 import { usePrefs } from "@/lib/prefs";
 import {
@@ -17,9 +18,10 @@ import {
   Restaurant
 } from "@/typescript/interface/domain.interface";
 import { useQuery } from "@tanstack/react-query";
-import { Bike, Clock, MapPin, Minus, Phone, Plus, Star } from "lucide-react";
+import { Bike, Clock, Images, MapPin, Minus, Phone, Plus, Star } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/router";
+import { useState } from "react";
 
 /** Section headings, in the order MENU_SECTIONS declares them. */
 const SECTION_KEY: Record<MenuSection, string> = {
@@ -204,6 +206,11 @@ function MenuRow({ item, restaurant }: { item: MenuItem; restaurant: Restaurant 
   const qty = line?.quantity ?? 0;
 
   const soldOut = !item.isAvailable;
+  // Every photo the office added to the dish, full screen from its thumbnail.
+  // (mediaUrls stands a placeholder in for an empty list; a dish without photos shows none.)
+  const photos = item.images?.length ? mediaUrls(item.images) : [];
+  const [photo, setPhoto] = useState<number | null>(null);
+  const dishName = lz(item.name);
 
   return (
     <li
@@ -212,13 +219,25 @@ function MenuRow({ item, restaurant }: { item: MenuItem; restaurant: Restaurant 
       // looking for yesterday's order learns it is off today.
       aria-disabled={soldOut || undefined}
     >
-      {item.images?.[0] && (
-        <div className="relative size-20 shrink-0 overflow-hidden rounded-xl bg-ink-50">
-          <Image src={mediaUrl(item.images[0])} alt="" fill sizes="80px" className="object-cover" />
-        </div>
+      {photos[0] && (
+        <button
+          type="button"
+          onClick={() => setPhoto(0)}
+          aria-label={photos.length > 1 ? t("listing.gallery", { n: photos.length }) : dishName}
+          className="relative size-20 shrink-0 cursor-zoom-in overflow-hidden rounded-xl bg-ink-50 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none"
+        >
+          <Image src={mediaUrl(item.images![0])} alt="" fill sizes="80px" className="object-cover" />
+          {photos.length > 1 && (
+            <span className="tnum absolute end-1 bottom-1 flex items-center gap-0.5 rounded-md bg-black/60 px-1 py-0.5 text-[10px] font-semibold text-white">
+              <Images className="size-3" aria-hidden="true" />
+              {photos.length}
+            </span>
+          )}
+        </button>
       )}
+      <Lightbox images={photos} alt={dishName} index={photo} onChange={setPhoto} />
       <div className="min-w-0 flex-1">
-        <h3 className="font-semibold text-ink-900">{lz(item.name)}</h3>
+        <h3 className="font-semibold text-ink-900">{dishName}</h3>
         <p className="mt-0.5 line-clamp-2 text-sm text-ink-500">
           {lz(item.description)}
         </p>

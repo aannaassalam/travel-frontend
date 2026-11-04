@@ -908,6 +908,7 @@ const messages: Record<string, string> = {
   "pg.hotels.title": "刚果（金）酒店",
   "pg.hotels.description": "在Kinshasa、Lubumbashi、Goma、Bukavu和Matadi提前购入的客房。价格以USD、CDF或EUR显示，可在我们的门店现金付款。",
   "pg.hotels.stars": "{n}星",
+  "pg.hotels.star1": "1星",
   "pg.hotel.meal.roomOnly": "不含餐",
   "pg.hotel.meal.breakfast": "含早餐",
   "pg.hotel.meal.halfBoard": "半膳",

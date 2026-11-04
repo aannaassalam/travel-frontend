@@ -908,6 +908,7 @@ const messages: Record<string, string> = {
   "pg.hotels.title": "الفنادق في جمهورية الكونغو الديمقراطية",
   "pg.hotels.description": "غرف اشتريناها مسبقا في Kinshasa و Lubumbashi و Goma و Bukavu و Matadi. الأسعار بـ USD أو CDF أو EUR، والدفع نقدا في مكتبنا.",
   "pg.hotels.stars": "النجوم: {n}",
+  "pg.hotels.star1": "النجوم: 1",
   "pg.hotel.meal.roomOnly": "الغرفة فقط",
   "pg.hotel.meal.breakfast": "شامل الإفطار",
   "pg.hotel.meal.halfBoard": "نصف إقامة",

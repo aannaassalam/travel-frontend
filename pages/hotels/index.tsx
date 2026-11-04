@@ -36,9 +36,10 @@ export default function HotelsPage({ facets }: Props) {
           key: "stars",
           label: t("results.stars"),
           type: "checkbox",
-          options: [5, 4, 3].map((n) => ({
+          // The ratings the hotels on sale actually have, 1 and 2 stars included.
+          options: (facets.hotelStars ?? [5, 4, 3, 2, 1]).map((n) => ({
             value: String(n),
-            label: t("pg.hotels.stars", { n })
+            label: n === 1 ? t("pg.hotels.star1") : t("pg.hotels.stars", { n })
           }))
         },
         {

@@ -908,6 +908,7 @@ const messages: Record<string, string> = {
   "pg.hotels.title": "Отели в ДРК",
   "pg.hotels.description": "Номера, заранее выкупленные в Kinshasa, Lubumbashi, Goma, Bukavu и Matadi. Цены в USD, CDF или EUR, оплата наличными в нашем офисе.",
   "pg.hotels.stars": "Звёзд: {n}",
+  "pg.hotels.star1": "Звёзд: 1",
   "pg.hotel.meal.roomOnly": "Без питания",
   "pg.hotel.meal.breakfast": "Завтрак включён",
   "pg.hotel.meal.halfBoard": "Полупансион",

@@ -148,6 +148,8 @@ export interface Facets {
   categories: string[];
   vehicleClasses: string[];
   hotelAmenities: string[];
+  /** The star ratings of the hotels on sale, highest first (absent from an older API). */
+  hotelStars?: number[];
   /** The makes of the cars on sale. Absent from an API older than the filter. */
   makes?: string[];
   /** Per vertical: the lowest and highest price on sale, in francs. */
