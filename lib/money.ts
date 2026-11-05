@@ -157,6 +157,20 @@ export function multiply(money: Money | number | undefined, factor: number): Mon
   return out.CDF === undefined ? { ...out, CDF: 0 } : out;
 }
 
+/**
+ * A processing fee (or any flat amount) added to a total, currency by currency:
+ * only the currencies both carry, as the server settles. No fee: the total as is.
+ */
+export function addMoney(total: Money, fee: Money | undefined): Money {
+  if (!(baseMinor(fee) > 0)) return total;
+  const out: Money = {};
+  for (const [c, v] of Object.entries(total) as [Currency, number | undefined][]) {
+    const f = fee?.[c];
+    if (typeof v === "number" && typeof f === "number") out[c] = v + f;
+  }
+  return out;
+}
+
 export function nightsBetween(from: string, to: string): number {
   const ms = new Date(to).getTime() - new Date(from).getTime();
   return Math.max(1, Math.round(ms / 86400000));

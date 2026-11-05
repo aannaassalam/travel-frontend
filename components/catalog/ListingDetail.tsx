@@ -68,7 +68,8 @@ export default function ListingDetail(built: { listing: Listing; related: Listin
     HOTEL: t("nav.hotels"),
     PROPERTY: t("nav.property"),
     // Never a listing's vertical; named so the map stays total over `Vertical`.
-    TRANSFER: t("nav.transfers")
+    TRANSFER: t("nav.transfers"),
+    VEHICLE_SALE: t("nav.vehicles")
   }[listing.vertical];
   // The nearest thing a listing has to an address: an activity's meeting
   // point, a car's first pick-up point, otherwise the city alone.

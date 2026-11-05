@@ -24,7 +24,7 @@ import { useCheckout } from "@/lib/checkout";
 import { cn } from "@/lib/utils";
 import { fmtDate } from "@/lib/format";
 import { mediaUrl, mediaUrls } from "@/lib/media";
-import { baseMinor, multiply, nightsBetween } from "@/lib/money";
+import { addMoney, baseMinor, multiply, nightsBetween } from "@/lib/money";
 import { tagLabel } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
 import { usePolicyNotice, usePolicyTitle } from "@/lib/siteContent";
@@ -143,7 +143,9 @@ export default function HotelDetail({ hotel: initialHotel, others }: Props) {
       roomTypeId: room.id,
       startDate: from,
       endDate: to,
-      adults
+      adults,
+      // The hotel's, once — not per room or night.
+      processingFee: hotel.processingFee
     });
     router.push("/booking/travellers");
   }
@@ -329,7 +331,7 @@ export default function HotelDetail({ hotel: initialHotel, others }: Props) {
                 aria-busy={isFetching}
               >
                 {hotel.roomTypes.map((room) => {
-                  const total = multiply(room.sellPrice, nights * rooms);
+                  const total = addMoney(multiply(room.sellPrice, nights * rooms), hotel.processingFee);
                   // Rooms are not counted: one without a price is the only one
                   // that cannot be booked.
                   const soldOut = !(baseMinor(room.sellPrice) > 0);
@@ -374,6 +376,11 @@ export default function HotelDetail({ hotel: initialHotel, others }: Props) {
                           <PromoEnds promotion={room.promotion} />
                           {!soldOut && (
                             <>
+                              {baseMinor(hotel.processingFee) > 0 && (
+                                <p className="mt-1 text-xs text-ink-500">
+                                  + {t("checkout.processingFees")} <Price money={hotel.processingFee} />
+                                </p>
+                              )}
                               <p className="mt-1 text-sm font-semibold text-ink-700">
                                 <Price money={total} /> {t("listing.total")}
                               </p>

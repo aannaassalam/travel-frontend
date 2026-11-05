@@ -318,7 +318,31 @@ export const fr = {
     "Nous ne demandons jamais votre code ni votre mot de passe par téléphone ou par SMS.",
   "pg.login.panelTitle": "Votre numéro suffit.",
   "pg.login.panelBody":
-    "Pas besoin d'adresse e-mail. Vos réservations, vos documents et vos demandes sont liés à votre téléphone."
+    "Pas besoin d'adresse e-mail. Vos réservations, vos documents et vos demandes sont liés à votre téléphone.",
+  // vehicles for sale (2026-11-04)
+  "pg.vehicles.title": "Véhicules à vendre en RDC",
+  "pg.vehicles.description": "Voitures, SUV, pick-up et camions en stock dans nos parkings : fiche technique, équipements et prix affichés, retrait sur place.",
+  "pg.vehicles.inTown": "Véhicules à vendre à {city}",
+  "pg.vehicles.allTowns": "Toutes les villes",
+  "pg.vehicles.emptyTitle": "Aucun véhicule ne correspond à cette recherche",
+  "pg.vehicles.emptyBody": "Essayez une autre ville ou retirez des filtres : de nouveaux véhicules arrivent régulièrement.",
+  "pg.vehicle.notFound": "Ce véhicule est introuvable.",
+  "pg.vehicle.specs": "Fiche technique",
+  "pg.vehicle.price": "Prix",
+  "pg.vehicle.order": "Commander ce véhicule",
+  "pg.vehicle.orderNote": "Le prix complet se règle à la commande. Vous retirez le véhicule à son parking.",
+  "pg.vehicle.reserved": "Réservé",
+  "pg.vehicle.reservedBody": "Un autre client a réservé ce véhicule. Il peut redevenir disponible si sa commande n'est pas réglée.",
+  "pg.vehicle.sold": "Vendu",
+  "pg.vehicle.soldBody": "Ce véhicule a été vendu.",
+  "pg.vehicle.seeOthers": "Voir les autres véhicules",
+  "pg.vehicleOrder.contact": "Vos coordonnées",
+  "pg.vehicleOrder.phoneHelper": "Nous vous joignons sur ce numéro au sujet de la commande.",
+  "pg.vehicleOrder.submitCash": "Commander — payer en agence",
+  "pg.vehicleOrder.blocked": "Complétez vos coordonnées et cochez la case ci-dessus.",
+  "pg.vehicleOrder.errTaken": "Un autre client vient de réserver ce véhicule.",
+  "pg.confirm.vehicleReady": "Suivez ici la préparation du véhicule : l'étape « Prêt à retirer » s'affiche dès que les documents de vente sont émis.",
+  "pg.home.vehiclesSub": "Les derniers arrivés dans nos parkings, à voir et à retirer sur place."
 };
 
 export const en: Record<keyof typeof fr, string> = {
@@ -626,5 +650,29 @@ export const en: Record<keyof typeof fr, string> = {
     "We never ask for your code or password by phone or SMS. Do not share them with anyone.",
   "pg.login.panelTitle": "Your number is enough.",
   "pg.login.panelBody":
-    "No email needed. Your bookings, documents and requests are tied to your phone."
+    "No email needed. Your bookings, documents and requests are tied to your phone.",
+  // vehicles for sale (2026-11-04)
+  "pg.vehicles.title": "Vehicles for sale in the DRC",
+  "pg.vehicles.description": "Cars, SUVs, pick-ups and trucks in stock at our parkings: specifications, accessories and price shown, collected on site.",
+  "pg.vehicles.inTown": "Vehicles for sale in {city}",
+  "pg.vehicles.allTowns": "All towns",
+  "pg.vehicles.emptyTitle": "No vehicle matches this search",
+  "pg.vehicles.emptyBody": "Try another town or remove some filters: new vehicles come in regularly.",
+  "pg.vehicle.notFound": "That vehicle could not be found.",
+  "pg.vehicle.specs": "Specifications",
+  "pg.vehicle.price": "Price",
+  "pg.vehicle.order": "Order this vehicle",
+  "pg.vehicle.orderNote": "The full price is paid when you order. You collect the vehicle at its parking.",
+  "pg.vehicle.reserved": "Reserved",
+  "pg.vehicle.reservedBody": "Another customer has reserved this vehicle. It may come back on sale if their order is not paid.",
+  "pg.vehicle.sold": "Sold",
+  "pg.vehicle.soldBody": "This vehicle has been sold.",
+  "pg.vehicle.seeOthers": "See other vehicles",
+  "pg.vehicleOrder.contact": "Your details",
+  "pg.vehicleOrder.phoneHelper": "We contact you on this number about the order.",
+  "pg.vehicleOrder.submitCash": "Order — pay at our office",
+  "pg.vehicleOrder.blocked": "Fill in your details and tick the box above.",
+  "pg.vehicleOrder.errTaken": "Another customer has just reserved this vehicle.",
+  "pg.confirm.vehicleReady": "Follow the vehicle's preparation here: “Ready to collect” shows as soon as the sale papers are issued.",
+  "pg.home.vehiclesSub": "The latest arrivals at our parkings, to see and collect on site."
 };

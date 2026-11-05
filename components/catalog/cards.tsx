@@ -10,7 +10,18 @@ import {
   Stars,
   hasPrice
 } from "@/components/site/bits";
-import { carTypeLabel, detailHref, hotelHref, propertySizes, restaurantHref, sqm } from "@/lib/catalog";
+import type { VehicleCard } from "@/lib/api";
+import {
+  carTypeLabel,
+  detailHref,
+  hotelHref,
+  km,
+  propertySizes,
+  restaurantHref,
+  specText,
+  sqm,
+  vehicleHref
+} from "@/lib/catalog";
 import { mediaUrl } from "@/lib/media";
 import { baseMinor, formatMoney, price, resolve } from "@/lib/money";
 import { fmtDateLong, formatMinutes } from "@/lib/format";
@@ -36,6 +47,7 @@ import {
   Building2,
   Clock,
   Gauge,
+  Images,
   MapPin,
   Maximize,
   Plane,
@@ -1061,6 +1073,71 @@ export function RestaurantCard({ restaurant: r, row }: { restaurant: Restaurant;
             <Clock className="size-4 text-brand-500" />
             {t("cmp.minutes", { n: r.prepTimeMinutes + (cheapestFee?.etaMinutes ?? 0) })}
           </span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+/* -------------------------------------------------------------- vehicle card */
+
+/**
+ * A vehicle for sale: a tile in the grid; with `row`, image-left for the list
+ * (as `RestaurantCard`). The facts a buyer scans first — year, mileage,
+ * condition, the office's card specs — then where it stands and the price.
+ */
+export function SaleVehicleCard({ vehicle: v, row }: { vehicle: VehicleCard; row?: boolean }) {
+  const { t, lz, locale } = usePrefs();
+  const facts = [
+    v.year,
+    v.mileageKm != null ? km(v.mileageKm, locale) : "",
+    v.condition ? t(`cmp.vehicle.${v.condition}`) : ""
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  return (
+    <Link
+      href={vehicleHref(v)}
+      className={cn(
+        "surface motion-rise group flex flex-col overflow-hidden transition-shadow hover:shadow-lg",
+        row && "flex-row"
+      )}
+    >
+      <div className={cn("relative h-48 shrink-0 overflow-hidden bg-ink-50", row && "h-auto w-32 sm:w-64")}>
+        <Thumb src={mediaUrl(v.image)} alt="" className="absolute inset-0" />
+        {(v.imageCount ?? 0) > 1 && (
+          <span className="tnum absolute end-2 bottom-2 flex items-center gap-1 rounded-md bg-black/60 px-1.5 py-0.5 text-[11px] font-semibold text-white">
+            <Images className="size-3.5" aria-hidden="true" />
+            {v.imageCount}
+          </span>
+        )}
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col gap-2 p-5">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+          <CardKind kind="VEHICLE_SALE" />
+          <span className="font-mono text-xs text-ink-500" dir="ltr">
+            {v.stockRef}
+          </span>
+        </div>
+        <h2 className="text-lg font-bold leading-snug text-brand-900">{lz(v.title)}</h2>
+        {facts && <p className="text-sm font-medium text-ink-700">{facts}</p>}
+        {v.cardSpecs?.length ? (
+          <ul className="flex flex-wrap gap-1.5">
+            {v.cardSpecs.map((s) => (
+              <li key={s.key} className="rounded bg-ink-50 px-2 py-1 text-xs font-medium text-ink-700">
+                {specText(s, locale)}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        <p className="flex items-center gap-1.5 text-sm text-ink-500">
+          <MapPin className="size-4 shrink-0 text-brand-500" />
+          {[v.city, lz(v.parking?.name)].filter(Boolean).join(" · ")}
+        </p>
+        <div className="mt-auto pt-3">
+          <PromoWas promotion={v.promotion} />
+          <Price money={v.sellPrice} className="display block text-[24px] leading-none text-brand-900" />
+          <PromoEnds promotion={v.promotion} />
         </div>
       </div>
     </Link>

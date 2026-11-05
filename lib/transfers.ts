@@ -79,6 +79,8 @@ export interface TransferCategory {
   pricePerKm: Money;
   pricePerHour: Money;
   minimumFare?: Money;
+  /** Charged once per ride, whatever the distance or hours; absent when 0. */
+  processingFee?: Money;
 }
 
 export const getTransferCategories = (city: string, init?: RequestInit) =>
@@ -120,6 +122,8 @@ export interface TransferQuote {
     name: Localized | string;
     seats: number;
     price: Money;
+    /** The category's, once per ride; absent when 0. */
+    processingFee?: Money;
     /** False when the category seats fewer than the passengers. */
     available: boolean;
   }[];

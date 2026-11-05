@@ -1,9 +1,10 @@
-import { facetLabel, intlLocale, translate } from "@/lib/i18n";
+import { facetLabel, intlLocale, localized, translate } from "@/lib/i18n";
 import {
   Hotel,
   Listing,
   ListingAttributes,
   Locale,
+  Localized,
   Vertical
 } from "@/typescript/interface/domain.interface";
 
@@ -42,7 +43,8 @@ export const VERTICAL_SLUGS: Record<Vertical, string> = {
   ACTIVITY: "activities",
   PROPERTY: "property",
   RESTAURANT: "restaurants",
-  TRANSFER: "transfers"
+  TRANSFER: "transfers",
+  VEHICLE_SALE: "vehicles"
 };
 
 /** The detail-page segment for each vertical, per the §11.1 architecture. */
@@ -57,7 +59,9 @@ const DETAIL_SEGMENT: Record<Vertical, string> = {
   // page per restaurant and no intermediate listing to disambiguate.
   RESTAURANT: "",
   // A transfer has no listing at all: /transfers is the one booking page.
-  TRANSFER: ""
+  TRANSFER: "",
+  // Not a listing either: a vehicle is at /vehicles/<stockRef> (vehicleHref).
+  VEHICLE_SALE: ""
 };
 
 export function detailHref(l: Pick<Listing, "vertical" | "slug">): string {
@@ -78,6 +82,17 @@ export const cityGeo = (name?: string) =>
     : undefined;
 
 export const restaurantHref = (r: { slug: string }) => `/restaurants/${r.slug}`;
+
+export const vehicleHref = (v: { stockRef: string }) => `/vehicles/${encodeURIComponent(v.stockRef)}`;
+
+/** "45 000 km", grouped the locale's way. */
+export const km = (n: number, locale: Locale) => `${n.toLocaleString(intlLocale(locale))} km`;
+
+/** A vehicle spec as shown: a number grouped the locale's way, its unit beside it. */
+export function specText(s: { value: Localized | string | number; unit?: string }, locale: Locale) {
+  const v = typeof s.value === "number" ? s.value.toLocaleString(intlLocale(locale)) : localized(s.value, locale);
+  return s.unit && v && !v.endsWith(s.unit) ? `${v} ${s.unit}` : v;
+}
 
 /**
  * The car types the office picks from, stored as these codes in a car's

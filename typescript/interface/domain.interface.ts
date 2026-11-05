@@ -16,7 +16,9 @@ export const VERTICALS = {
   PROPERTY: "PROPERTY",
   RESTAURANT: "RESTAURANT",
   // A ride with a driver: no listing behind it, one Ride document per order.
-  TRANSFER: "TRANSFER"
+  TRANSFER: "TRANSFER",
+  // A vehicle bought outright and collected at its parking (`CAR` is hire).
+  VEHICLE_SALE: "VEHICLE_SALE"
 } as const;
 export type Vertical = (typeof VERTICALS)[keyof typeof VERTICALS];
 
@@ -121,7 +123,8 @@ export const ARCHETYPE: Record<Vertical, "INSTANT" | "REQUEST" | "ENQUIRY"> = {
   PROPERTY: "ENQUIRY",
   // Food is bought outright like a seat, not requested like a property.
   RESTAURANT: "INSTANT",
-  TRANSFER: "INSTANT"
+  TRANSFER: "INSTANT",
+  VEHICLE_SALE: "INSTANT"
 };
 
 /** A text the office types per language. Typed `Localized | string` where an older API sends plain (French) text. */
@@ -229,6 +232,8 @@ export interface Listing {
   /** Bus and flight fares for a child of 2 to 12 and a baby under 2. */
   childPrice?: Money;
   infantPrice?: Money;
+  /** Charged once per booking, whatever the quantity; absent when 0 (inside the price). */
+  processingFee?: Money;
   /**
    * A car: the lengths it rents for (1, 6, 12, 24 hours) and their prices,
    * offered ones only, shortest first. 24 hours is `sellPrice`.
@@ -309,6 +314,8 @@ export interface Hotel {
   reviewCount?: number;
   /** Cheapest nightly price across room types, per currency. */
   fromPrice: Money;
+  /** Charged once per booking (per hotel, not per room), whatever the quantity; absent when 0 (inside the price). */
+  processingFee?: Money;
   /** The room with the biggest running promotion. Absent from an older API. */
   promotion?: PromotedItem;
   roomTypes: RoomType[];
@@ -371,6 +378,8 @@ export interface OrderItem {
   lineTotal: Money;
   /** A transfer: the ride behind the line. */
   ride?: Ride;
+  /** A vehicle for sale: its stock reference. */
+  stockRef?: string;
 }
 
 /* --------------------------------------------------------------- transfers */
@@ -463,9 +472,25 @@ export interface OrderDelivery {
   notes?: string;
 }
 
+/** A vehicle for sale: the parking it is collected from, as it was when ordered. */
+export interface OrderPickup {
+  parkingId?: string;
+  name: Localized | string;
+  city: string;
+  address?: string;
+  phone?: string;
+  openingHours?: Localized | string;
+  geo?: { lat: number; lng: number };
+}
+
 export interface Order {
   /** Restaurant orders only. */
   delivery?: OrderDelivery;
+  /** Processing fees, once per order: francs (the base) and in the currency charged. Absent when 0. */
+  processingFee?: number;
+  processingFeeCharged?: number;
+  /** Vehicle-for-sale orders only. */
+  pickup?: OrderPickup;
   /** §10.3(4) unguessable — never a sequential integer. */
   reference: string;
   /** Last four digits of the booking phone, for the confirmation line. */
@@ -571,6 +596,8 @@ export interface Restaurant {
   rating?: number;
   reviewCount?: number;
   deliveryZones: DeliveryZone[];
+  /** Charged once per order (not per dish), whatever the quantity; absent when 0 (inside the price). */
+  processingFee?: Money;
   /** Cheapest available dish, per currency. */
   fromPrice: Money;
   /** The available dish with the biggest running promotion. Absent from an older API. */

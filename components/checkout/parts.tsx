@@ -3,7 +3,7 @@ import { ApiError, getPolicy, type Policy } from "@/lib/api";
 import { useCheckout, useCountdown } from "@/lib/checkout";
 import { fmtDate, formatMinutes } from "@/lib/format";
 import { mediaUrl } from "@/lib/media";
-import { multiply } from "@/lib/money";
+import { baseMinor, multiply } from "@/lib/money";
 import { usePrefs } from "@/lib/prefs";
 import { durationLabel } from "@/lib/rental";
 import { FALLBACK } from "@/lib/i18n";
@@ -241,6 +241,14 @@ export function Summary({ children }: { children?: React.ReactNode }) {
               </dt>
               <dd className="font-medium">
                 <Price money={subtotal} />
+              </dd>
+            </div>
+          )}
+          {baseMinor(selection.processingFee) > 0 && (
+            <div className="flex justify-between gap-4">
+              <dt className="text-ink-500">{t("checkout.processingFees")}</dt>
+              <dd className="font-medium">
+                <Price money={selection.processingFee} />
               </dd>
             </div>
           )}

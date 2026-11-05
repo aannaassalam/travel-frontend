@@ -3,7 +3,7 @@ import { useCheckout } from "@/lib/checkout";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { mediaUrl } from "@/lib/media";
-import { baseMinor, multiply } from "@/lib/money";
+import { addMoney, baseMinor, multiply } from "@/lib/money";
 import { usePrefs } from "@/lib/prefs";
 import {
   addHours,
@@ -95,7 +95,10 @@ function StockBookingBox({ listing }: { listing: Listing }) {
   // A car's price per car is its whole hire; the cheapest mix of its rates.
   const unitPrice = isCar ? rental.total : listing.sellPrice;
   // Scale every currency together rather than converting a franc total.
-  const total = multiply(unitPrice, quantity);
+  const subtotal = multiply(unitPrice, quantity);
+  // The processing fee once, whatever the quantity.
+  const fee = listing.processingFee;
+  const total = addMoney(subtotal, fee);
   // A car is priced once its times are set, just after mount.
   const ready = !isCar || rental.blocks.length > 0;
 
@@ -120,7 +123,8 @@ function StockBookingBox({ listing }: { listing: Listing }) {
       rentalHours: span ? hours : undefined,
       rentalBlocks: span ? rental.blocks : undefined,
       adults: isCar ? undefined : quantity,
-      available
+      available,
+      processingFee: fee
     });
     router.push("/booking/travellers");
   }
@@ -292,10 +296,11 @@ function StockBookingBox({ listing }: { listing: Listing }) {
                 <Price money={listing.sellPrice} /> × {quantity}
               </dt>
               <dd className="font-medium">
-                <Price money={total} />
+                <Price money={subtotal} />
               </dd>
             </div>
           )}
+          <FeeLine fee={fee} />
           <div className="flex justify-between text-base font-bold text-brand-900">
             <dt>{t("checkout.totalDue")}</dt>
             <dd>
@@ -371,7 +376,9 @@ function RouteBookingBox({ listing }: { listing: Listing }) {
   const next = day && !times.length ? nextDayWithDepartures(a, addDays(day, 1)) : undefined;
   const kg = (v: string) => v !== "" && Number(v) >= 0 && Number(v) <= 200;
   const bagsOk = !isFlight || (kg(bags.cabinKg) && kg(bags.checkedKg));
-  const total = routeTotal(fares, p);
+  const fee = listing.processingFee;
+  // Each fare times its passengers, then the processing fee once.
+  const total = addMoney(routeTotal(fares, p), fee);
 
   function book() {
     setTried(true);
@@ -392,7 +399,8 @@ function RouteBookingBox({ listing }: { listing: Listing }) {
       fares,
       baggage: isFlight
         ? { cabinKg: Number(bags.cabinKg), checkedKg: Number(bags.checkedKg) }
-        : undefined
+        : undefined,
+      processingFee: fee
     });
     router.push("/booking/travellers");
   }
@@ -573,6 +581,7 @@ function RouteBookingBox({ listing }: { listing: Listing }) {
               </dd>
             </div>
           ))}
+        <FeeLine fee={fee} />
         <div className="flex justify-between text-base font-bold text-brand-900">
           <dt>{t("checkout.totalDue")}</dt>
           <dd>
@@ -595,6 +604,20 @@ function RouteBookingBox({ listing }: { listing: Listing }) {
           </Link>
         </span>
       </p>
+    </div>
+  );
+}
+
+/** The processing fees line, once per booking; nothing when there are none. */
+function FeeLine({ fee }: { fee?: Money }) {
+  const { t } = usePrefs();
+  if (!(baseMinor(fee) > 0)) return null;
+  return (
+    <div className="flex justify-between">
+      <dt className="text-ink-500">{t("checkout.processingFees")}</dt>
+      <dd className="font-medium">
+        <Price money={fee} />
+      </dd>
     </div>
   );
 }

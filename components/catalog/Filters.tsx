@@ -5,13 +5,32 @@ import * as Slider from "@radix-ui/react-slider";
 import { SlidersHorizontal } from "lucide-react";
 import { useState } from "react";
 
-export interface FilterSection {
-  /** Must be an allow-listed search param (§8) — nothing else reaches the API. */
-  key: string;
-  label: string;
-  type: "checkbox" | "radio";
-  options: { value: string; label: string }[];
-}
+export type FilterSection =
+  | {
+      /** Must be an allow-listed search param (§8) — nothing else reaches the API. */
+      key: string;
+      label: string;
+      type: "checkbox" | "radio";
+      /** `count`: how many are on sale with it, shown beside the label. */
+      options: { value: string; label: string; count?: number }[];
+      /** Other params that change with this one (a new make drops the models of the old). */
+      alsoSet?: (next: string[]) => Record<string, string | undefined>;
+    }
+  | {
+      key: string;
+      label: string;
+      /** Two handles between `bounds`, or one (an upper limit) without `minKey`. */
+      type: "range";
+      bounds: [number, number];
+      minKey?: string;
+      maxKey: string;
+      step?: number;
+      format?: (n: number) => string;
+    };
+
+/** The URL params a section writes. */
+const keysOf = (s: FilterSection) =>
+  s.type === "range" ? [s.minKey, s.maxKey].filter((k): k is string => Boolean(k)) : [s.key];
 
 /**
  * §11.2: sidebar on desktop, disclosure on mobile. State lives in the URL so a
@@ -29,7 +48,7 @@ export default function Filters({
   priceLabel?: string;
   className?: string;
 }) {
-  const { t, rates } = usePrefs();
+  const { t, rates, currency, locale } = usePrefs();
   // The address as it will be: a tick shows at once, even on a slow line.
   const q = useQueryNow();
 
@@ -40,18 +59,23 @@ export default function Filters({
   // A narrower search starts again at its first page.
   const apply = (next: Record<string, string | undefined>) => void pushQuery(next);
 
-  function toggle(key: string, value: string) {
+  function toggle(section: Extract<FilterSection, { options: unknown }>, value: string) {
     // From the address as it will be: a box ticked while the last tick is on
     // its way adds to it.
-    const set = new Set(list(queryNow()[key]));
+    const set = new Set(list(queryNow()[section.key]));
     if (set.has(value)) set.delete(value);
     else set.add(value);
-    apply({ [key]: set.size ? Array.from(set).join(",") : undefined });
+    const next = Array.from(set);
+    apply({ [section.key]: next.length ? next.join(",") : undefined, ...section.alsoSet?.(next) });
   }
+  const pick = (section: Extract<FilterSection, { options: unknown }>, value?: string) =>
+    apply({ [section.key]: value, ...section.alsoSet?.(value ? [value] : []) });
 
-  // The price range is one filter, whichever end is set.
-  const activeCount = sections.reduce((n, s) => n + current(s.key).length, 0) +
-    (q.minPrice || q.maxPrice ? 1 : 0);
+  // A range is one filter, whichever end is set; the price range too.
+  const activeCount = sections.reduce(
+    (n, s) => n + (s.type === "range" ? (keysOf(s).some((k) => q[k]) ? 1 : 0) : current(s.key).length),
+    0
+  ) + (q.minPrice || q.maxPrice ? 1 : 0);
 
   // From 5 $, not from the cheapest listing: with one bus on sale both ends
   // read its fare. Prices are francs, so the floor is 5 $ at the office's rate,
@@ -65,7 +89,7 @@ export default function Filters({
   const body = (copy: string) => (
     <div className="space-y-6">
       {priceBounds && high > low && (
-        <PriceRange
+        <RangeSlider
           // New ends start it again (the floor waits for the office's dollar
           // rate); a new URL does not: every key press commits, and a remount
           // would take the focused handle away.
@@ -75,62 +99,93 @@ export default function Filters({
           label={priceLabel ?? t("results.priceRange")}
           min={Number(q.minPrice) || low}
           max={Number(q.maxPrice) || high}
+          minKey="minPrice"
+          maxKey="maxPrice"
+          step={Math.max(100, Math.round((high - low) / 40))}
+          format={(v) => fmtPrice(fromBase(v, rates), currency, locale)}
+          ariaMin={t("results.priceMin")}
+          ariaMax={t("results.priceMax")}
           onCommit={apply}
         />
       )}
 
       {/* A filter with nothing to choose (no makes on sale yet) is not shown. */}
-      {sections.filter((section) => section.options.length).map((section) => (
-        <fieldset key={section.key} className="border-t border-ink-100/70 pt-5">
-          <legend className="mb-3 text-sm font-bold text-brand-900">{section.label}</legend>
-          <ul className="space-y-2">
-            {section.options.map((opt) => {
-              const checked = current(section.key).includes(opt.value);
-              return (
-                <li key={opt.value}>
-                  <label className="flex cursor-pointer items-center gap-2.5 text-sm text-ink-700">
-                    <input
-                      type={section.type}
-                      name={`${section.key}-${copy}`}
-                      checked={checked}
-                      onChange={() =>
-                        section.type === "checkbox"
-                          ? toggle(section.key, opt.value)
-                          : apply({ [section.key]: opt.value })
-                      }
-                      // A radio fires no change when the ticked one is picked
-                      // again: that click, or Space (no click from the
-                      // keyboard), clears it. Space on release, as the browser
-                      // ticks one: held down, it clears once, not off then on.
-                      onClick={
-                        section.type === "radio" && checked
-                          ? () => apply({ [section.key]: undefined })
-                          : undefined
-                      }
-                      onKeyDown={
-                        section.type === "radio" && checked
-                          ? (e) => e.key === " " && e.preventDefault()
-                          : undefined
-                      }
-                      onKeyUp={
-                        section.type === "radio" && checked
-                          ? (e) => {
-                              if (e.key !== " ") return;
-                              e.preventDefault();
-                              apply({ [section.key]: undefined });
-                            }
-                          : undefined
-                      }
-                      className="size-4 accent-brand-500"
-                    />
-                    {opt.label}
-                  </label>
-                </li>
-              );
-            })}
-          </ul>
-        </fieldset>
-      ))}
+      {sections
+        .filter((section) =>
+          section.type === "range" ? section.bounds[1] > section.bounds[0] : section.options.length
+        )
+        .map((section) =>
+          section.type === "range" ? (
+            <div key={section.key} className="border-t border-ink-100/70 pt-5">
+              <RangeSlider
+                key={section.bounds.join("-")}
+                low={section.bounds[0]}
+                high={section.bounds[1]}
+                label={section.label}
+                min={(section.minKey && Number(q[section.minKey])) || section.bounds[0]}
+                max={Number(q[section.maxKey]) || section.bounds[1]}
+                minKey={section.minKey}
+                maxKey={section.maxKey}
+                step={section.step}
+                format={section.format ?? String}
+                ariaMin={t("results.rangeMin", { label: section.label })}
+                ariaMax={t("results.rangeMax", { label: section.label })}
+                onCommit={apply}
+              />
+            </div>
+          ) : (
+            <fieldset key={section.key} className="border-t border-ink-100/70 pt-5">
+              <legend className="mb-3 text-sm font-bold text-brand-900">{section.label}</legend>
+              <ul className="space-y-2">
+                {section.options.map((opt) => {
+                  const checked = current(section.key).includes(opt.value);
+                  return (
+                    <li key={opt.value}>
+                      <label className="flex cursor-pointer items-center gap-2.5 text-sm text-ink-700">
+                        <input
+                          type={section.type}
+                          name={`${section.key}-${copy}`}
+                          checked={checked}
+                          onChange={() =>
+                            section.type === "checkbox" ? toggle(section, opt.value) : pick(section, opt.value)
+                          }
+                          // A radio fires no change when the ticked one is picked
+                          // again: that click, or Space (no click from the
+                          // keyboard), clears it. Space on release, as the browser
+                          // ticks one: held down, it clears once, not off then on.
+                          onClick={
+                            section.type === "radio" && checked
+                              ? () => pick(section)
+                              : undefined
+                          }
+                          onKeyDown={
+                            section.type === "radio" && checked
+                              ? (e) => e.key === " " && e.preventDefault()
+                              : undefined
+                          }
+                          onKeyUp={
+                            section.type === "radio" && checked
+                              ? (e) => {
+                                  if (e.key !== " ") return;
+                                  e.preventDefault();
+                                  pick(section);
+                                }
+                              : undefined
+                          }
+                          className="size-4 shrink-0 accent-brand-500"
+                        />
+                        {opt.label}
+                        {opt.count !== undefined && (
+                          <span className="tnum ms-auto text-xs text-ink-500">{opt.count}</span>
+                        )}
+                      </label>
+                    </li>
+                  );
+                })}
+              </ul>
+            </fieldset>
+          )
+        )}
 
       {activeCount > 0 && (
         <button
@@ -139,7 +194,7 @@ export default function Filters({
           onClick={() =>
             apply(
               Object.fromEntries(
-                [...sections.map((s) => s.key), "minPrice", "maxPrice"].map((k) => [k, undefined])
+                [...sections.flatMap(keysOf), "minPrice", "maxPrice"].map((k) => [k, undefined])
               )
             )
           }
@@ -182,17 +237,24 @@ export default function Filters({
 }
 
 /**
- * The price, between two handles, in francs: `minPrice` and `maxPrice` in the
- * URL, each left out at its end of the range so "any price" has one address.
- * Dragging moves only the handles; the URL — and the one request it makes —
- * changes when a handle is let go, not at every notch.
+ * A range between two handles — the price in francs (`minPrice`/`maxPrice`),
+ * a year, an engine size — or one handle, an upper limit (a maximum mileage).
+ * Each end is left out of the URL at its end of the range, so "any" has one
+ * address. Dragging moves only the handles; the URL — and the one request it
+ * makes — changes when a handle is let go, not at every notch.
  */
-function PriceRange({
+function RangeSlider({
   low,
   high,
   label,
   min,
   max,
+  minKey,
+  maxKey,
+  step: given,
+  format,
+  ariaMin,
+  ariaMax,
   onCommit
 }: {
   low: number;
@@ -200,25 +262,33 @@ function PriceRange({
   label: string;
   min: number;
   max: number;
-  onCommit: (next: { minPrice?: string; maxPrice?: string }) => void;
+  /** None: one handle, the upper limit. */
+  minKey?: string;
+  maxKey: string;
+  step?: number;
+  format: (v: number) => string;
+  ariaMin: string;
+  ariaMax: string;
+  onCommit: (next: Record<string, string | undefined>) => void;
 }) {
-  const { t, currency, locale, rates } = usePrefs();
   const clamp = (v: number) => Math.min(high, Math.max(low, v));
-  const [value, setValue] = useState([clamp(min), clamp(max)]);
+  const handles = (a: number, b: number) => (minKey ? [clamp(a), clamp(b)] : [clamp(b)]);
+  const [value, setValue] = useState(handles(min, max));
   // Drawn twice (phone and desktop): a new URL — the other copy, the back
   // button, "clear" — moves these handles too.
   const [fromUrl, setFromUrl] = useState([min, max]);
   if (fromUrl[0] !== min || fromUrl[1] !== max) {
     setFromUrl([min, max]);
-    setValue([clamp(min), clamp(max)]);
+    setValue(handles(min, max));
   }
-  const step = Math.max(100, Math.round((high - low) / 40));
-  // The last notch is "any price". It is where the slider snaps the top to:
+  const step = given ?? Math.max(1, Math.round((high - low) / 40));
+  // The last notch is "any". It is where the slider snaps the top to:
   // the top itself, or a notch short of it when the step does not divide the
-  // span — which must not leave the dearest out.
+  // span — which must not leave the highest out.
   const top = Math.min(high, low + Math.round((high - low) / step) * step);
   const atTop = (v: number) => v >= top;
-  const shown = (v: number) => fmtPrice(fromBase(v, rates), currency, locale);
+  const from = minKey ? value[0] : low;
+  const to = value[value.length - 1];
   const thumb =
     "block size-5 rounded-full border-2 border-brand-500 bg-white shadow-sm transition-colors hover:border-brand-700";
 
@@ -231,18 +301,18 @@ function PriceRange({
         step={step}
         value={value}
         onValueChange={setValue}
-        onValueCommit={([from, to]) => {
+        onValueCommit={(v) => {
           const next = {
-            minPrice: from > low ? String(from) : undefined,
-            maxPrice: atTop(to) ? undefined : String(to)
+            ...(minKey ? { [minKey]: v[0] > low ? String(v[0]) : undefined } : {}),
+            [maxKey]: atTop(v[v.length - 1]) ? undefined : String(v[v.length - 1])
           };
           onCommit(next);
           // Not taken (a move the visitor made is still loading): the handles
-          // go back to the prices the address has — after Radix has set the
-          // value of a key press, which it does after this call.
+          // go back to what the address has — after Radix has set the value of
+          // a key press, which it does after this call.
           const now = queryNow();
-          if (now.minPrice !== next.minPrice || now.maxPrice !== next.maxPrice) {
-            setTimeout(() => setValue([clamp(min), clamp(max)]));
+          if (Object.entries(next).some(([k, x]) => now[k] !== x)) {
+            setTimeout(() => setValue(handles(min, max)));
           }
         }}
         className="relative flex h-5 touch-none items-center select-none"
@@ -250,16 +320,12 @@ function PriceRange({
         <Slider.Track className="relative h-1.5 grow rounded-full bg-ink-100">
           <Slider.Range className="absolute h-full rounded-full bg-brand-500" />
         </Slider.Track>
-        <Slider.Thumb aria-label={t("results.priceMin")} aria-valuetext={shown(value[0])} className={thumb} />
-        <Slider.Thumb
-          aria-label={t("results.priceMax")}
-          aria-valuetext={shown(atTop(value[1]) ? high : value[1])}
-          className={thumb}
-        />
+        {minKey && <Slider.Thumb aria-label={ariaMin} aria-valuetext={format(from)} className={thumb} />}
+        <Slider.Thumb aria-label={ariaMax} aria-valuetext={format(atTop(to) ? high : to)} className={thumb} />
       </Slider.Root>
       <p className="mt-2 flex justify-between gap-3 text-xs font-semibold text-ink-700">
-        <span>{shown(value[0])}</span>
-        <span>{shown(atTop(value[1]) ? high : value[1])}</span>
+        <span>{format(from)}</span>
+        <span>{format(atTop(to) ? high : to)}</span>
       </p>
     </fieldset>
   );

@@ -3,8 +3,10 @@ import {
   Listing,
   Locale,
   Localized,
+  Money,
   Order,
   Passengers,
+  Promotion,
   Restaurant,
   Vertical
 } from "@/typescript/interface/domain.interface";
@@ -736,3 +738,105 @@ export interface Partner {
 /** GET /partners — the switched-on ones, in the office's order. */
 export const getPartners = (init?: RequestInit) =>
   get<{ items: Partner[] }>("/partners", init).then((r) => r.items);
+
+/* --------------------------------------------------------- vehicles for sale */
+
+/** A spec's value as the API words it (a choice's label, a number, a text); `unit` beside a number. */
+export interface VehicleSpecValue {
+  key: string;
+  name: Localized | string;
+  valueType?: "CHOICE" | "NUMBER" | "TEXT";
+  value: Localized | string | number;
+  unit?: string;
+}
+
+/** One result of GET /vehicles. Never the cost price or the VIN. */
+export interface VehicleCard {
+  id: string;
+  stockRef: string;
+  /** The office's title, else "Make Model Year". */
+  title: Localized | string;
+  make: string;
+  model: string;
+  year?: number;
+  mileageKm?: number;
+  condition?: "NEW" | "USED";
+  colour?: string;
+  vehicleType?: { slug: string; name: Localized | string };
+  city: string;
+  parking: { id: string; slug: string; name: Localized | string };
+  sellPrice: Money;
+  /** Charged once per order; absent when 0 (inside the price). */
+  processingFee?: Money;
+  promotion?: Promotion;
+  image?: string;
+  imageCount?: number;
+  /** The specs the office shows on cards (gearbox, fuel, engine…). */
+  cardSpecs?: VehicleSpecValue[];
+  createdAt?: string;
+}
+
+export interface VehicleParking {
+  id: string;
+  slug: string;
+  name: Localized | string;
+  city: string;
+  address?: string;
+  geo?: { lat: number; lng: number };
+  phone?: string;
+  openingHours?: Localized | string;
+  images?: string[];
+}
+
+/** GET /vehicles/:stockRef — a reserved or sold one still opens, and cannot be ordered. */
+export interface VehicleDetail extends Omit<VehicleCard, "parking"> {
+  description?: Localized | string;
+  images: string[];
+  videoUrl?: string;
+  specs: VehicleSpecValue[];
+  /** Every active accessory, `has` saying whether this vehicle has it. */
+  accessories: { key: string; name: Localized | string; group?: Localized | string; has: boolean }[];
+  parking: VehicleParking;
+  availability: "AVAILABLE" | "RESERVED" | "SOLD";
+}
+
+/** GET /vehicles/facets — what the deep search offers, from what is on sale now. */
+export interface VehicleFacets {
+  cities: { city: string; count: number }[];
+  parkings: { id: string; slug: string; name: Localized | string; city: string; count: number }[];
+  types: { slug: string; name: Localized | string; count: number }[];
+  makes: { make: string; count: number; models: { model: string; count: number }[] }[];
+  /** [lowest, highest]; absent with nothing on sale. Price in francs. */
+  year?: [number, number];
+  price?: [number, number];
+  mileage?: [number, number];
+  conditions: { condition: "NEW" | "USED"; count: number }[];
+  specs: {
+    key: string;
+    name: Localized | string;
+    valueType: "CHOICE" | "NUMBER" | "TEXT";
+    unit?: string;
+    choices?: { key: string; label: Localized | string; count: number }[];
+    range?: [number, number];
+  }[];
+  accessories: { key: string; name: Localized | string; group?: Localized | string; count: number }[];
+}
+
+/**
+ * GET /vehicles — `city`, `parking`, `type`, `make`, `model`, `yearMin`/`yearMax`,
+ * `priceMin`/`priceMax` (francs), `mileageMax`, `condition`, `spec.<key>`
+ * (choices) or `spec.<key>.min`/`.max`, `accessories` (all of them), `q`,
+ * `sort`, `page`, `limit`. Lists are comma-separated.
+ */
+export const searchVehicles = (q: Record<string, string | number | undefined>, init?: RequestInit) =>
+  get<Paged<VehicleCard>>(`/vehicles${qs(q)}`, init);
+
+/** Bare or wrapped (`{ facets }`): the contract names the fields, not the envelope. */
+export const getVehicleFacets = (init?: RequestInit) =>
+  get<VehicleFacets & { facets?: VehicleFacets }>("/vehicles/facets", init).then((r) => r.facets ?? r);
+
+/** Bare or wrapped (`{ vehicle }`), as above. */
+export const getVehicle = (stockRef: string, init?: RequestInit) =>
+  get<VehicleDetail & { vehicle?: VehicleDetail }>(`/vehicles/${encodeURIComponent(stockRef)}`, init).then(
+    (r) => r.vehicle ?? r
+  );

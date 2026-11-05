@@ -1,13 +1,23 @@
+import {
+  getCountries,
+  getCountryCallingCode,
+  isPossiblePhoneNumber,
+  parsePhoneNumber
+} from "react-phone-number-input/input";
+import names from "react-phone-number-input/locale/en.json";
+
 /**
  * Dialling codes offered by the phone field.
  *
- * Not every country on earth: this is a DRC travel business, so the list is the
- * DRC plus its neighbours, the diaspora destinations customers actually call
- * from, and the handful of hubs the flights connect through. A 200-entry
- * dropdown is slower to use than typing, which defeats the point.
+ * The DRC, its neighbours, the diaspora destinations customers call from and
+ * the hubs the flights connect through come first — the quick picks. Every
+ * other country follows, A to Z: with only those 24, a customer whose number
+ * was from anywhere else (an account made in the app or by the office) saw it
+ * prefilled under DR Congo, its dialling code left inside the number.
  *
  * `digits` is how many national digits the number has AFTER any trunk zero, so
  * the field can tell someone their number is short before the SMS is wasted.
+ * The rest of the world is checked with the phone library's own rules instead.
  */
 export interface Country {
   /** ISO 3166-1 alpha-2, used as the stable option value. */
@@ -16,10 +26,12 @@ export interface Country {
   /** Dialling prefix, with the plus. */
   dial: string;
   flag: string;
-  digits: [number, number];
+  digits?: [number, number];
+  /** One of the quick picks at the top of the list. */
+  preferred?: boolean;
 }
 
-export const COUNTRIES: Country[] = [
+const PREFERRED: Country[] = ([
   { code: "CD", name: "RD Congo", dial: "+243", flag: "\u{1F1E8}\u{1F1E9}", digits: [9, 9] },
   { code: "CG", name: "Congo-Brazzaville", dial: "+242", flag: "\u{1F1E8}\u{1F1EC}", digits: [9, 9] },
   { code: "AO", name: "Angola", dial: "+244", flag: "\u{1F1E6}\u{1F1F4}", digits: [9, 9] },
@@ -43,6 +55,25 @@ export const COUNTRIES: Country[] = [
   { code: "IN", name: "India", dial: "+91", flag: "\u{1F1EE}\u{1F1F3}", digits: [10, 10] },
   { code: "CN", name: "China", dial: "+86", flag: "\u{1F1E8}\u{1F1F3}", digits: [11, 11] },
   { code: "TR", name: "Türkiye", dial: "+90", flag: "\u{1F1F9}\u{1F1F7}", digits: [10, 10] },
+] as Country[]).map((c) => ({ ...c, preferred: true }));
+
+/** A flag from the two letters of its code (regional indicator symbols). */
+const flagOf = (code: string) =>
+  String.fromCodePoint(...[...code].map((ch) => 0x1f1e6 + ch.charCodeAt(0) - 65));
+
+const quick = new Set(PREFERRED.map((c) => c.code));
+
+export const COUNTRIES: Country[] = [
+  ...PREFERRED,
+  ...getCountries()
+    .filter((code) => !quick.has(code))
+    .map((code) => ({
+      code,
+      name: (names as Record<string, string>)[code] ?? code,
+      dial: `+${getCountryCallingCode(code)}`,
+      flag: flagOf(code)
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name))
 ];
 
 /** The office is in Kinshasa, so this is the overwhelmingly common case. */
@@ -60,20 +91,39 @@ export const findCountry = (code: string) =>
  */
 export function toE164(country: Country, national: string): string | null {
   const digits = national.replace(/\D/g, "").replace(/^0+/, "");
-  const [min, max] = country.digits;
-  if (digits.length < min || digits.length > max) return null;
-  return `${country.dial}${digits}`;
+  const e164 = `${country.dial}${digits}`;
+  if (country.digits) {
+    const [min, max] = country.digits;
+    return digits.length < min || digits.length > max ? null : e164;
+  }
+  return digits && isPossiblePhoneNumber(e164) ? e164 : null;
 }
 
 /** Longest prefix first, so +1 never wins over a +1xx style code. */
 const BY_DIAL_LENGTH = [...COUNTRIES].sort((a, b) => b.dial.length - a.dial.length);
 
+/**
+ * The country a full number belongs to. The phone library reads it from the
+ * number itself — so +1 416… is Canada and +1 876… Jamaica, not "the first +1"
+ * — and the longest matching dialling code is the fallback.
+ */
+const countryOf = (e164: string): Country | undefined => {
+  try {
+    const code = parsePhoneNumber(e164)?.country;
+    if (code) return findCountry(code);
+  } catch {
+    /* not a number the library can read: by its dialling code */
+  }
+  return BY_DIAL_LENGTH.find((c) => e164.startsWith(c.dial));
+};
+
 /** Splits a stored E.164 back into a country and its national part. */
 export function fromE164(value?: string | null): { country: Country; national: string } {
   if (!value?.startsWith("+")) return { country: DEFAULT_COUNTRY, national: "" };
-  const match = BY_DIAL_LENGTH.find((c) => value.startsWith(c.dial));
-  if (!match) return { country: DEFAULT_COUNTRY, national: value.replace(/^\+/, "") };
-  return { country: match, national: value.slice(match.dial.length) };
+  const compact = value.replace(/[^\d+]/g, "");
+  const match = countryOf(compact);
+  if (!match) return { country: DEFAULT_COUNTRY, national: compact.replace(/^\+/, "") };
+  return { country: match, national: compact.slice(match.dial.length) };
 }
 
 /**
@@ -95,9 +145,11 @@ export function splitNational(
   current: Country
 ): { country: Country; national: string } {
   const digits = value.replace(/\D/g, "");
-  const international = value.trim().startsWith("+") || digits.length > current.digits[1];
+  // Countries without a curated length: longer than any national number is.
+  const longest = current.digits?.[1] ?? 12;
+  const international = value.trim().startsWith("+") || digits.length > longest;
   if (international) {
-    const match = BY_DIAL_LENGTH.find((c) => digits.startsWith(c.dial.slice(1)));
+    const match = countryOf(`+${digits}`);
     if (match) return { country: match, national: digits.slice(match.dial.length - 1) };
   }
   return { country: current, national: digits };

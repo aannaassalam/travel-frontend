@@ -87,7 +87,35 @@ export const fr = {
   "cmp.password.show": "Afficher le mot de passe",
   "cmp.password.hide": "Masquer le mot de passe",
   // ui: PhoneField (English only before: French added)
-  "cmp.phone.country": "{label} - pays"
+  "cmp.phone.country": "{label} - pays",
+  // vehicles for sale (2026-11-04)
+  "card.kind.VEHICLE_SALE": "Véhicule à vendre",
+  "cmp.vehicle.NEW": "Neuf",
+  "cmp.vehicle.USED": "Occasion",
+  "results.rangeMin": "{label} : minimum",
+  "results.rangeMax": "{label} : maximum",
+  "cmp.vehicle.sortNewest": "Derniers arrivés",
+  "cmp.vehicle.sortYear": "Année la plus récente",
+  "cmp.vehicle.sortMileage": "Kilométrage le plus bas",
+  "cmp.vehicle.parking": "Parking",
+  "cmp.vehicle.type": "Type de véhicule",
+  "cmp.vehicle.make": "Marque",
+  "cmp.vehicle.model": "Modèle",
+  "cmp.vehicle.year": "Année",
+  "cmp.vehicle.mileage": "Kilométrage",
+  "cmp.vehicle.mileageMax": "Kilométrage maximum",
+  "cmp.vehicle.condition": "État",
+  "cmp.vehicle.colour": "Couleur",
+  "cmp.vehicle.accessories": "Équipements",
+  "cmp.vehicle.otherAccessories": "Autres",
+  "cmp.vehicle.has": "inclus",
+  "cmp.vehicle.hasNot": "non inclus",
+  "cmp.vehicle.stockRef": "Réf. stock",
+  "cmp.pickup.title": "Où retirer le véhicule",
+  "cmp.pickup.note": "Le véhicule vous est remis à ce parking quand il est prêt — suivez l'étape « Prêt à retirer ». Venez avec la référence de la commande et une pièce d'identité.",
+  "steps.vehicleConfirmed": "Confirmée — véhicule en préparation",
+  "steps.readyToCollect": "Prêt à retirer",
+  "steps.collected": "Véhicule remis"
 };
 
 export const en: Record<keyof typeof fr, string> = {
@@ -173,5 +201,33 @@ export const en: Record<keyof typeof fr, string> = {
   "cmp.password.show": "Show password",
   "cmp.password.hide": "Hide password",
   // ui: PhoneField (English only before: French added)
-  "cmp.phone.country": "{label} - country"
+  "cmp.phone.country": "{label} - country",
+  // vehicles for sale (2026-11-04)
+  "card.kind.VEHICLE_SALE": "Vehicle for sale",
+  "cmp.vehicle.NEW": "New",
+  "cmp.vehicle.USED": "Used",
+  "results.rangeMin": "{label}: minimum",
+  "results.rangeMax": "{label}: maximum",
+  "cmp.vehicle.sortNewest": "Newest arrivals",
+  "cmp.vehicle.sortYear": "Newest year",
+  "cmp.vehicle.sortMileage": "Lowest mileage",
+  "cmp.vehicle.parking": "Parking",
+  "cmp.vehicle.type": "Vehicle type",
+  "cmp.vehicle.make": "Make",
+  "cmp.vehicle.model": "Model",
+  "cmp.vehicle.year": "Year",
+  "cmp.vehicle.mileage": "Mileage",
+  "cmp.vehicle.mileageMax": "Maximum mileage",
+  "cmp.vehicle.condition": "Condition",
+  "cmp.vehicle.colour": "Colour",
+  "cmp.vehicle.accessories": "Accessories",
+  "cmp.vehicle.otherAccessories": "Other",
+  "cmp.vehicle.has": "included",
+  "cmp.vehicle.hasNot": "not included",
+  "cmp.vehicle.stockRef": "Stock ref.",
+  "cmp.pickup.title": "Where to collect the vehicle",
+  "cmp.pickup.note": "The vehicle is handed over at this parking once it is ready — follow the “Ready to collect” step. Bring the order reference and an ID.",
+  "steps.vehicleConfirmed": "Confirmed — vehicle being prepared",
+  "steps.readyToCollect": "Ready to collect",
+  "steps.collected": "Vehicle collected"
 };

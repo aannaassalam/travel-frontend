@@ -11,7 +11,6 @@ import {
   Building2,
   Bus,
   Car,
-  CarTaxiFront,
   Compass,
   Hotel,
   History,
@@ -28,13 +27,13 @@ import { useEffect, useState } from "react";
 
 // Same order as VERTICAL_NAV in the header — the hero tabs and the menu
 // disagreeing about what comes first is the kind of small wrongness people
-// notice without being able to name.
+// notice without being able to name. Taxis & transfers and vehicles for sale
+// are not searched from here: each is its own page, reached from the menu.
 const TABS: { vertical: Vertical; key: string; Icon: typeof Plane }[] = [
   { vertical: "HOTEL", key: "nav.hotels", Icon: Hotel },
   { vertical: "FLIGHT", key: "nav.flights", Icon: Plane },
   { vertical: "BUS", key: "nav.bus", Icon: Bus },
   { vertical: "CAR", key: "nav.cars", Icon: Car },
-  { vertical: "TRANSFER", key: "nav.transfers", Icon: CarTaxiFront },
   { vertical: "RESTAURANT", key: "nav.restaurants", Icon: UtensilsCrossed },
   { vertical: "PROPERTY", key: "nav.property", Icon: Building2 },
   { vertical: "ACTIVITY", key: "nav.activities", Icon: Compass }
@@ -193,6 +192,7 @@ export default function SearchWidget({
       TRANSFER: ["destination", "from"],
       // Restaurants are browsed by city; there are no dates to carry.
       RESTAURANT: ["destination"],
+      VEHICLE_SALE: ["destination"],
       ACTIVITY: ["destination", "from", "adults"],
       PROPERTY: ["propertyType", "destination", "maxPrice"]
     };
@@ -347,8 +347,7 @@ export default function SearchWidget({
               vertical === "CAR" ||
               vertical === "ACTIVITY" ||
               vertical === "PROPERTY" ||
-              vertical === "RESTAURANT" ||
-              vertical === "TRANSFER") && (
+              vertical === "RESTAURANT") && (
               <Field as="div" label={t("search.where")} className="md:flex-[1.4]">
                 <LocationField
                   value={form.destination}

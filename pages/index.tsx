@@ -5,7 +5,8 @@ import {
   HotelTile,
   PropertyTile,
   RestaurantCard,
-  ResultTile
+  ResultTile,
+  SaleVehicleCard
 } from "@/components/catalog/cards";
 import RecentlyViewed from "@/components/catalog/RecentlyViewed";
 import SearchWidget from "@/components/search/SearchWidget";
@@ -18,9 +19,11 @@ import {
   getPartners,
   getSiteContent,
   safely,
+  searchVehicles,
   type Partner,
   type ServiceLocation,
-  type SiteContent
+  type SiteContent,
+  type VehicleCard
 } from "@/lib/api";
 import { cityImage } from "@/lib/catalog";
 import { mediaUrl } from "@/lib/media";
@@ -61,6 +64,8 @@ interface Props {
   destinations: ServiceLocation[];
   /** Logos from the admin's Partners screen; none hides the section. */
   partners: Partner[];
+  /** The newest vehicles for sale; none hides the rail. */
+  vehicles: VehicleCard[];
 }
 
 /**
@@ -145,6 +150,10 @@ const homeRails = async (init?: RequestInit) => {
   };
 };
 
+/** The vehicles-for-sale rail: the newest on sale. */
+const newestVehicles = (init?: RequestInit) =>
+  searchVehicles({ sort: "newest", limit: 10 }, init).then((r) => r.items);
+
 /** A listing's biggest running discount, on any of its prices. */
 const bestOff = (l: Listing) =>
   Math.max(
@@ -153,7 +162,7 @@ const bestOff = (l: Listing) =>
     ...(l.rentalRates ?? []).map((r) => r.promotion?.discountPercent ?? 0)
   );
 
-export default function Home({ heroImage, hero, destinations, partners, ...built }: Props) {
+export default function Home({ heroImage, hero, destinations, partners, vehicles: builtVehicles, ...built }: Props) {
   /*
    * The rails as built are only the first paint: re-read on load, so what the
    * office just changed (a promotion, a price) shows at once rather than at
@@ -166,6 +175,13 @@ export default function Home({ heroImage, hero, destinations, partners, ...built
     staleTime: 30_000
   });
   const { deals, promotions, promoHotels, promoRestaurants, hotels, properties } = live ?? built;
+  const { data: liveVehicles } = useQuery({
+    queryKey: ["home", "vehicles"],
+    queryFn: ({ signal }) => newestVehicles({ signal }),
+    refetchOnMount: true,
+    staleTime: 30_000
+  });
+  const vehicles = liveVehicles ?? builtVehicles;
   const contact = useSiteContact();
   // Offers, hotels and restaurants on promotion in one rail, the biggest discount first.
   const promoTiles = [
@@ -449,6 +465,23 @@ export default function Home({ heroImage, hero, destinations, partners, ...built
         )}
       </section>
 
+      {/* ------------------------------------------------ vehicles for sale */}
+      {vehicles.length > 0 && (
+        <section className="container-site pb-16">
+          <Carousel
+            label={t("nav.vehicles")}
+            title={t("nav.vehicles")}
+            subtitle={t("pg.home.vehiclesSub")}
+            href="/vehicles"
+            cta={t("home.viewAll")}
+          >
+            {vehicles.map((v) => (
+              <SaleVehicleCard key={v.id} vehicle={v} />
+            ))}
+          </Carousel>
+        </section>
+      )}
+
       {/* ---------------------------------------------------- recently seen */}
       <div className="container-site">
         <RecentlyViewed />
@@ -581,6 +614,7 @@ export const getStaticProps: GetStaticProps<Props> = async () => {
 
   // Unreachable is "no partners": the section hides, the page still builds.
   const partners = await safely(() => getPartners(), []);
+  const vehicles = await safely(() => newestVehicles(), []);
 
   const dropped = HERO_CANDIDATES.find((name) =>
     existsSync(join(process.cwd(), "public", "img", name))
@@ -596,7 +630,8 @@ export const getStaticProps: GetStaticProps<Props> = async () => {
       heroImage,
       hero: site?.home ?? null,
       destinations,
-      partners
+      partners,
+      vehicles
     },
     revalidate: 30
   };

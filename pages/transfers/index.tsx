@@ -359,7 +359,9 @@ export default function TransfersPage() {
         category: placeText(q.name, locale),
         distanceKm: mode === "DISTANCE" ? quote.data?.distanceKm : undefined,
         durationMinutes: mode === "DISTANCE" ? quote.data?.durationMinutes : undefined
-      }
+      },
+      // The vehicle type's, once per ride: from the quote, else the category.
+      processingFee: q.processingFee ?? cat?.processingFee
     });
     router.push("/booking/travellers");
   }
@@ -586,6 +588,7 @@ export default function TransfersPage() {
                       {quotes.map((q) => {
                         const cat = categories.find((c) => c.id === q.categoryId);
                         const chosen = categoryId === q.categoryId;
+                        const fee = q.processingFee ?? cat?.processingFee;
                         return (
                           <li key={q.categoryId}>
                             <button
@@ -628,6 +631,11 @@ export default function TransfersPage() {
                               </span>
                               <span className="ms-auto shrink-0 text-end">
                                 <Price money={q.price} className="block text-lg font-bold text-brand-900" />
+                                {baseMinor(fee) > 0 && (
+                                  <span className="block text-xs text-ink-500">
+                                    + {t("checkout.processingFees")} <Price money={fee} />
+                                  </span>
+                                )}
                                 <span className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-brand-700">
                                   {chosen && <Check className="size-3.5" aria-hidden="true" />}
                                   {chosen ? t("transfer.chosen") : t("transfer.choose")}

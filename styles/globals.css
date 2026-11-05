@@ -49,6 +49,10 @@
   --color-v-car: #b5622e;
   --color-v-activity: #2f7a52;
   --color-v-property: #8a5a2b;
+  /* The app's colours for the three services the cards had none for. */
+  --color-v-restaurant: #a8442f;
+  --color-v-transfer: #4b4f9a;
+  --color-v-vehicle: #52606d;
 
   /* Warm neutrals, not cold greys. A page on #FBFAF8 with pure-white cards
      reads as considered; the same layout on #FFFFFF with grey borders reads as

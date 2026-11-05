@@ -3,12 +3,13 @@ import {
   Select,
   SelectContent,
   SelectItem,
+  SelectSeparator,
   SelectTrigger
 } from "@/components/ui/select";
 import { usePrefs } from "@/lib/prefs";
 import { cn } from "@/lib/utils";
 import { AlertCircle } from "lucide-react";
-import { useId } from "react";
+import { Fragment, useId } from "react";
 
 /**
  * One height for both halves of the control.
@@ -86,14 +87,18 @@ export function PhoneField({
             </span>
           </SelectTrigger>
           <SelectContent>
-            {COUNTRIES.map((c) => (
-              <SelectItem key={c.code} value={c.code}>
-                {/* The open list has room for the name, which is what
-                    disambiguates the countries sharing a dial code. */}
-                <span className="me-2">{c.flag}</span>
-                <span dir="ltr" className="tnum me-2 font-semibold">{c.dial}</span>
-                <span className="text-ink-500">{c.name}</span>
-              </SelectItem>
+            {COUNTRIES.map((c, i) => (
+              <Fragment key={c.code}>
+                {/* A line under the quick picks; every other country follows, A to Z. */}
+                {!c.preferred && COUNTRIES[i - 1]?.preferred && <SelectSeparator />}
+                <SelectItem value={c.code}>
+                  {/* The open list has room for the name, which is what
+                      disambiguates the countries sharing a dial code. */}
+                  <span className="me-2">{c.flag}</span>
+                  <span dir="ltr" className="tnum me-2 font-semibold">{c.dial}</span>
+                  <span className="text-ink-500">{c.name}</span>
+                </SelectItem>
+              </Fragment>
             ))}
           </SelectContent>
         </Select>

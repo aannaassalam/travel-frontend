@@ -4,6 +4,7 @@ import {
   OrderItems,
   OrderProgress,
   OrderStatusBadges,
+  PickupPanel,
   StatusTimeline
 } from "@/components/account/order";
 import RidePanel from "@/components/transfers/RidePanel";
@@ -67,6 +68,9 @@ export default function BookingDetail() {
 
             {/* A transfer: the map, the status, the driver, the alert, the rating. */}
             <RidePanel order={order} />
+
+            {/* A vehicle for sale: the parking it is collected from. */}
+            <PickupPanel order={order} />
 
             {/* Not for a delivery order: food is paid to the driver, and an
                 office deadline here contradicts the confirmation page. Nor for

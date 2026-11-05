@@ -10,10 +10,21 @@ import {
   Locale,
   Money,
   Order,
-  OrderDelivery,
   OrderItem
 } from "@/typescript/interface/domain.interface";
-import { CheckCircle2, Circle, CircleDot, Download, FileText, XCircle } from "lucide-react";
+import { dial, mapsLink } from "@/lib/contact";
+import {
+  CarFront,
+  CheckCircle2,
+  Circle,
+  CircleDot,
+  Clock,
+  Download,
+  FileText,
+  MapPin,
+  Phone,
+  XCircle
+} from "lucide-react";
 import { useState } from "react";
 
 /**
@@ -80,6 +91,8 @@ export function orderSteps(order: Order): Step[] {
     order.fulfilmentStatus === "DELIVERED" ||
     (order.documents?.length ?? 0) > 0;
   const ride = order.items.some((i) => i.ride);
+  // A vehicle for sale: confirmed (being prepared) → ready to collect → collected.
+  const vehicle = isVehicleSale(order);
 
   const planned: { key: string; done: boolean; at?: string; note?: string }[] = [
     { key: "created", done: true, at: order.createdAt ?? at(["ORDER_CREATED"]) },
@@ -99,7 +112,13 @@ export function orderSteps(order: Order): Step[] {
       done: confirmed,
       at: at(["STATUS_CONFIRMED"]) ?? (confirmed ? at(["CASH_RECEIVED"]) : undefined)
     },
-    ...(order.delivery
+    ...(vehicle
+      ? [
+          // Ready once the office has issued the sale papers.
+          { key: "ready", done: documents, at: at(["DOCUMENTS_ISSUED"]) },
+          { key: "collected", done: completed, at: at(["STATUS_COMPLETED"]) }
+        ]
+      : order.delivery
       ? [{ key: "delivered", done: completed, at: at(["STATUS_COMPLETED"]) }]
       : ride
         ? // A ride issues no ticket: after confirmation comes the ride itself.
@@ -157,7 +176,11 @@ export function OrderProgress({ order }: { order: Order }) {
       case "online":
         return t(s.state === "done" ? "steps.paidOnline" : "steps.payOnline");
       case "confirmed":
-        return t("steps.confirmed");
+        return t(isVehicleSale(order) ? "steps.vehicleConfirmed" : "steps.confirmed");
+      case "ready":
+        return t("steps.readyToCollect");
+      case "collected":
+        return t("steps.collected");
       case "documents":
         return t(s.state === "done" ? "steps.documents" : "steps.documentsTodo");
       case "completed":
@@ -220,6 +243,56 @@ export function OrderProgress({ order }: { order: Order }) {
   );
 }
 
+export const isVehicleSale = (order: Order) =>
+  Boolean(order.pickup) || order.items.some((i) => i.vertical === "VEHICLE_SALE");
+
+/**
+ * A vehicle for sale: where it is collected — the parking as it was when the
+ * order was made, not as it may have been edited since.
+ */
+export function PickupPanel({ order, className }: { order: Order; className?: string }) {
+  const { t, lz } = usePrefs();
+  const p = order.pickup;
+  if (!p) return null;
+  const directions = mapsLink(p.geo);
+  return (
+    <div className={cn("rounded-card bg-brand-50 p-6 ring-1 ring-brand-100 ring-inset", className)}>
+      <h2 className="flex items-center gap-2 text-lg font-bold text-brand-900">
+        <CarFront className="size-5 text-brand-500" />
+        {t("cmp.pickup.title")}
+      </h2>
+      <p className="mt-2 font-semibold text-ink-900">{lz(p.name)}</p>
+      <p className="mt-1 flex gap-2 text-[15px] text-ink-700">
+        <MapPin className="mt-0.5 size-4 shrink-0 text-brand-500" />
+        {[p.address, p.city].filter(Boolean).join(", ")}
+      </p>
+      {lz(p.openingHours) && (
+        <p className="mt-1 flex gap-2 text-[15px] text-ink-700">
+          <Clock className="mt-0.5 size-4 shrink-0 text-brand-500" />
+          {lz(p.openingHours)}
+        </p>
+      )}
+      {(directions || p.phone) && (
+        <div className="mt-4 flex flex-wrap gap-3">
+          {directions && (
+            <a href={directions} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-outline">
+              <MapPin className="size-4" />
+              {t("ride.directions")}
+            </a>
+          )}
+          {p.phone && (
+            <a href={`tel:${dial(p.phone)}`} className="btn btn-sm btn-dark">
+              <Phone className="size-4" />
+              <span dir="ltr">{p.phone}</span>
+            </a>
+          )}
+        </div>
+      )}
+      <p className="mt-4 text-sm text-ink-700">{t("cmp.pickup.note")}</p>
+    </div>
+  );
+}
+
 /** What happened, in order. Every entry is in the past, so every one is ticked. */
 export function StatusTimeline({ order }: { order: Order }) {
   const { t, locale } = usePrefs();
@@ -261,12 +334,12 @@ export const rentalSpan = (item: OrderItem, locale: Locale) =>
   )} · ${item.returnTime}`;
 
 /**
- * The delivery charge as the money helpers read it: francs, and the figure in
- * the charged currency beside them when that is another one.
+ * A fee on the order (delivery, processing) as the money helpers read it:
+ * francs, and the figure in the charged currency beside them when that is another one.
  */
-const deliveryMoney = (d: OrderDelivery, charged: Currency): Money => {
-  const out: Money = { CDF: d.fee };
-  if (charged !== "CDF") out[charged] = d.feeCharged;
+const feeMoney = (fee: number, feeCharged: number | undefined, charged: Currency): Money => {
+  const out: Money = { CDF: fee };
+  if (charged !== "CDF" && typeof feeCharged === "number") out[charged] = feeCharged;
   return out;
 };
 
@@ -331,6 +404,13 @@ export function OrderItems({ order }: { order: Order }) {
                   </p>
                 ) : null}
               </>
+            ) : item.vertical === "VEHICLE_SALE" ? (
+              // A vehicle: its stock reference and the parking it is collected from.
+              <p className="text-sm text-ink-500">
+                {[item.stockRef, order.pickup && [lz(order.pickup.name), order.pickup.city].filter(Boolean).join(", ")]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
             ) : (
               <>
                 {item.rentalHours ? (
@@ -368,7 +448,22 @@ export function OrderItems({ order }: { order: Order }) {
             )}
           </p>
           <p className="font-bold text-brand-900">
-            <Price money={deliveryMoney(order.delivery, charged)} charged={charged} />
+            <Price
+              money={feeMoney(order.delivery.fee, order.delivery.feeCharged, charged)}
+              charged={charged}
+            />
+          </p>
+        </li>
+      )}
+      {/* Once per order, whatever the quantity — part of the total. */}
+      {(order.processingFee ?? 0) > 0 && (
+        <li className="flex flex-wrap justify-between gap-3 py-3">
+          <p className="font-semibold text-ink-900">{t("checkout.processingFees")}</p>
+          <p className="font-bold text-brand-900">
+            <Price
+              money={feeMoney(order.processingFee!, order.processingFeeCharged, charged)}
+              charged={charged}
+            />
           </p>
         </li>
       )}

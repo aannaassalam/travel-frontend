@@ -8,9 +8,18 @@ import {
   Locale
 } from "@/typescript/interface/domain.interface";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
+import {
   Bus,
   Car,
+  CarFront,
   CarTaxiFront,
+  ChevronDown,
   Compass,
   Hotel,
   LifeBuoy,
@@ -22,7 +31,7 @@ import {
 , UtensilsCrossed , Languages, Wallet } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Brand from "./Brand";
 
 /**
@@ -34,15 +43,155 @@ import Brand from "./Brand";
  * this one list.
  */
 export const VERTICAL_NAV = [
-  { href: "/hotels", key: "nav.hotels", Icon: Hotel },
-  { href: "/flights", key: "nav.flights", Icon: Plane },
-  { href: "/bus", key: "nav.bus", Icon: Bus },
-  { href: "/cars", key: "nav.cars", Icon: Car },
-  { href: "/transfers", key: "nav.transfers", Icon: CarTaxiFront },
-  { href: "/restaurants", key: "nav.restaurants", Icon: UtensilsCrossed },
-  { href: "/property", key: "nav.property", Icon: Building2 },
-  { href: "/activities", key: "nav.activities", Icon: Compass }
+  // `tint`: the service's own colour, as on its cards and in the app.
+  { href: "/hotels", key: "nav.hotels", Icon: Hotel, tint: "var(--color-v-hotel)" },
+  { href: "/flights", key: "nav.flights", Icon: Plane, tint: "var(--color-v-flight)" },
+  { href: "/bus", key: "nav.bus", Icon: Bus, tint: "var(--color-v-bus)" },
+  { href: "/cars", key: "nav.cars", Icon: Car, tint: "var(--color-v-car)" },
+  { href: "/transfers", key: "nav.transfers", Icon: CarTaxiFront, tint: "var(--color-v-transfer)" },
+  { href: "/vehicles", key: "nav.vehicles", Icon: CarFront, tint: "var(--color-v-vehicle)" },
+  { href: "/restaurants", key: "nav.restaurants", Icon: UtensilsCrossed, tint: "var(--color-v-restaurant)" },
+  { href: "/property", key: "nav.property", Icon: Building2, tint: "var(--color-v-property)" },
+  { href: "/activities", key: "nav.activities", Icon: Compass, tint: "var(--color-v-activity)" }
 ];
+type Service = (typeof VERTICAL_NAV)[number];
+
+const useIsoLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
+
+/**
+ * One tab of the services bar. Quiet at rest — the icon carries the service's
+ * colour, lifted so it reads on navy — and the page you are on sits in a soft
+ * pill over the amber baseline the brand uses for "here".
+ */
+const tabClass = (active: boolean) =>
+  cn(
+    "relative flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold whitespace-nowrap transition-colors duration-200",
+    active
+      ? "bg-white/11 text-white ring-1 ring-white/15 ring-inset"
+      : "text-white/75 hover:bg-white/7 hover:text-white"
+  );
+
+function TabFace({ Icon, label, tint, active }: { Icon: Service["Icon"]; label: string; tint: string; active?: boolean }) {
+  return (
+    <>
+      <Icon
+        className="size-4 shrink-0 transition-colors duration-200"
+        style={{ color: `color-mix(in oklab, ${tint} ${active ? 30 : 45}%, white)` }}
+        aria-hidden="true"
+      />
+      {label}
+    </>
+  );
+}
+
+/**
+ * The services bar: one row whatever the language or the width. Every service
+ * that fits is a tab, in the office's order; the rest move under "More". The
+ * row used to wrap — a lone "Activities & Tours" on a second line in English,
+ * two in Russian — and the header grew past the 124px everything sticky below
+ * it is placed by (--header-h).
+ *
+ * The fit is measured, not guessed: an invisible twin row holds every tab and
+ * the More button at their real size, so a longer name in Russian, or a font
+ * still loading, is counted as it is.
+ */
+function ServicesBar({ isActive }: { isActive: (href: string) => boolean }) {
+  const { t, locale } = usePrefs();
+  const rowRef = useRef<HTMLDivElement>(null);
+  const twinRef = useRef<HTMLDivElement>(null);
+  const [shown, setShown] = useState(VERTICAL_NAV.length);
+
+  useIsoLayoutEffect(() => {
+    const row = rowRef.current;
+    const twin = twinRef.current;
+    if (!row || !twin) return;
+    const fit = () => {
+      const cells = [...twin.children] as HTMLElement[];
+      const more = cells.pop()?.offsetWidth ?? 0;
+      const widths = cells.map((c) => c.offsetWidth);
+      const style = getComputedStyle(row);
+      const gap = parseFloat(style.columnGap) || 0;
+      const room = row.clientWidth - parseFloat(style.paddingInlineStart) - parseFloat(style.paddingInlineEnd);
+      const span = (n: number) => widths.slice(0, n).reduce((a, w) => a + w, 0) + gap * Math.max(0, n - 1);
+      let n = widths.length;
+      if (span(n) > room) while (n > 0 && span(n) + gap + more > room) n--;
+      setShown(n);
+    };
+    fit();
+    const watch = new ResizeObserver(fit);
+    watch.observe(row);
+    document.fonts?.ready.then(fit).catch(() => undefined);
+    return () => watch.disconnect();
+  }, [locale]);
+
+  const overflow = VERTICAL_NAV.slice(shown);
+  const overflowActive = overflow.some((s) => isActive(s.href));
+
+  return (
+    <nav
+      aria-label={t("footer.services")}
+      // A hairline drawn, not a border: a border would add a pixel to --header-h.
+      className="relative hidden shadow-[inset_0_1px_0_rgb(255_255_255/0.08)] lg:block"
+    >
+      <div ref={rowRef} className="container-site flex h-13 items-center overflow-hidden">
+        {VERTICAL_NAV.slice(0, shown).map(({ href, key, Icon, tint }) => {
+          const active = isActive(href);
+          return (
+            <Link key={href} href={href} aria-current={active ? "page" : undefined} className={tabClass(active)}>
+              <TabFace Icon={Icon} label={t(key)} tint={tint} active={active} />
+              {active && <span className="absolute inset-x-3.5 -bottom-1.5 h-0.5 rounded-full bg-accent-500" />}
+            </Link>
+          );
+        })}
+        {overflow.length > 0 && (
+          <DropdownMenu modal={false}>
+            <DropdownMenuTrigger className={cn(tabClass(overflowActive), "cursor-pointer data-[state=open]:bg-white/11 data-[state=open]:text-white")}>
+              {t("nav.more")}
+              <ChevronDown className="size-4 opacity-70" aria-hidden="true" />
+              {overflowActive && <span className="absolute inset-x-3.5 -bottom-1.5 h-0.5 rounded-full bg-accent-500" />}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" sideOffset={10} className="min-w-60 rounded-xl p-1.5">
+              {overflow.map(({ href, key, Icon, tint }) => (
+                <DropdownMenuItem key={href} asChild className="cursor-pointer gap-3 rounded-lg px-2.5 py-2 text-sm font-semibold text-ink-900 aria-[current=page]:bg-ink-50">
+                  <Link href={href} aria-current={isActive(href) ? "page" : undefined}>
+                    <ServiceMark Icon={Icon} tint={tint} />
+                    {t(key)}
+                  </Link>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
+      {/* The measuring twin: every tab and the More button at their real size, never seen. */}
+      <div ref={twinRef} aria-hidden="true" className="pointer-events-none invisible absolute top-0 flex h-0 overflow-hidden">
+        {VERTICAL_NAV.map(({ href, key, Icon, tint }) => (
+          <span key={href} className={tabClass(false)}>
+            <TabFace Icon={Icon} label={t(key)} tint={tint} />
+          </span>
+        ))}
+        <span className={tabClass(false)}>
+          {t("nav.more")}
+          <ChevronDown className="size-4" />
+        </span>
+      </div>
+    </nav>
+  );
+}
+
+/** A service's icon on a square of its colour: the More list and the phone menu. */
+function ServiceMark({ Icon, tint, size = "sm" }: { Icon: Service["Icon"]; tint: string; size?: "sm" | "lg" }) {
+  return (
+    <span
+      className={cn("grid shrink-0 place-items-center text-white", size === "lg" ? "size-11 rounded-xl" : "size-8 rounded-lg")}
+      style={{ background: tint }}
+      aria-hidden="true"
+    >
+      {/* Its own colour class: the dropdown greys any icon without one. */}
+      <Icon className={cn("text-white", size === "lg" ? "size-5" : "size-4")} />
+    </span>
+  );
+}
 
 /**
  * §11.2 header. Booking.com's shape — brand left, currency/language/account
@@ -146,53 +295,34 @@ export default function Header({ transparent = false }: { transparent?: boolean 
           </div>
         </div>
 
-        <nav
-          aria-label={t("footer.services")}
-          // Wraps to a second row where a language's names are longer than
-          // the screen (Spanish, Russian on a laptop), never off the side.
-          className="container-site hidden flex-wrap items-center gap-0.5 pb-2.5 lg:flex"
-        >
-          {VERTICAL_NAV.map(({ href, key, Icon }) => (
-            <Link
-              key={href}
-              href={href}
-              aria-current={isActive(href) ? "page" : undefined}
-              // Underline rather than a pill: it is quieter, and it keeps the
-              // amber CTA as the only strongly filled thing in the chrome.
-              // Tighter and without icons below xl, where the eight names
-              // ("Taxis & Transferts"…) would not fit on one row.
-              className={`relative flex items-center gap-2 rounded-lg px-2.5 py-2.5 text-sm font-semibold whitespace-nowrap transition-colors xl:px-3.5 ${
-                isActive(href) ? "text-white" : "text-white/70 hover:bg-white/10 hover:text-white"
-              }`}
-            >
-              <Icon className="hidden size-4 xl:block" />
-              {t(key)}
-              {isActive(href) && (
-                <span className="absolute inset-x-2.5 -bottom-0.5 h-0.5 rounded-full bg-accent-500 xl:inset-x-3.5" />
-              )}
-            </Link>
-          ))}
-        </nav>
+        <ServicesBar isActive={isActive} />
       </div>
 
       {open && (
         <nav
           id="mobile-nav"
           aria-label={t("nav.menu")}
-          className="border-t border-white/15 bg-brand-900 lg:hidden"
+          // Opens downward from the bar, and scrolls on its own on a short phone.
+          className="max-h-[calc(100dvh-var(--header-h))] overflow-y-auto border-t border-white/10 bg-brand-900 shadow-xl motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-2 motion-safe:duration-200 lg:hidden"
         >
-          <div className="container-site grid gap-1 py-3">
-            {VERTICAL_NAV.map(({ href, key, Icon }) => (
-              <Link
-                key={href}
-                href={href}
-                className="flex items-center gap-3 rounded-md px-3 py-3 text-[15px] font-medium hover:bg-white/10"
-              >
-                <Icon className="size-5" />
-                {t(key)}
-              </Link>
-            ))}
-            <div className="my-1 h-px bg-white/15" />
+          <div className="container-site grid gap-1 py-4">
+            {/* The services as a grid of tiles: all nine in sight at once, each
+                in its colour — a list of nine rows pushed account and language
+                below the fold. */}
+            <div className="grid grid-cols-3 gap-1.5">
+              {VERTICAL_NAV.map(({ href, key, Icon, tint }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  aria-current={isActive(href) ? "page" : undefined}
+                  className="flex flex-col items-center gap-2 rounded-xl px-1.5 py-3 text-center text-[13px] leading-tight font-semibold text-white/85 transition-colors hover:bg-white/7 hover:text-white aria-[current=page]:bg-white/11 aria-[current=page]:text-white aria-[current=page]:ring-1 aria-[current=page]:ring-accent-500/70 aria-[current=page]:ring-inset"
+                >
+                  <ServiceMark Icon={Icon} tint={tint} size="lg" />
+                  {t(key)}
+                </Link>
+              ))}
+            </div>
+            <div className="my-2 h-px bg-white/10" />
             <Link
               href={user ? "/account" : "/login"}
               className="flex items-center gap-3 rounded-md px-3 py-3 text-[15px] font-medium hover:bg-white/10"
@@ -218,7 +348,7 @@ export default function Header({ transparent = false }: { transparent?: boolean 
               * targets, and the label spelled out instead of inferred from a
               * three-letter code.
               */}
-            <div className="my-1 h-px bg-white/15" />
+            <div className="my-1 h-px bg-white/10" />
             <div className="grid gap-2 px-3 py-2">
               <label className="flex items-center justify-between gap-3 text-[15px] font-medium">
                 <span className="flex items-center gap-3">

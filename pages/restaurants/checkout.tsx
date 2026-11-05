@@ -8,7 +8,7 @@ import { ApiError, createOrder, getRestaurant, startPayment } from "@/lib/api";
 import { useCart } from "@/lib/cart";
 import { useOnlinePayment } from "@/lib/payments";
 import { Country, DEFAULT_COUNTRY, toE164 } from "@/lib/countries";
-import { baseMinor, price, resolve } from "@/lib/money";
+import { addMoney, baseMinor, price, resolve } from "@/lib/money";
 import { usePrefs } from "@/lib/prefs";
 import { cn } from "@/lib/utils";
 import { Money, PaymentMethod } from "@/typescript/interface/domain.interface";
@@ -86,17 +86,19 @@ export default function RestaurantCheckoutPage() {
   }, [zones, form.zoneId]);
 
   const zone = zones.find((z) => z.id === form.zoneId) ?? null;
+  // The restaurant's processing fee: once per order, not per dish.
+  const fee = restaurant?.processingFee;
 
   const total = useMemo<Money>(() => {
-    if (!zone) return subtotal;
+    if (!zone) return addMoney(subtotal, fee);
     // Only currencies both the food and the fee carry — matching how the
     // server decides what it can settle in.
     const out: Money = {};
     for (const c of Object.keys(subtotal) as (keyof Money)[]) {
       if (typeof zone.fee[c] === "number") out[c] = (subtotal[c] ?? 0) + (zone.fee[c] ?? 0);
     }
-    return Object.keys(out).length ? out : subtotal;
-  }, [subtotal, zone]);
+    return addMoney(Object.keys(out).length ? out : subtotal, fee);
+  }, [subtotal, zone, fee]);
 
   const belowMinimum =
     zone?.minOrder && baseMinor(subtotal) < baseMinor(zone.minOrder) ? zone.minOrder : null;
@@ -413,6 +415,12 @@ export default function RestaurantCheckoutPage() {
                     : t("pg.checkout.pickZone")}
                 </span>
               </div>
+              {baseMinor(fee) > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-ink-700">{t("checkout.processingFees")}</span>
+                  <span className="tnum font-semibold text-ink-900">{price(fee, currency, locale)}</span>
+                </div>
+              )}
               <div className="flex justify-between border-t border-ink-100 pt-3 text-base">
                 <span className="font-bold text-brand-900">{t("pg.checkout.total")}</span>
                 <span className="tnum text-lg font-bold text-brand-900">

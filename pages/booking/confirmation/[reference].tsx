@@ -1,8 +1,10 @@
 import {
+  isVehicleSale,
   OrderDocuments,
   OrderItems,
   OrderProgress,
-  OrderStatusBadges
+  OrderStatusBadges,
+  PickupPanel
 } from "@/components/account/order";
 import Layout from "@/components/site/Layout";
 import RidePanel from "@/components/transfers/RidePanel";
@@ -287,6 +289,9 @@ export default function ConfirmationPage() {
         {/* A transfer: where the ride stands, the map, the driver once named. */}
         <RidePanel order={order} className="mt-6" />
 
+        {/* A vehicle for sale: the parking it is collected from. */}
+        <PickupPanel order={order} className="mt-6" />
+
         <div className="mt-6 surface p-6">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-lg font-bold text-brand-900">{t("checkout.summary")}</h2>
@@ -315,7 +320,7 @@ export default function ConfirmationPage() {
             {!isRide && (
               <li className="flex gap-3">
                 <CalendarPlus className="mt-0.5 size-5 shrink-0 text-brand-500" />
-                {t("pg.confirm.documents")}
+                {t(isVehicleSale(order) ? "pg.confirm.vehicleReady" : "pg.confirm.documents")}
               </li>
             )}
           </ul>

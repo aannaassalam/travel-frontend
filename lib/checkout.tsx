@@ -10,7 +10,7 @@ import {
   Vertical
 } from "@/typescript/interface/domain.interface";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { multiply } from "./money";
+import { addMoney, multiply } from "./money";
 import type { RentalBlock } from "./rental";
 import { Fares, passengerCount, routeTotal } from "./routes";
 import type { TransferRequest } from "./transfers";
@@ -66,6 +66,8 @@ export interface CheckoutSelection {
   transfer?: TransferRequest;
   /** What the summary says about that ride. Display only: the server keeps its own figures. */
   transferInfo?: { category: string; distanceKm?: number; durationMinutes?: number };
+  /** The item's processing fee: once on the total, never times the quantity. Absent when 0. */
+  processingFee?: Money;
 }
 
 export interface ContactDetails {
@@ -272,13 +274,9 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
           : multiply(sel.unitPrice, sel.quantity * sel.units),
     [sel]
   );
-  /**
-   * §17 Q1 (service fee / markup model) is still open with the client, so there
-   * is deliberately no invented fee line. Sell price is the price. When the
-   * answer arrives it is added here and in the summary component, never at the
-   * payment step — §11.3 forbids revealing a fee at the last step.
-   */
-  const total: Money = subtotal;
+  // The item's processing fee, once — shown in the summary from the first step
+  // (§11.3: never revealed at the last one).
+  const total: Money = useMemo(() => addMoney(subtotal, sel?.processingFee), [subtotal, sel]);
 
   const expired = Boolean(
     state.holdExpiresAt && now > 0 && new Date(state.holdExpiresAt).getTime() < now
