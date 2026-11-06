@@ -47,7 +47,7 @@ export default function SearchResults({
   priceRange: [number, number];
   heroLabel: string;
 }) {
-  const { t, locale, view = "list" } = usePrefs();
+  const { t, locale, view } = usePrefs();
   const router = useRouter();
   const grid = view === "grid";
 

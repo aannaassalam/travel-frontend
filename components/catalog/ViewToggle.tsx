@@ -4,7 +4,7 @@ import { LayoutGrid, List } from "lucide-react";
 
 /**
  * List or grid, beside a results page's sort. The page passes what it shows
- * (a list until the visitor chooses); the choice holds on every results page
+ * (a grid until the visitor chooses); the choice holds on every results page
  * for the rest of the visit, in this tab only.
  */
 export default function ViewToggle({ value }: { value: ResultsView }) {

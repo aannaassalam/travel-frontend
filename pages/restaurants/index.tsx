@@ -33,11 +33,11 @@ const fromSelect = (v: string) => (v === ANY ? "" : v);
  * `Listing`/`Hotel` and a filter sidebar of stars and cabins, none of which a
  * restaurant has. A restaurant is chosen by city and cuisine in about two
  * seconds, so the page is a list and a pair of selects rather than a search.
- * A list by default, like every results page; a visitor who prefers the grid
+ * A grid by default, like every results page; a visitor who prefers the list
  * can have it for the rest of the visit.
  */
 export default function RestaurantsPage() {
-  const { t, view = "list" } = usePrefs();
+  const { t, view } = usePrefs();
   const router = useRouter();
   const grid = view === "grid";
 

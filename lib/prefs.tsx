@@ -10,16 +10,16 @@ import { DirectionProvider } from "@radix-ui/react-direction";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { getSiteCurrencies, updateProfile } from "./api";
-import { dirOf, pickLocale, localized as pickLocalized, translate } from "./i18n";
+import { dirOf, localized as pickLocalized, translate } from "./i18n";
 import { pickCurrency } from "./money";
 import { Localized } from "@/typescript/interface/domain.interface";
 
 /**
  * Locale, currency, low-data mode, and list or grid on the results pages.
  *
- * The language: the visitor's pick in the switcher (saved), else on a first
- * visit the browser's language when it is one of ours, else English
- * (`pickLocale`, 2026-10-31). Never from IP (§14); only a pick is saved.
+ * The language: the visitor's pick in the switcher (saved), else French,
+ * whatever the browser's language (2026-11-06). Never from IP (§14); only a
+ * pick is saved.
  */
 
 type Prefs = {
@@ -33,8 +33,8 @@ type Prefs = {
   /** The office's rates (francs per 1 unit of each), once /site/currencies has answered. */
   rates?: Partial<Record<Currency, number>>;
   lowData: boolean;
-  /** Undefined until the visitor chooses this visit: each page then shows its own default, a list. */
-  view?: ResultsView;
+  /** A grid until the visitor chooses (2026-11-06; it was a list). */
+  view: ResultsView;
   setLocale: (l: Locale) => void;
   setCurrency: (c: Currency) => void;
   setLowData: (v: boolean) => void;
@@ -46,13 +46,13 @@ type Prefs = {
 export type ResultsView = "list" | "grid";
 
 const KEY = "ct.prefs";
-/** The list or grid choice, for this tab only: every new visit opens on a list. */
+/** The list or grid choice, for this tab only: every new visit opens on a grid. */
 const VIEW_KEY = "ct.view";
 const PrefsContext = createContext<Prefs | null>(null);
 
 /**
  * The language and direction on <html>. _document renders lang="fr" and its
- * inline script applies the saved or detected language before the first
+ * inline script applies the saved language before the first
  * paint; this keeps it right from then on, so a page is not announced as
  * French (§BUG-027) or laid out left to right in Arabic.
  */
@@ -62,13 +62,13 @@ const applyToDocument = (l: Locale) => {
 };
 
 export function PrefsProvider({ children }: { children: React.ReactNode }) {
-  // French on the server and first client render (they must agree); the
-  // saved or detected language applies right after mount.
+  // French on the server and first client render (they must agree); a
+  // saved language applies right after mount.
   const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
   // The visitor's own choice, if they made one: what is shown is worked out below.
   const [savedCurrency, setSavedCurrency] = useState<Currency>();
   const [lowData, setLowDataState] = useState(false);
-  const [view, setViewState] = useState<ResultsView>();
+  const [view, setViewState] = useState<ResultsView>("grid");
   const qc = useQueryClient();
 
   // Read after mount, not during render: the server has no localStorage and a
@@ -83,15 +83,15 @@ export function PrefsProvider({ children }: { children: React.ReactNode }) {
     } catch {
       /* corrupt or unavailable storage just means defaults */
     }
-    // No saved choice: the browser's language, not saved (only a pick is).
-    const l = savedLocale ?? pickLocale([...(navigator.languages ?? []), navigator.language]);
+    // No saved choice: French, not saved (only a pick is).
+    const l = savedLocale ?? DEFAULT_LOCALE;
     setLocaleState(l);
     applyToDocument(l);
     try {
       const view = sessionStorage.getItem(VIEW_KEY);
       if (view === "list" || view === "grid") setViewState(view);
     } catch {
-      /* no session storage: the page's own default */
+      /* no session storage: the grid */
     }
   }, []);
 

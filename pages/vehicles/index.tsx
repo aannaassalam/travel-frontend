@@ -42,7 +42,7 @@ const list = (v?: string | string[]) => (typeof v === "string" ? v.split(",").fi
  * also quick chips at the top: /vehicles?city=Kinshasa is "what is on sale here".
  */
 export default function VehiclesPage() {
-  const { t, lz, locale, view = "list" } = usePrefs();
+  const { t, lz, locale, view } = usePrefs();
   const router = useRouter();
   const grid = view === "grid";
 

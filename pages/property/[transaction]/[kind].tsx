@@ -80,7 +80,7 @@ export default function PropertyCategory({
   kind,
   propertyType
 }: Props) {
-  const { t, view = "list" } = usePrefs();
+  const { t, view } = usePrefs();
   const grid = view === "grid";
   const c = { h1: t(`${copy}.h1`), lead: t(`${copy}.lead`) };
   const router = useRouter();

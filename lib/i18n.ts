@@ -1,7 +1,6 @@
 import {
   Localized,
-  Locale,
-  LOCALES
+  Locale
 } from "@/typescript/interface/domain.interface";
 
 /**
@@ -1661,16 +1660,6 @@ export const LOCALE_NAMES: Record<Locale, string> = {
   ar: "العربية",
   ru: "Русский"
 };
-
-/**
- * A first visit, with no saved choice: the first of the browser's languages
- * that is one of ours, by its primary subtag ("pt-BR" is pt, "zh-TW" zh),
- * else English. pages/_document.tsx does the same before the first paint.
- */
-export const pickLocale = (tags: readonly string[]): Locale =>
-  (tags
-    .map((tag) => String(tag).toLowerCase().split(/[-_]/)[0])
-    .find((l) => LOCALES.includes(l as Locale)) as Locale | undefined) ?? "en";
 
 /** Written right to left (also read by pages/_document.tsx before the first paint). */
 export const isRtl = (locale: Locale) => locale === "ar";

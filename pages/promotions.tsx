@@ -21,7 +21,7 @@ import { useRouter } from "next/router";
  * ahead of time would keep one that has ended.
  */
 export default function PromotionsPage() {
-  const { t, locale, view = "list" } = usePrefs();
+  const { t, locale, view } = usePrefs();
   const router = useRouter();
   const grid = view === "grid";
   const page = pageParam(router.query.page);
