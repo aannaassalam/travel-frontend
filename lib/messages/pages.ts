@@ -195,7 +195,7 @@ export const fr = {
   "pg.confirm.eta": "environ {n} min",
   "pg.confirm.payDriver":
     "Payez le livreur en espèces à la réception de la commande.",
-  "pg.confirm.payAtOffice": "Payer en agence",
+  "pg.confirm.payAtOffice": "Payer en agence ou par mobile money",
   "pg.confirm.sent": "Une confirmation avec la référence vous a été envoyée.",
   "pg.confirm.documents":
     "Vos documents de voyage sont émis sous 24 heures ouvrées et apparaissent dans votre compte.",
@@ -296,7 +296,7 @@ export const fr = {
   // pages/account/index
   "pg.account.cancelNoteEnd": ".",
   // pages/account/bookings/[reference]
-  "pg.booking.cashTitle": "Paiement en agence",
+  "pg.booking.cashTitle": "Paiement en agence ou par mobile money",
   "pg.booking.acceptedOn": "Accepté le",
   // pages/account/enquiries
   "pg.enquiries.emptyBody":
@@ -338,7 +338,7 @@ export const fr = {
   "pg.vehicle.seeOthers": "Voir les autres véhicules",
   "pg.vehicleOrder.contact": "Vos coordonnées",
   "pg.vehicleOrder.phoneHelper": "Nous vous joignons sur ce numéro au sujet de la commande.",
-  "pg.vehicleOrder.submitCash": "Commander — payer en agence",
+  "pg.vehicleOrder.submitCash": "Commander — payer en agence ou par mobile money",
   "pg.vehicleOrder.blocked": "Complétez vos coordonnées et cochez la case ci-dessus.",
   "pg.vehicleOrder.errTaken": "Un autre client vient de réserver ce véhicule.",
   "pg.confirm.vehicleReady": "Suivez ici la préparation du véhicule : l'étape « Prêt à retirer » s'affiche dès que les documents de vente sont émis.",
@@ -527,7 +527,7 @@ export const en: Record<keyof typeof fr, string> = {
   "pg.confirm.onItsWay": "On its way",
   "pg.confirm.eta": "about {n} min",
   "pg.confirm.payDriver": "Pay the driver in cash when the food arrives.",
-  "pg.confirm.payAtOffice": "Pay at our office",
+  "pg.confirm.payAtOffice": "Pay at our office or via mobile money",
   "pg.confirm.sent": "A confirmation with the reference has been sent.",
   "pg.confirm.documents":
     "Your travel documents are issued within 24 working hours and appear in your account.",
@@ -628,7 +628,7 @@ export const en: Record<keyof typeof fr, string> = {
   // pages/account/index
   "pg.account.cancelNoteEnd": ".",
   // pages/account/bookings/[reference]
-  "pg.booking.cashTitle": "Cash payment",
+  "pg.booking.cashTitle": "Payment in cash or via mobile money",
   "pg.booking.acceptedOn": "Accepted on",
   // pages/account/enquiries
   "pg.enquiries.emptyBody":
@@ -670,7 +670,7 @@ export const en: Record<keyof typeof fr, string> = {
   "pg.vehicle.seeOthers": "See other vehicles",
   "pg.vehicleOrder.contact": "Your details",
   "pg.vehicleOrder.phoneHelper": "We contact you on this number about the order.",
-  "pg.vehicleOrder.submitCash": "Order — pay at our office",
+  "pg.vehicleOrder.submitCash": "Order — pay at our office or via mobile money",
   "pg.vehicleOrder.blocked": "Fill in your details and tick the box above.",
   "pg.vehicleOrder.errTaken": "Another customer has just reserved this vehicle.",
   "pg.confirm.vehicleReady": "Follow the vehicle's preparation here: “Ready to collect” shows as soon as the sale papers are issued.",

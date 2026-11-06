@@ -35,7 +35,7 @@ export const fr = {
   "cmp.listing.similar": "Autres offres similaires",
   // catalog: BookingBox
   "cmp.rental.block": "{count} × {hours} h",
-  "cmp.booking.cashNote": "Paiement en espèces à notre agence. Aucun frais caché.",
+  "cmp.booking.cashNote": "Paiement en espèces à notre agence ou par mobile money. Aucun frais caché.",
   // catalog: LeadForm
   "cmp.lead.failedCall": "Votre demande n'a pas pu être envoyée. Appelez-nous au {phone}.",
   "cmp.lead.failed": "Votre demande n'a pas pu être envoyée. Veuillez réessayer.",
@@ -149,7 +149,7 @@ export const en: Record<keyof typeof fr, string> = {
   "cmp.listing.similar": "Other similar offers",
   // catalog: BookingBox
   "cmp.rental.block": "{count} × {hours} h",
-  "cmp.booking.cashNote": "Pay in cash at our office. No hidden fees.",
+  "cmp.booking.cashNote": "Pay in cash at our office or via mobile money. No hidden fees.",
   // catalog: LeadForm
   "cmp.lead.failedCall": "Your request could not be sent. Call us on {phone}.",
   "cmp.lead.failed": "Your request could not be sent. Please try again.",

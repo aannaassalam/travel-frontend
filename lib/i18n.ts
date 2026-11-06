@@ -387,7 +387,7 @@ const fr: Dict = {
     "Choisissez le paiement en espèces au bureau, ou par virement — la réservation reste valable.",
   "pay.errCancelledBody":
     "Le stock n'est tenu que quelques minutes. Rien n'a été débité — relancez la recherche pour réserver à nouveau.",
-  "pay.errNoCharge": "Rien n'a été débité. Réessayez, ou choisissez le paiement en espèces au bureau.",
+  "pay.errNoCharge": "Rien n'a été débité. Réessayez, ou choisissez le paiement en espèces au bureau ou par mobile money.",
   "pay.errNoChargeCash": "Rien n'a été débité. Réessayez, ou contactez notre agence.",
   "pay.errAccountExists": "Ce numéro appartient à un compte. Connectez-vous pour réserver.",
   "pay.errAccountExistsBody":
@@ -397,17 +397,17 @@ const fr: Dict = {
   "checkout.bankTransfer": "Virement bancaire",
   "checkout.bankTransferNote":
     "Payez depuis votre banque via notre prestataire. Confirmation immédiate.",
-  "checkout.cash": "Espèces en agence",
-  "checkout.cashOnly": "Le paiement se fait en espèces, à notre agence.",
+  "checkout.cash": "Espèces en agence ou par mobile money",
+  "checkout.cashOnly": "Le paiement se fait en espèces à notre agence, ou par mobile money.",
   "checkout.mobileMoneyNote":
     "Vous recevrez une demande de confirmation sur votre téléphone. Gardez-le à portée de main.",
   "checkout.cardNote":
     "Paiement sur la page sécurisée de notre prestataire. Nous ne voyons jamais votre numéro de carte.",
   "checkout.cashNote":
-    "Réservation maintenue 48 heures. Payez en agence avec votre référence de réservation.",
+    "Réservation maintenue 48 heures. Payez en agence ou par mobile money avec votre référence de réservation.",
   "checkout.operator": "Opérateur",
   "checkout.payNow": "Payer {amount}",
-  "checkout.reserveCash": "Réserver et payer en agence",
+  "checkout.reserveCash": "Réserver et payer en agence ou par mobile money",
   "checkout.waitingTitle": "Vérifiez votre téléphone",
   "checkout.waitingCash": "Enregistrement de votre réservation…",
   "checkout.online": "Payer en ligne",
@@ -457,7 +457,7 @@ const fr: Dict = {
   "confirm.body":
     "Une confirmation a été envoyée au {phone}. Conservez cette référence.",
   "confirm.cashBody":
-    "Présentez la référence {ref} à notre agence avant le {deadline}. Passé ce délai, la réservation est annulée et les places remises en vente.",
+    "Payez en espèces à notre agence ou par mobile money avant le {deadline}, avec la référence {ref}. Passé ce délai, la réservation est annulée et les places remises en vente.",
   "confirm.next": "Prochaines étapes",
   "confirm.download": "Télécharger le voucher",
   "confirm.addCalendar": "Ajouter au calendrier",
@@ -510,7 +510,7 @@ const fr: Dict = {
   "steps.title": "Où en est votre réservation",
   "steps.created": "Réservation créée",
   "steps.paidCash": "Payée en agence",
-  "steps.payCash": "Paiement en espèces à l'agence",
+  "steps.payCash": "Paiement en espèces à l'agence ou par mobile money",
   // A delivered meal is paid at the door, never at the office.
   "steps.payCashDelivery": "Paiement en espèces à la livraison",
   "steps.paidCashDelivery": "Payée à la livraison",
@@ -1176,7 +1176,7 @@ const en: Dict = {
     "Choose cash at the office or bank transfer instead — your booking still stands.",
   "pay.errCancelledBody":
     "Stock is only held for a few minutes. You have not been charged — start a new search to book again.",
-  "pay.errNoCharge": "You have not been charged. Try again, or choose to pay cash at the office.",
+  "pay.errNoCharge": "You have not been charged. Try again, or choose to pay cash at the office or via mobile money.",
   "pay.errNoChargeCash": "You have not been charged. Try again, or contact our office.",
   "pay.errAccountExists": "This number belongs to an account. Please sign in to book.",
   "pay.errAccountExistsBody": "Your selection is kept: sign in, then pick up here.",
@@ -1185,17 +1185,17 @@ const en: Dict = {
   "checkout.bankTransfer": "Bank transfer",
   "checkout.bankTransferNote":
     "Pay from your bank through our provider. Confirmed immediately.",
-  "checkout.cash": "Cash at our office",
-  "checkout.cashOnly": "Payment is made in cash at our office.",
+  "checkout.cash": "Cash at our office or via mobile money",
+  "checkout.cashOnly": "Payment is made in cash at our office or via mobile money.",
   "checkout.mobileMoneyNote":
     "You will receive a confirmation request on your phone. Keep it to hand.",
   "checkout.cardNote":
     "Payment on our provider's secure page. We never see your card number.",
   "checkout.cashNote":
-    "Booking held for 48 hours. Pay at our office using your booking reference.",
+    "Booking held for 48 hours. Pay at our office or via mobile money using your booking reference.",
   "checkout.operator": "Operator",
   "checkout.payNow": "Pay {amount}",
-  "checkout.reserveCash": "Reserve and pay at the office",
+  "checkout.reserveCash": "Reserve and pay at the office or via mobile money",
   "checkout.waitingTitle": "Check your phone",
   "checkout.waitingCash": "Registering your booking…",
   "checkout.online": "Pay online",
@@ -1243,7 +1243,7 @@ const en: Dict = {
   "confirm.body":
     "A confirmation was sent to {phone}. Keep this reference.",
   "confirm.cashBody":
-    "Bring reference {ref} to our office before {deadline}. After that the booking is cancelled and the stock returned to sale.",
+    "Pay in cash at our office or via mobile money before {deadline}, quoting reference {ref}. After that the booking is cancelled and the stock returned to sale.",
   "confirm.next": "Next steps",
   "confirm.download": "Download voucher",
   "confirm.addCalendar": "Add to calendar",
@@ -1296,7 +1296,7 @@ const en: Dict = {
   "steps.title": "Where your booking stands",
   "steps.created": "Booking created",
   "steps.paidCash": "Paid at the office",
-  "steps.payCash": "Pay in cash at the office",
+  "steps.payCash": "Pay in cash at the office or via mobile money",
   // A delivered meal is paid at the door, never at the office.
   "steps.payCashDelivery": "Cash on delivery",
   "steps.paidCashDelivery": "Paid on delivery",

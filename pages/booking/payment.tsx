@@ -373,7 +373,8 @@ export default function PaymentStep() {
                   aria-disabled={blocked || undefined}
                   aria-describedby={blocked ? "consent-required" : undefined}
                   className={cn(
-                    "btn btn-lg",
+                    // The cash label is long ("…or via mobile money"): it wraps on a phone.
+                    "btn btn-lg whitespace-normal! text-center leading-snug!",
                     /*
                       Blocked is not disabled (see above), so it cannot use the
                       system's disabled styling — it stays pressable and only

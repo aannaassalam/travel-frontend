@@ -207,6 +207,22 @@ export default function VehiclesPage() {
 
   return (
     <Layout title={q.city ? heading : t("pg.vehicles.title")} description={t("pg.vehicles.description")}>
+      {/* The same opening as Taxis & Transfers: what the section is, in a line. */}
+      <div className="bg-brand-900 text-white">
+        <div className="container-site py-10 sm:py-14">
+          <p className="eyebrow mb-3 flex items-center gap-2 text-accent-500">
+            <CarFront className="size-4" aria-hidden="true" />
+            {t("nav.vehicles")}
+          </p>
+          <h1 className="display max-w-2xl text-[30px] leading-tight sm:text-[40px]">
+            {q.city ? heading : t("pg.vehicles.title")}
+          </h1>
+          <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-white/75">
+            {t("pg.vehicles.description")}
+          </p>
+        </div>
+      </div>
+
       <div className="container-site py-8">
         <Breadcrumbs
           items={[
@@ -217,16 +233,13 @@ export default function VehiclesPage() {
           ]}
         />
 
-        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h1 className="display text-[30px] leading-tight text-brand-900 sm:text-[38px]">{heading}</h1>
-            <div className="mt-2 flex items-center gap-2 text-base text-ink-500">
-              {isPending ? (
-                <Skeleton className="h-4 w-28" />
-              ) : (
-                <strong className="font-semibold text-ink-900">{resultsLabel(locale, total)}</strong>
-              )}
-            </div>
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-2 text-base text-ink-500">
+            {isPending ? (
+              <Skeleton className="h-4 w-28" />
+            ) : (
+              <strong className="font-semibold text-ink-900">{resultsLabel(locale, total)}</strong>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-3 text-sm">
