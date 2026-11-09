@@ -1,5 +1,5 @@
 import { usePrefs } from "@/lib/prefs";
-import { Money, MenuItem, Restaurant } from "@/typescript/interface/domain.interface";
+import { Localized, Money } from "@/typescript/interface/domain.interface";
 import {
   createContext,
   useCallback,
@@ -25,10 +25,34 @@ import {
  *
  * ponytail: sessionStorage, not a server cart. Move to POST /api/v1/carts when
  * the endpoint lands — `persist()` is the only call site.
+ *
+ * Two baskets run on it: the restaurant one (`useCart`, one kitchen only) and
+ * Duty Free's (`useDutyFreeCart`, several shops, each shop's fee once).
  */
 
+/** What is added: a dish, or a Duty Free product. */
+export interface CartItem {
+  id: string;
+  name: Localized;
+  sellPrice: Money;
+  images?: string[];
+}
+
+/** Who sells it: the restaurant, or the Duty Free shop. */
+export interface CartShop {
+  id: string;
+  slug?: string;
+  name: Localized | string;
+  processingFee?: Money;
+}
+
 export interface CartLine {
+  /** The dish's id, or the Duty Free product's. */
   menuItemId: string;
+  /** Who sells it, and its processing fee (charged once per shop). */
+  shopId?: string;
+  shopName?: string;
+  fee?: Money;
   name: string;
   /** Per-currency minor units, per single item. Snapshotted for display only —
    *  the server re-prices every line at checkout and its figure is the one
@@ -53,7 +77,6 @@ const EMPTY: CartState = {
   lines: []
 };
 
-const KEY = "ct.cart";
 const MAX_LINES = 10; // The API refuses more than 10 lines on one order.
 const MAX_QTY = 20; // …and more than 20 of any one line.
 
@@ -62,20 +85,64 @@ interface Ctx extends CartState {
   count: number;
   /** Food subtotal only — delivery is added by the server at checkout. */
   subtotal: Money;
-  add: (item: MenuItem, restaurant: Restaurant, quantity?: number) => void;
+  add: (item: CartItem, shop: CartShop, quantity?: number) => void;
   setQuantity: (menuItemId: string, quantity: number) => void;
   remove: (menuItemId: string) => void;
   clear: () => void;
   /** True when `add` was called for a different kitchen and is awaiting a
    *  decision — the UI asks before throwing away someone's basket. */
-  pending: { item: MenuItem; restaurant: Restaurant } | null;
+  pending: { item: CartItem; restaurant: CartShop } | null;
   confirmReplace: () => void;
   cancelReplace: () => void;
 }
+export type Cart = Ctx;
 
 const CartContext = createContext<Ctx | null>(null);
+const DutyFreeCartContext = createContext<Ctx | null>(null);
 
-export function CartProvider({ children }: { children: React.ReactNode }) {
+/** The restaurant basket: one kitchen at a time. */
+export const CartProvider = ({ children }: { children: React.ReactNode }) => (
+  <CartStore storageKey="ct.cart" oneShop Context={CartContext}>
+    {children}
+  </CartStore>
+);
+
+/** The Duty Free basket: products from several shops in one order. */
+export const DutyFreeCartProvider = ({ children }: { children: React.ReactNode }) => (
+  <CartStore storageKey="ct.dfcart" oneShop={false} Context={DutyFreeCartContext}>
+    {children}
+  </CartStore>
+);
+
+/** The line for `item` sold by `shop`, as kept in the basket (names in the visitor's language). */
+const lineOf = (
+  item: CartItem,
+  shop: CartShop,
+  quantity: number,
+  lz: (f: Localized | string | undefined) => string
+): CartLine => ({
+  menuItemId: item.id,
+  name: lz(item.name),
+  unitPrice: item.sellPrice,
+  quantity: Math.min(quantity, MAX_QTY),
+  image: item.images?.[0],
+  shopId: shop.id,
+  shopName: lz(shop.name),
+  fee: shop.processingFee
+});
+
+function CartStore({
+  children,
+  storageKey,
+  oneShop,
+  Context
+}: {
+  children: React.ReactNode;
+  storageKey: string;
+  /** Restaurants: adding from another kitchen asks to replace the basket. */
+  oneShop: boolean;
+  Context: React.Context<Ctx | null>;
+}) {
   const [state, setState] = useState<CartState>(EMPTY);
   const [ready, setReady] = useState(false);
   const [pending, setPending] = useState<Ctx["pending"]>(null);
@@ -86,7 +153,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   // and a first paint that disagrees with the server's is a hydration error.
   useEffect(() => {
     try {
-      const saved: CartState | null = JSON.parse(sessionStorage.getItem(KEY) || "null");
+      const saved: CartState | null = JSON.parse(sessionStorage.getItem(storageKey) || "null");
       // A basket kept from before prices were in francs has no franc price: it
       // would total "0 FC" and never clear a zone's minimum, so it is dropped.
       if (saved?.lines?.every((l) => typeof l.unitPrice?.CDF === "number")) {
@@ -96,17 +163,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       /* corrupt or unavailable storage just means an empty cart */
     }
     setReady(true);
-  }, []);
+  }, [storageKey]);
 
   const persist = useCallback((next: CartState) => {
     setState(next);
     try {
-      if (next.lines.length) sessionStorage.setItem(KEY, JSON.stringify(next));
-      else sessionStorage.removeItem(KEY);
+      if (next.lines.length) sessionStorage.setItem(storageKey, JSON.stringify(next));
+      else sessionStorage.removeItem(storageKey);
     } catch {
       /* a full or disabled store must not break the basket in memory */
     }
-  }, []);
+  }, [storageKey]);
 
   /**
    * One cart, one kitchen.
@@ -115,10 +182,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
    * one delivery fee — so allowing the basket to mix would only produce a
    * failure at the last step, after the customer had chosen everything. Adding
    * from elsewhere raises `pending` instead, and the UI asks.
+   *
+   * Duty Free (`oneShop` false) takes several shops: the office collects from
+   * each, and the order carries one delivery and each shop's fee once.
    */
   const add = useCallback(
-    (item: MenuItem, restaurant: Restaurant, quantity = 1) => {
-      if (state.restaurantId && state.restaurantId !== restaurant.id) {
+    (item: CartItem, restaurant: CartShop, quantity = 1) => {
+      if (oneShop && state.restaurantId && state.restaurantId !== restaurant.id) {
         setPending({ item, restaurant });
         return;
       }
@@ -131,25 +201,20 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
               ? { ...l, quantity: Math.min(l.quantity + quantity, MAX_QTY) }
               : l
           )
-        : [
-            ...state.lines,
-            {
-              menuItemId: item.id,
-              name: lz(item.name),
-              unitPrice: item.sellPrice,
-              quantity: Math.min(quantity, MAX_QTY),
-              image: item.images?.[0]
-            }
-          ];
+        : [...state.lines, lineOf(item, restaurant, quantity, lz)];
 
-      persist({
-        restaurantId: restaurant.id,
-        restaurantSlug: restaurant.slug,
-        restaurantName: lz(restaurant.name),
-        lines
-      });
+      persist(
+        oneShop
+          ? {
+              restaurantId: restaurant.id,
+              restaurantSlug: restaurant.slug ?? null,
+              restaurantName: lz(restaurant.name),
+              lines
+            }
+          : { ...EMPTY, lines }
+      );
     },
-    [state, persist, lz]
+    [state, persist, lz, oneShop]
   );
 
   const setQuantity = useCallback(
@@ -179,17 +244,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setPending(null);
     persist({
       restaurantId: restaurant.id,
-      restaurantSlug: restaurant.slug,
+      restaurantSlug: restaurant.slug ?? null,
       restaurantName: lz(restaurant.name),
-      lines: [
-        {
-          menuItemId: item.id,
-          name: lz(item.name),
-          unitPrice: item.sellPrice,
-          quantity: 1,
-          image: item.images?.[0]
-        }
-      ]
+      lines: [lineOf(item, restaurant, 1, lz)]
     });
   }, [pending, persist, lz]);
 
@@ -235,11 +292,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     [state, ready, count, subtotal, add, setQuantity, remove, clear, pending, confirmReplace, cancelReplace]
   );
 
-  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+  return <Context.Provider value={value}>{children}</Context.Provider>;
 }
 
 export function useCart(): Ctx {
   const ctx = useContext(CartContext);
   if (!ctx) throw new Error("useCart must be used inside <CartProvider>");
+  return ctx;
+}
+
+export function useDutyFreeCart(): Ctx {
+  const ctx = useContext(DutyFreeCartContext);
+  if (!ctx) throw new Error("useDutyFreeCart must be used inside <DutyFreeCartProvider>");
   return ctx;
 }

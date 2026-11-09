@@ -1,11 +1,7 @@
-import {
-  Enquiry,
-  EnquiryKind,
-  Vertical
-} from "@/typescript/interface/domain.interface";
+import { Vertical } from "@/typescript/interface/domain.interface";
 
 /**
- * Browser-side persistence for orders, enquiries, saved items and the signed-in
+ * Browser-side persistence for orders, saved items and the signed-in
  * customer.
  *
  * Orders and enquiries are now server-owned: `POST /orders`, `POST /enquiries`
@@ -23,7 +19,6 @@ import {
 
 const KEYS = {
   orders: "ct.orders",
-  enquiries: "ct.enquiries",
   saved: "ct.saved",
   user: "ct.user"
 } as const;
@@ -92,30 +87,6 @@ export const getOrderRefs = () => read<string[]>(KEYS.orders, []);
 export function rememberOrderRef(reference: string) {
   const all = getOrderRefs().filter((r) => r !== reference);
   write(KEYS.orders, [reference, ...all].slice(0, 50));
-}
-
-/* ---------------------------------------------------------------- enquiries */
-
-export const getEnquiries = () => read<Enquiry[]>(KEYS.enquiries, []);
-
-export function saveEnquiry(input: {
-  /** Assigned by the server so the customer and the admin quote the same one. */
-  reference: string;
-  kind: EnquiryKind;
-  vertical: Vertical;
-  customerName: string;
-  phone: string;
-  email?: string;
-  message: string;
-  listingLabel?: string;
-}): Enquiry {
-  const enquiry: Enquiry = {
-    stage: "NEW",
-    createdAt: new Date().toISOString(),
-    ...input
-  };
-  write(KEYS.enquiries, [enquiry, ...getEnquiries()]);
-  return enquiry;
 }
 
 /* ---------------------------------------------------------- recent searches */

@@ -1,4 +1,4 @@
-import { useCart } from "@/lib/cart";
+import { useCart, useDutyFreeCart } from "@/lib/cart";
 import { usePrefs } from "@/lib/prefs";
 import { cn } from "@/lib/utils";
 import { ArrowUp } from "lucide-react";
@@ -129,6 +129,7 @@ function BackToTop() {
   const { t } = usePrefs();
   const router = useRouter();
   const { ready, count } = useCart();
+  const df = useDutyFreeCart();
   const [shown, setShown] = useState(false);
   const [covered, setCovered] = useState(false);
   const self = useRef<HTMLButtonElement>(null);
@@ -156,10 +157,12 @@ function BackToTop() {
     };
     // Again when the basket bar comes or goes, and once the button is drawn:
     // the scroll that showed it could not measure it yet.
-  }, [count, shown]);
+  }, [count, df.count, shown]);
 
   if (!shown) return null;
-  const overBasket = router.pathname === "/restaurants/[slug]" && ready && count > 0;
+  const overBasket =
+    (router.pathname === "/restaurants/[slug]" && ready && count > 0) ||
+    (router.pathname === "/duty-free/[category]" && df.ready && df.count > 0);
   return (
     <button
       ref={self}

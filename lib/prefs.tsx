@@ -15,7 +15,7 @@ import { pickCurrency } from "./money";
 import { Localized } from "@/typescript/interface/domain.interface";
 
 /**
- * Locale, currency, low-data mode, and list or grid on the results pages.
+ * Locale, currency, and list or grid on the results pages.
  *
  * The language: the visitor's pick in the switcher (saved), else French,
  * whatever the browser's language (2026-11-06). Never from IP (§14); only a
@@ -32,12 +32,10 @@ type Prefs = {
   currencies: Currency[];
   /** The office's rates (francs per 1 unit of each), once /site/currencies has answered. */
   rates?: Partial<Record<Currency, number>>;
-  lowData: boolean;
   /** A grid until the visitor chooses (2026-11-06; it was a list). */
   view: ResultsView;
   setLocale: (l: Locale) => void;
   setCurrency: (c: Currency) => void;
-  setLowData: (v: boolean) => void;
   setView: (v: ResultsView) => void;
   t: (key: string, vars?: Record<string, string | number>) => string;
   lz: (field: Localized | string | undefined) => string;
@@ -67,7 +65,6 @@ export function PrefsProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
   // The visitor's own choice, if they made one: what is shown is worked out below.
   const [savedCurrency, setSavedCurrency] = useState<Currency>();
-  const [lowData, setLowDataState] = useState(false);
   const [view, setViewState] = useState<ResultsView>("grid");
   const qc = useQueryClient();
 
@@ -79,7 +76,6 @@ export function PrefsProvider({ children }: { children: React.ReactNode }) {
       const saved = JSON.parse(localStorage.getItem(KEY) || "{}");
       if (LOCALES.includes(saved.locale)) savedLocale = saved.locale;
       if (CURRENCIES.includes(saved.currency)) setSavedCurrency(saved.currency);
-      if (saved.lowData) setLowDataState(saved.lowData);
     } catch {
       /* corrupt or unavailable storage just means defaults */
     }
@@ -139,13 +135,6 @@ export function PrefsProvider({ children }: { children: React.ReactNode }) {
   // Before the answer: the currency on show, and francs, which are always offered.
   const currencies = offered ?? CURRENCIES.filter((c) => c === BASE_CURRENCY || c === currency);
 
-  const setLowData = useCallback(
-    (v: boolean) => {
-      setLowDataState(v);
-      persist({ lowData: v });
-    },
-    [persist]
-  );
   const setView = useCallback((v: ResultsView) => {
     setViewState(v);
     try {
@@ -169,7 +158,7 @@ export function PrefsProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <PrefsContext.Provider
-      value={{ locale, dir, currency, currencies, rates: fx?.rates as Prefs["rates"], lowData, view, setLocale, setCurrency, setLowData, setView, t, lz }}
+      value={{ locale, dir, currency, currencies, rates: fx?.rates as Prefs["rates"], view, setLocale, setCurrency, setView, t, lz }}
     >
       {/* Radix menus, selects and popovers read their direction from here. */}
       <DirectionProvider dir={dir}>{children}</DirectionProvider>

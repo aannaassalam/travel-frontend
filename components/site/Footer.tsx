@@ -14,7 +14,7 @@ export default function Footer() {
   // office's to edit; the dictionary wording stands in until they arrive.
   const footer = useSiteFooter();
   const notice = usePolicyNotice();
-  const { t, locale, lowData, setLowData } = usePrefs();
+  const { t, locale } = usePrefs();
   /*
    * §9.1 — how one can pay, named plainly. Online it is MaxiCash's page, which
    * takes cards and mobile money: named as it does, not as a list of brands this
@@ -154,17 +154,6 @@ export default function Footer() {
               </Link>
             </li>
           </ul>
-
-          {/* §11.7 low-data mode: bandwidth is expensive in-market. */}
-          <label className="mt-5 flex cursor-pointer items-center gap-2.5 text-sm text-white/85">
-            <input
-              type="checkbox"
-              checked={lowData}
-              onChange={(e) => setLowData(e.target.checked)}
-              className="size-4 accent-accent-500"
-            />
-            {t("footer.lowData")}
-          </label>
         </nav>
       </div>
 

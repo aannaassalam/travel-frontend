@@ -196,7 +196,7 @@ export const fr = {
   "pg.confirm.payDriver":
     "Payez le livreur en espèces à la réception de la commande.",
   "pg.confirm.payAtOffice": "Payer en agence ou par mobile money",
-  "pg.confirm.sent": "Une confirmation avec la référence vous a été envoyée.",
+  "pg.confirm.sent": "Vous recevrez un SMS quand votre réservation sera terminée.",
   "pg.confirm.documents":
     "Vos documents de voyage sont émis sous 24 heures ouvrées et apparaissent dans votre compte.",
   "pg.confirm.quoted": "« {text} »",
@@ -298,11 +298,6 @@ export const fr = {
   // pages/account/bookings/[reference]
   "pg.booking.cashTitle": "Paiement en agence ou par mobile money",
   "pg.booking.acceptedOn": "Accepté le",
-  // pages/account/enquiries
-  "pg.enquiries.emptyBody":
-    "Vos demandes de devis et vos demandes d'informations sur un bien apparaîtront ici.",
-  "pg.enquiries.replyNote":
-    "Nous répondons sous 24 heures ouvrées par téléphone ou WhatsApp. Une demande n'est jamais un engagement d'achat.",
   // pages/account/profile
   "pg.profile.saved": "Profil enregistré",
   "pg.profile.phoneHint":
@@ -528,7 +523,7 @@ export const en: Record<keyof typeof fr, string> = {
   "pg.confirm.eta": "about {n} min",
   "pg.confirm.payDriver": "Pay the driver in cash when the food arrives.",
   "pg.confirm.payAtOffice": "Pay at our office or via mobile money",
-  "pg.confirm.sent": "A confirmation with the reference has been sent.",
+  "pg.confirm.sent": "You'll get a text message once your booking is completed.",
   "pg.confirm.documents":
     "Your travel documents are issued within 24 working hours and appear in your account.",
   "pg.confirm.quoted": "« {text} »",
@@ -630,11 +625,6 @@ export const en: Record<keyof typeof fr, string> = {
   // pages/account/bookings/[reference]
   "pg.booking.cashTitle": "Payment in cash or via mobile money",
   "pg.booking.acceptedOn": "Accepted on",
-  // pages/account/enquiries
-  "pg.enquiries.emptyBody":
-    "Your quote requests and property enquiries will appear here.",
-  "pg.enquiries.replyNote":
-    "We reply within 24 working hours by phone or WhatsApp. A request is never a commitment to buy.",
   // pages/account/profile
   "pg.profile.saved": "Profile saved",
   "pg.profile.phoneHint":

@@ -44,7 +44,8 @@ export const VERTICAL_SLUGS: Record<Vertical, string> = {
   PROPERTY: "property",
   RESTAURANT: "restaurants",
   TRANSFER: "transfers",
-  VEHICLE_SALE: "vehicles"
+  VEHICLE_SALE: "vehicles",
+  DUTY_FREE: "duty-free"
 };
 
 /** The detail-page segment for each vertical, per the §11.1 architecture. */
@@ -61,7 +62,9 @@ const DETAIL_SEGMENT: Record<Vertical, string> = {
   // A transfer has no listing at all: /transfers is the one booking page.
   TRANSFER: "",
   // Not a listing either: a vehicle is at /vehicles/<stockRef> (vehicleHref).
-  VEHICLE_SALE: ""
+  VEHICLE_SALE: "",
+  // Not a listing: products open in a dialog on /duty-free/<category>.
+  DUTY_FREE: ""
 };
 
 export function detailHref(l: Pick<Listing, "vertical" | "slug">): string {

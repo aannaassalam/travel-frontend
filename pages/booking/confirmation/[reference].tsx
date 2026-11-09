@@ -1,4 +1,5 @@
 import {
+  isDelivered,
   isVehicleSale,
   OrderDocuments,
   OrderItems,
@@ -186,7 +187,7 @@ export default function ConfirmationPage() {
             that exists to give the right one. */}
         {/* Not for a meal whose online payment is still open: "on its way" is
             said once it is paid for, or to be paid to the driver. */}
-        {order.delivery && !unsettled && (
+        {order.delivery && isDelivered(order) && !unsettled && (
           <div className="mt-6 rounded-card bg-brand-50 p-6 ring-1 ring-brand-100 ring-inset">
             <h2 className="flex items-center gap-2 text-lg font-bold text-brand-900">
               <Bike className="size-5 text-brand-500" />
@@ -267,7 +268,7 @@ export default function ConfirmationPage() {
 
         {/* Nor for a ride: its cash goes to the driver at the end of it, which
             the ride block below says in place of any office deadline. */}
-        {isCash && !order.delivery && !isRide && order.cashDeadline && (
+        {isCash && !isDelivered(order) && !isRide && order.cashDeadline && (
           <div className="mt-6 rounded-card bg-warn-100 p-6 ring-2 ring-warn-600/30 ring-inset">
             <h2 className="flex items-center gap-2 text-lg font-bold text-brand-900">
               <Banknote className="size-5 text-warn-600" />

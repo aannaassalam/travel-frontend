@@ -18,7 +18,7 @@ export default function Gallery({
   images: string[];
   alt: string;
 }) {
-  const { t, lowData } = usePrefs();
+  const { t } = usePrefs();
   /**
    * Resolved once, and every render below reads from THIS list — never from
    * the raw `images` prop. The stored value is `/uploads/<folder>/<uuid>.png`,
@@ -32,21 +32,6 @@ export default function Gallery({
   const [current, setCurrent] = useState(0);
   const [open, setOpen] = useState<number | null>(null);
   const hero = resolved[current] ?? resolved[0];
-
-  if (lowData) {
-    return (
-      <div className="relative h-56 overflow-hidden rounded-lg sm:h-72">
-        <Image
-          src={resolved[0]}
-          alt={alt}
-          fill
-          sizes="100vw"
-          className="object-cover"
-          priority
-        />
-      </div>
-    );
-  }
 
   return (
     <div>
@@ -118,12 +103,11 @@ export default function Gallery({
  * threading state back to the hero.
  */
 export function PhotoGrid({ images, alt }: { images: string[]; alt: string }) {
-  const { t, lowData } = usePrefs();
+  const { t } = usePrefs();
   const [open, setOpen] = useState<number | null>(null);
   const resolved = mediaUrls(images);
-  // One photo is the hero already; nothing to add. Low-data mode shows the
-  // hero alone, like the gallery.
-  if (lowData || resolved.length < 2) return null;
+  // One photo is the hero already; nothing to add.
+  if (resolved.length < 2) return null;
   return (
     <section>
       <h2 className="mb-3 text-xl font-bold text-brand-900">{t("cmp.gallery.photos")}</h2>

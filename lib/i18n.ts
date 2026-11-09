@@ -23,6 +23,10 @@ import es from "./messages/es";
 import pt from "./messages/pt";
 import ru from "./messages/ru";
 import zh from "./messages/zh";
+import dutyFreeMessages from "./messages/dutyFree";
+import tripMessages from "./messages/trip";
+import townMapMessages from "./messages/townMap";
+import { visaMessages } from "./messages/visa";
 
 const fr: Dict = {
   "brand.name": "Flexi Agency",
@@ -454,8 +458,7 @@ const fr: Dict = {
   "confirm.title": "Réservation confirmée",
   "confirm.titleCash": "Réservation enregistrée",
   "confirm.reference": "Référence",
-  "confirm.body":
-    "Une confirmation a été envoyée au {phone}. Conservez cette référence.",
+  "confirm.body": "Votre réservation est enregistrée. Conservez cette référence : elle vous sera demandée au bureau.",
   "confirm.cashBody":
     "Payez en espèces à notre agence ou par mobile money avant le {deadline}, avec la référence {ref}. Passé ce délai, la réservation est annulée et les places remises en vente.",
   "confirm.next": "Prochaines étapes",
@@ -470,7 +473,6 @@ const fr: Dict = {
   "account.title": "Mon compte",
   "account.dashboard": "Tableau de bord",
   "account.bookings": "Mes réservations",
-  "account.enquiries": "Mes demandes",
   "account.saved": "Favoris",
   "account.profile": "Profil",
   "account.sessions": "Appareils connectés",
@@ -479,7 +481,6 @@ const fr: Dict = {
   "account.past": "Passées",
   "account.noBookings": "Aucune réservation pour l'instant",
   "account.noBookingsBody": "Vos réservations apparaîtront ici dès la première.",
-  "account.noEnquiries": "Aucune demande en cours",
   "account.noSaved": "Aucun favori enregistré",
   "account.browse": "Parcourir les offres",
   "account.viewBooking": "Détails",
@@ -535,12 +536,6 @@ const fr: Dict = {
   "ev.STATUS_CANCELLED": "Réservation annulée",
   "ev.AUTO_CANCELLED": "Annulée — délai de paiement dépassé",
   "ev.DOCUMENTS_ISSUED": "Documents envoyés",
-  "enq.NEW": "Reçue",
-  "enq.CONTACTED": "Contact établi",
-  "enq.QUALIFIED": "En cours",
-  "enq.QUOTED": "Devis envoyé",
-  "enq.WON": "Convertie",
-  "enq.LOST": "Clôturée",
 
   "auth.title": "Se connecter",
   "auth.subtitle": "Votre numéro de téléphone est votre identifiant.",
@@ -609,7 +604,6 @@ const fr: Dict = {
   "footer.services": "Nos services",
   "footer.payments": "Moyens de paiement acceptés",
   "footer.rights": "Tous droits réservés.",
-  "footer.lowData": "Mode économie de données",
   "footer.offices": "Nos bureaux",
   "footer.cash": "Espèces",
 
@@ -1240,8 +1234,7 @@ const en: Dict = {
   "confirm.title": "Booking confirmed",
   "confirm.titleCash": "Booking registered",
   "confirm.reference": "Reference",
-  "confirm.body":
-    "A confirmation was sent to {phone}. Keep this reference.",
+  "confirm.body": "Your booking is registered. Keep this reference: the office will ask for it.",
   "confirm.cashBody":
     "Pay in cash at our office or via mobile money before {deadline}, quoting reference {ref}. After that the booking is cancelled and the stock returned to sale.",
   "confirm.next": "Next steps",
@@ -1256,7 +1249,6 @@ const en: Dict = {
   "account.title": "My account",
   "account.dashboard": "Dashboard",
   "account.bookings": "My bookings",
-  "account.enquiries": "My enquiries",
   "account.saved": "Saved",
   "account.profile": "Profile",
   "account.sessions": "Active devices",
@@ -1265,7 +1257,6 @@ const en: Dict = {
   "account.past": "Past",
   "account.noBookings": "No bookings yet",
   "account.noBookingsBody": "Your bookings will appear here after the first one.",
-  "account.noEnquiries": "No open enquiries",
   "account.noSaved": "Nothing saved yet",
   "account.browse": "Browse offers",
   "account.viewBooking": "Details",
@@ -1321,12 +1312,6 @@ const en: Dict = {
   "ev.STATUS_CANCELLED": "Booking cancelled",
   "ev.AUTO_CANCELLED": "Cancelled — payment deadline passed",
   "ev.DOCUMENTS_ISSUED": "Documents sent",
-  "enq.NEW": "Received",
-  "enq.CONTACTED": "Contacted",
-  "enq.QUALIFIED": "In progress",
-  "enq.QUOTED": "Quote sent",
-  "enq.WON": "Converted",
-  "enq.LOST": "Closed",
 
   "auth.title": "Sign in",
   "auth.subtitle": "Your phone number is your identifier.",
@@ -1393,7 +1378,6 @@ const en: Dict = {
   "footer.services": "Our services",
   "footer.payments": "Accepted payment methods",
   "footer.rights": "All rights reserved.",
-  "footer.lowData": "Low-data mode",
   "footer.offices": "Our offices",
   "footer.cash": "Cash",
 
@@ -1605,6 +1589,11 @@ const CATALOGUES: Record<Locale, Dict> = {
   ar,
   ru
 };
+
+// Module files (Duty Free, trips), all seven languages each, over the above.
+for (const m of [dutyFreeMessages, tripMessages, visaMessages, townMapMessages]) {
+  for (const l of Object.keys(m) as Locale[]) CATALOGUES[l] = { ...CATALOGUES[l], ...m[l] };
+}
 
 /**
  * Where a missing string or content field is looked for next: French and

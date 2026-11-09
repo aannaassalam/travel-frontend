@@ -17,7 +17,20 @@ module.exports = {
   changefreq: "daily",
   priority: 0.7,
   // The driver portal is a work tool behind a sign-in, not a page to rank.
-  exclude: ["/account", "/account/*", "/booking/*", "/login", "/404", "/driver", "/driver/*"],
+  exclude: ["/account", "/account/*", "/booking/*", "/login", "/404", "/driver", "/driver/*", "/duty-free/checkout", "/e-visa/apply"],
+  // Duty Free's category pages are drawn in the browser, so not built: listed
+  // from the API at build time (none when it cannot be reached; /duty-free is).
+  additionalPaths: async (config) => {
+    const api = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001/api/v1").replace(/\/$/, "");
+    try {
+      const res = await fetch(`${api}/duty-free/categories`);
+      const body = res.ok ? await res.json() : {};
+      const categories = body.items ?? body.categories ?? [];
+      return Promise.all(categories.map((c) => config.transform(config, `/duty-free/${encodeURIComponent(c.slug)}`)));
+    } catch {
+      return [];
+    }
+  },
   alternateRefs: [
     { href: siteUrl, hreflang: "fr" },
     { href: siteUrl, hreflang: "en" },

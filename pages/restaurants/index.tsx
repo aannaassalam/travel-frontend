@@ -2,6 +2,7 @@ import Pager, { PageGone } from "@/components/catalog/Pager";
 import ResultsSearch from "@/components/catalog/ResultsSearch";
 import ViewToggle from "@/components/catalog/ViewToggle";
 import { RestaurantCard } from "@/components/catalog/cards";
+import MapButton from "@/components/townMap/MapButton";
 import { Breadcrumbs } from "@/components/site/bits";
 import Layout from "@/components/site/Layout";
 import Partners from "@/components/site/Partners";
@@ -136,6 +137,7 @@ export default function RestaurantsPage() {
               ]}
               triggerClassName="rounded-xl px-4 py-2.5 shadow-xs"
             />
+            <MapButton kind="RESTAURANT" city={params.city} />
             <ViewToggle value={view} />
           </div>
         </div>

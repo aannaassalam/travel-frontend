@@ -3,6 +3,7 @@ import Pager, { PageGone } from "@/components/catalog/Pager";
 import ResultsSearch from "@/components/catalog/ResultsSearch";
 import ViewToggle from "@/components/catalog/ViewToggle";
 import { SaleVehicleCard } from "@/components/catalog/cards";
+import MapButton from "@/components/townMap/MapButton";
 import { Breadcrumbs } from "@/components/site/bits";
 import Layout from "@/components/site/Layout";
 import Partners from "@/components/site/Partners";
@@ -251,6 +252,7 @@ export default function VehiclesPage() {
               options={SORTS.map(([value, key]) => ({ value, label: t(key) }))}
               triggerClassName="rounded-xl px-4 py-2.5 shadow-xs"
             />
+            <MapButton kind="PARKING" city={q.city} />
             <ViewToggle value={view} />
           </div>
         </div>

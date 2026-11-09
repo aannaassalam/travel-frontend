@@ -29,7 +29,7 @@ import { tagLabel } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
 import { rateLabel, ratesOf } from "@/lib/rental";
 import { usePolicyShort } from "@/lib/siteContent";
-import { arrivalOf, bookableTimesOn, timetableLines } from "@/lib/routes";
+import { arrivalOf, bookableTimesOn, isInternational, timetableLines } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 import {
   Hotel,
@@ -47,6 +47,7 @@ import {
   Building2,
   Clock,
   Gauge,
+  Globe,
   Images,
   MapPin,
   Maximize,
@@ -86,6 +87,18 @@ export function VerticalChip({
     <span className="chip" style={{ ["--chip-color" as string]: VERTICAL_COLOR[vertical] }}>
       {Icon && <Icon className="size-3" />}
       {label}
+    </span>
+  );
+}
+
+/** "International", on a bus or flight that crosses a border; nothing otherwise. */
+export function InternationalChip({ listing }: { listing: Pick<Listing, "vertical" | "tripScope"> }) {
+  const { t } = usePrefs();
+  if (!isInternational(listing)) return null;
+  return (
+    <span className="chip" style={{ ["--chip-color" as string]: "var(--color-teal-500)" }}>
+      <Globe className="size-3" aria-hidden="true" />
+      {t("trip.international")}
     </span>
   );
 }
@@ -146,7 +159,6 @@ function Thumb({
   className?: string;
   priority?: boolean;
 }) {
-  const { lowData } = usePrefs();
   /**
    * `mediaUrl` covers a MISSING image; this covers one that fails to arrive —
    * a dead S3 object, a storage hiccup, a bad migration. Without it next/image
@@ -156,9 +168,7 @@ function Thumb({
   const [failed, setFailed] = useState(false);
   return (
     <div className={cn("relative shrink-0 overflow-hidden bg-ink-50", className)}>
-      {lowData ? (
-        <div className="size-full bg-linear-to-br from-brand-100 to-brand-500/30" aria-hidden />
-      ) : failed ? (
+      {failed ? (
         <div className="grid size-full place-items-center bg-brand-50">
           <NoImageSpot className="w-2/3 max-w-[160px] text-brand-900" />
         </div>
@@ -318,6 +328,7 @@ export function RouteRow({ listing }: { listing: Listing }) {
               {t(`cabin.${a.cabin}`)}
             </span>
           ) : null}
+          <InternationalChip listing={listing} />
           <PolicyChip />
         </div>
         <h3 className="text-lg font-bold text-brand-900">
@@ -709,7 +720,7 @@ export const PROPERTY_LABEL: Record<string, string> = {
 
 /*
  * The tiles draw their image with `Thumb`, like the rows: in the results grid
- * too, low-data mode loads no photos and a photo that fails is not a blank box.
+ * too, a photo that fails is not a blank box.
  */
 
 /**
@@ -788,12 +799,13 @@ export function RouteTile({ listing }: { listing: Listing }) {
     <article className={TILE}>
       <div className="relative">
         <Thumb src={mediaUrl(listing.images[0])} alt={lz(listing.title)} className="aspect-4/3" />
-        <span className="absolute start-4 top-4 shadow-xs backdrop-blur-sm">
+        <span className="absolute start-4 top-4 flex flex-wrap gap-1.5 shadow-xs backdrop-blur-sm">
           <VerticalChip
             vertical={listing.vertical}
             label={a.operator ?? ""}
             Icon={listing.vertical === "FLIGHT" ? Plane : undefined}
           />
+          <InternationalChip listing={listing} />
         </span>
       </div>
       <div className="flex flex-1 flex-col gap-2.5 p-5">

@@ -193,6 +193,8 @@ export default function SearchWidget({
       // Restaurants are browsed by city; there are no dates to carry.
       RESTAURANT: ["destination"],
       VEHICLE_SALE: ["destination"],
+      // Never a tab: browsed by category on /duty-free.
+      DUTY_FREE: [],
       ACTIVITY: ["destination", "from", "adults"],
       PROPERTY: ["propertyType", "destination", "maxPrice"]
     };

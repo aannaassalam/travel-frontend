@@ -2,6 +2,7 @@ import { Breadcrumbs } from "@/components/site/bits";
 import Layout from "@/components/site/Layout";
 import Partners from "@/components/site/Partners";
 import SearchWidget from "@/components/search/SearchWidget";
+import MapButton from "@/components/townMap/MapButton";
 import { CardSkeleton, Skeleton } from "@/components/ui/field";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { searchHotels, searchListings } from "@/lib/api";
@@ -197,6 +198,10 @@ export default function SearchResults({
               options={sortOptions.map(([value, key]) => ({ value, label: t(key) }))}
               triggerClassName="rounded-xl px-4 py-2.5 shadow-xs"
             />
+            {/* Only what has a pin: hotels and properties, of these verticals. */}
+            {(vertical === "HOTEL" || vertical === "PROPERTY") && (
+              <MapButton kind={vertical} city={q.city || q.destination} />
+            )}
             <ViewToggle value={view} />
           </div>
         </div>

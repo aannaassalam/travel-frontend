@@ -93,6 +93,7 @@ export function orderSteps(order: Order): Step[] {
   const ride = order.items.some((i) => i.ride);
   // A vehicle for sale: confirmed (being prepared) → ready to collect → collected.
   const vehicle = isVehicleSale(order);
+  const delivered = isDelivered(order);
 
   const planned: { key: string; done: boolean; at?: string; note?: string }[] = [
     { key: "created", done: true, at: order.createdAt ?? at(["ORDER_CREATED"]) },
@@ -103,7 +104,7 @@ export function orderSteps(order: Order): Step[] {
       // A ride's cash is handed to the driver at the end of it, a meal's at the
       // door: no deadline to meet.
       note:
-        !paid && cash && order.cashDeadline && !ride && !order.delivery
+        !paid && cash && order.cashDeadline && !ride && !delivered
           ? order.cashDeadline
           : undefined
     },
@@ -119,7 +120,8 @@ export function orderSteps(order: Order): Step[] {
           { key: "collected", done: completed, at: at(["STATUS_COMPLETED"]) }
         ]
       : order.delivery
-      ? [{ key: "delivered", done: completed, at: at(["STATUS_COMPLETED"]) }]
+      ? // Collected at our office (Duty Free): simply completed there.
+        [{ key: delivered ? "delivered" : "completed", done: completed, at: at(["STATUS_COMPLETED"]) }]
       : ride
         ? // A ride issues no ticket: after confirmation comes the ride itself.
           [{ key: "completed", done: completed, at: at(["STATUS_COMPLETED"]) }]
@@ -164,12 +166,12 @@ export function OrderProgress({ order }: { order: Order }) {
           s.state === "done"
             ? ride
               ? "steps.paidCashDriver"
-              : order.delivery
+              : isDelivered(order)
                 ? "steps.paidCashDelivery"
                 : "steps.paidCash"
             : ride
               ? "steps.payCashDriver"
-              : order.delivery
+              : isDelivered(order)
                 ? "steps.payCashDelivery"
                 : "steps.payCash"
         );
@@ -242,6 +244,10 @@ export function OrderProgress({ order }: { order: Order }) {
     </ol>
   );
 }
+
+/** Taken to the customer (a meal, Duty Free to a point) — not Duty Free collected at our office. */
+export const isDelivered = (order: Order) =>
+  Boolean(order.delivery) && order.delivery?.pointKind !== "OFFICE";
 
 export const isVehicleSale = (order: Order) =>
   Boolean(order.pickup) || order.items.some((i) => i.vertical === "VEHICLE_SALE");

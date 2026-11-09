@@ -15,7 +15,7 @@ import {
   Heart,
   LayoutDashboard,
   LogOut,
-  MessageSquareText,
+  Stamp,
   UserRound
 } from "lucide-react";
 import Link from "next/link";
@@ -25,7 +25,7 @@ import { useRouter } from "next/router";
 const NAV = [
   { href: "/account", key: "account.dashboard", Icon: LayoutDashboard },
   { href: "/account/bookings", key: "account.bookings", Icon: CalendarCheck },
-  { href: "/account/enquiries", key: "account.enquiries", Icon: MessageSquareText },
+  { href: "/account/visas", key: "account.visas", Icon: Stamp },
   { href: "/account/saved", key: "account.saved", Icon: Heart },
   { href: "/account/profile", key: "account.profile", Icon: UserRound }
 ];

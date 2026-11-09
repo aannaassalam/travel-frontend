@@ -68,7 +68,16 @@ const nextConfig: NextConfig = {
   },
   images: {
     /**
-     * Keep an optimised variant for a month.
+     * Served straight from storage (2026-11-09). Vercel's image optimiser has a
+     * plan quota: once used up it answers 402 OPTIMIZED_IMAGE_REQUEST_PAYMENT_REQUIRED,
+     * so every newly added photo showed as "no image" on the live site while
+     * older, already-cached ones still appeared. The admin now shrinks large
+     * photos before uploading them (components/Form/ImageUploader), and most
+     * stored ones measure 25–500 KB.
+     */
+    unoptimized: true,
+    /**
+     * Keep an optimised variant for a month (only used if `unoptimized` goes).
      *
      * The source objects in S3 are multi-megabyte PNGs, and a cold fetch of one
      * from eu-west-3 measured 11s here - past the optimiser's own 7s budget, so
@@ -112,6 +121,11 @@ const nextConfig: NextConfig = {
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET
   },
   typescript: { ignoreBuildErrors: false },
+
+  /** "My enquiries" is gone (2026-11-09): its list lived in one browser and never moved past "new". */
+  async redirects() {
+    return [{ source: "/account/enquiries", destination: "/account", permanent: true }];
+  },
 
   /**
    * §10.8 application hardening.

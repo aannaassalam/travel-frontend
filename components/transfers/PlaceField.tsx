@@ -5,6 +5,7 @@ import type { TransferPoint } from "@/typescript/interface/domain.interface";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useDebounced } from "@/lib/useDebounced";
 import {
+  CarFront,
   Hotel,
   Landmark,
   LocateFixed,
@@ -13,7 +14,8 @@ import {
   Plane,
   Search,
   Ship,
-  TrainFront
+  TrainFront,
+  UtensilsCrossed
 } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 
@@ -34,6 +36,8 @@ const KIND_ICON: Record<PlaceKind, typeof MapPin> = {
   STATION: TrainFront,
   PORT: Ship,
   LANDMARK: Landmark,
+  RESTAURANT: UtensilsCrossed,
+  PARKING: CarFront,
   OTHER: MapPin
 };
 

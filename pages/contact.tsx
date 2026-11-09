@@ -209,7 +209,7 @@ export default function ContactPage({ copy }: Props) {
             <p className="mb-5 mt-1 text-sm text-ink-500">
               {siteText(copy?.formIntro, locale, "pg.contact.formIntro")}
             </p>
-            <LeadForm kind="REQUEST_TO_BOOK" vertical="FLIGHT" compact />
+            <LeadForm kind="CONTACT" compact />
           </div>
         </div>
       </div>

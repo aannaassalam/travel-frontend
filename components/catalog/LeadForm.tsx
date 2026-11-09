@@ -6,7 +6,6 @@ import { PhoneField } from "@/components/ui/PhoneField";
 import { usePrefs } from "@/lib/prefs";
 import { createEnquiry } from "@/lib/api";
 import { dial, useSiteContact, waLink } from "@/lib/contact";
-import { saveEnquiry } from "@/lib/store";
 import { toast } from "sonner";
 import {
   EnquiryKind,
@@ -33,7 +32,8 @@ export default function LeadForm({
   route
 }: {
   kind: EnquiryKind;
-  vertical: Vertical;
+  /** None on the contact page's message. */
+  vertical?: Vertical;
   listingLabel?: string;
   defaultMessage?: string;
   compact?: boolean;
@@ -122,8 +122,6 @@ export default function LeadForm({
     try {
       // The server owns the reference and the idempotency window (§4.6).
       const { reference: ref } = await createEnquiry(payload);
-      // Mirrored locally so "My enquiries" works before the customer signs in.
-      saveEnquiry({ ...payload, reference: ref });
       setReference(ref);
       toast.success(t(isRtb ? "rtb.sent" : "enquiry.sent"), {
         description: t(isRtb ? "rtb.sentBody" : "enquiry.sentBody", { ref })
@@ -272,7 +270,8 @@ export default function LeadForm({
         onBlur={() => checkField("message")}
         error={errors.message}
         helper={
-          errors.message
+          // The enquiry example is about a property: none on a contact message.
+          errors.message || kind === "CONTACT"
             ? undefined
             : t(isRtb ? "rtb.detailsPlaceholder" : "enquiry.messagePlaceholder")
         }

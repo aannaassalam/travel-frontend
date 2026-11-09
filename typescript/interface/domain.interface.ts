@@ -18,7 +18,9 @@ export const VERTICALS = {
   // A ride with a driver: no listing behind it, one Ride document per order.
   TRANSFER: "TRANSFER",
   // A vehicle bought outright and collected at its parking (`CAR` is hire).
-  VEHICLE_SALE: "VEHICLE_SALE"
+  VEHICLE_SALE: "VEHICLE_SALE",
+  // Duty Free products, browsed by category across shops (lib/dutyFree.ts).
+  DUTY_FREE: "DUTY_FREE"
 } as const;
 export type Vertical = (typeof VERTICALS)[keyof typeof VERTICALS];
 
@@ -96,20 +98,11 @@ export const DEFAULT_LOCALE: Locale = "fr";
 /** The languages the pickers offer: all of them (a missing string falls back, lib/i18n.ts FALLBACK). */
 export const ENABLED_LOCALES: Locale[] = [...LOCALES];
 
-export const ENQUIRY_STAGES = {
-  NEW: "NEW",
-  CONTACTED: "CONTACTED",
-  QUALIFIED: "QUALIFIED",
-  QUOTED: "QUOTED",
-  WON: "WON",
-  LOST: "LOST"
-} as const;
-export type EnquiryStage =
-  (typeof ENQUIRY_STAGES)[keyof typeof ENQUIRY_STAGES];
-
 export const ENQUIRY_KINDS = {
   PROPERTY: "PROPERTY",
-  REQUEST_TO_BOOK: "REQUEST_TO_BOOK"
+  REQUEST_TO_BOOK: "REQUEST_TO_BOOK",
+  /** The contact page's message: about nothing in the catalogue, no vertical. */
+  CONTACT: "CONTACT"
 } as const;
 export type EnquiryKind = (typeof ENQUIRY_KINDS)[keyof typeof ENQUIRY_KINDS];
 
@@ -124,7 +117,8 @@ export const ARCHETYPE: Record<Vertical, "INSTANT" | "REQUEST" | "ENQUIRY"> = {
   // Food is bought outright like a seat, not requested like a property.
   RESTAURANT: "INSTANT",
   TRANSFER: "INSTANT",
-  VEHICLE_SALE: "INSTANT"
+  VEHICLE_SALE: "INSTANT",
+  DUTY_FREE: "INSTANT"
 };
 
 /** A text the office types per language. Typed `Localized | string` where an older API sends plain (French) text. */
@@ -145,6 +139,8 @@ export type TagTranslations = Record<string, Localized>;
  * set is simply absent.
  */
 export type Money = Partial<Record<Currency, number>>;
+
+export type TripScope = "NATIONAL" | "INTERNATIONAL";
 
 /** One flight of a route's week: 0 = Sunday … 6 = Saturday, "HH:MM". */
 export interface WeeklyTime {
@@ -227,6 +223,8 @@ export interface Listing {
   images: string[];
   /** The optional video: the stored address of the uploaded file (see lib/media.ts). */
   videoUrl?: string;
+  /** A bus or flight only: an international trip asks the customer to confirm a visa. Absent = national. */
+  tripScope?: TripScope;
   /** Per-currency minor units. For a bus or flight, the adult fare (12+). */
   sellPrice: Money;
   /** Bus and flight fares for a child of 2 to 12 and a baby under 2. */
@@ -470,6 +468,8 @@ export interface OrderDelivery {
   feeCharged: number;
   etaMinutes?: number;
   notes?: string;
+  /** Duty Free: the point's kind. OFFICE is collected and paid at the office, not delivered. */
+  pointKind?: string;
 }
 
 /** A vehicle for sale: the parking it is collected from, as it was when ordered. */
@@ -521,21 +521,6 @@ export interface Order {
   }[];
   timeline: OrderTimelineEntry[];
   travelDate?: string;
-  createdAt: string;
-}
-
-export interface Enquiry {
-  reference: string;
-  kind: EnquiryKind;
-  stage: EnquiryStage;
-  vertical: Vertical;
-  customerName: string;
-  phone: string;
-  email?: string;
-  message: string;
-  listingLabel?: string;
-  quotedAmount?: Money;
-  quoteExpiresAt?: string;
   createdAt: string;
 }
 

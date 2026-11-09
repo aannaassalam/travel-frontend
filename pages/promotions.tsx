@@ -5,6 +5,8 @@ import { Breadcrumbs } from "@/components/site/bits";
 import Layout from "@/components/site/Layout";
 import { CardSkeleton, Skeleton } from "@/components/ui/field";
 import { searchHotels, searchListings, searchRestaurants } from "@/lib/api";
+import { DutyFreeCartBar, ProductCard } from "@/components/dutyFree/parts";
+import { searchDutyFreeProducts } from "@/lib/dutyFree";
 import { resultsLabel } from "@/lib/i18n";
 import { PAGE_SIZE, pageParam } from "@/lib/paging";
 import { usePrefs } from "@/lib/prefs";
@@ -54,9 +56,18 @@ export default function PromotionsPage() {
     refetchOnMount: true,
     staleTime: 30_000
   });
+  // Duty Free products on promotion, on the first page too.
+  const dutyFreeQ = useQuery({
+    queryKey: ["duty-free", "products", "promotions"],
+    queryFn: ({ signal }) => searchDutyFreeProducts({ promo: true, limit: PAGE_SIZE }, { signal }),
+    enabled: router.isReady,
+    refetchOnMount: true,
+    staleTime: 30_000
+  });
   const hotels = first ? (hotelsQ.data?.items ?? []) : [];
   const restaurants = first ? (restaurantsQ.data?.items ?? []) : [];
-  const places = hotels.length + restaurants.length;
+  const products = first ? (dutyFreeQ.data?.items ?? []) : [];
+  const places = hotels.length + restaurants.length + products.length;
 
   const count = data?.total ?? 0;
   const pages = data?.pages ?? Math.ceil(count / PAGE_SIZE);
@@ -80,7 +91,10 @@ export default function PromotionsPage() {
                 <Skeleton className="h-4 w-28" />
               ) : (
                 <strong className="font-semibold text-ink-900">
-                  {resultsLabel(locale, count + (hotelsQ.data?.total ?? 0) + (restaurantsQ.data?.total ?? 0))}
+                  {resultsLabel(
+                    locale,
+                    count + (hotelsQ.data?.total ?? 0) + (restaurantsQ.data?.total ?? 0) + (dutyFreeQ.data?.total ?? 0)
+                  )}
                 </strong>
               )}
             </div>
@@ -134,6 +148,15 @@ export default function PromotionsPage() {
                 </div>
               </Section>
             )}
+            {products.length > 0 && (
+              <Section title={t("nav.dutyFree")}>
+                <div className={grid ? GRID : "space-y-4"}>
+                  {products.map((p) => (
+                    <ProductCard key={p.id} product={p} row={!grid} />
+                  ))}
+                </div>
+              </Section>
+            )}
             {items.length > 0 && (
               <Section title={places ? t("promotions.offers") : undefined}>
                 <div
@@ -153,6 +176,8 @@ export default function PromotionsPage() {
           </div>
         )}
       </div>
+      {/* Duty Free products added from here. */}
+      <DutyFreeCartBar />
     </Layout>
   );
 }

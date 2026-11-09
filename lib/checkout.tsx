@@ -7,6 +7,7 @@ import {
   Passengers,
   PaymentMethod,
   Traveller,
+  TripScope,
   Vertical
 } from "@/typescript/interface/domain.interface";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
@@ -68,6 +69,8 @@ export interface CheckoutSelection {
   transferInfo?: { category: string; distanceKm?: number; durationMinutes?: number };
   /** The item's processing fee: once on the total, never times the quantity. Absent when 0. */
   processingFee?: Money;
+  /** A bus or flight: INTERNATIONAL asks for the visa box on the payment step (`isInternational`). */
+  tripScope?: TripScope;
 }
 
 export interface ContactDetails {
@@ -124,6 +127,8 @@ type Ctx = CheckoutState & {
     locale: Locale;
     policyVersionId?: string;
     paymentMethod?: PaymentMethod;
+    /** The visa box ticked, for an international bus or flight. */
+    visaConfirmed?: boolean;
   }) => Promise<Order>;
   /**
    * Abandons the current attempt and takes a fresh hold, keeping the basket.
@@ -296,13 +301,15 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
       currency,
       locale,
       policyVersionId,
-      paymentMethod = "CASH"
+      paymentMethod = "CASH",
+      visaConfirmed
     }: {
       currency: Currency;
       locale: Locale;
       policyVersionId?: string;
       /** ONLINE only where the server offers it for this currency. */
       paymentMethod?: PaymentMethod;
+      visaConfirmed?: boolean;
     }): Promise<Order> => {
       if (!sel || !state.contact) {
         throw new Error("confirm() called before a selection and contact exist");
@@ -370,7 +377,9 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
         paymentMethod,
         currency,
         locale,
-        policyVersionId
+        policyVersionId,
+        // Sent only when ticked; the server asks for it on an international trip.
+        visaConfirmed: visaConfirmed || undefined
       };
 
       let order: Order;

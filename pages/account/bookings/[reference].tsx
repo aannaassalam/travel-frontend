@@ -1,5 +1,6 @@
 import AccountLayout from "@/components/account/AccountLayout";
 import {
+  isDelivered,
   OrderDocuments,
   OrderItems,
   OrderProgress,
@@ -77,7 +78,7 @@ export default function BookingDetail() {
                 a ride: its cash goes to the driver too (the ride block says so). */}
             {order.paymentMethod === "CASH" &&
               order.cashDeadline &&
-              !order.delivery &&
+              !isDelivered(order) &&
               !order.items.some((i) => i.ride) && (
               <div className="rounded-card bg-warn-100 p-6 ring-2 ring-warn-600/30 ring-inset">
                 <h3 className="flex items-center gap-2 font-bold text-brand-900">

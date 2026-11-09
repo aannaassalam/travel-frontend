@@ -400,7 +400,8 @@ function RouteBookingBox({ listing }: { listing: Listing }) {
       baggage: isFlight
         ? { cabinKg: Number(bags.cabinKg), checkedKg: Number(bags.checkedKg) }
         : undefined,
-      processingFee: fee
+      processingFee: fee,
+      tripScope: listing.tripScope
     });
     router.push("/booking/travellers");
   }

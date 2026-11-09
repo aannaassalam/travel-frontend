@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import BookingBox from "./BookingBox";
 import RecentlyViewed, { useRecordView } from "./RecentlyViewed";
-import { DealTile } from "./cards";
+import { DealTile, InternationalChip } from "./cards";
 import Gallery, { PhotoGrid } from "./Gallery";
 import LeadForm from "./LeadForm";
 import ListingVideo from "./ListingVideo";
@@ -69,7 +69,8 @@ export default function ListingDetail(built: { listing: Listing; related: Listin
     PROPERTY: t("nav.property"),
     // Never a listing's vertical; named so the map stays total over `Vertical`.
     TRANSFER: t("nav.transfers"),
-    VEHICLE_SALE: t("nav.vehicles")
+    VEHICLE_SALE: t("nav.vehicles"),
+    DUTY_FREE: t("nav.dutyFree")
   }[listing.vertical];
   // The nearest thing a listing has to an address: an activity's meeting
   // point, a car's first pick-up point, otherwise the city alone.
@@ -129,6 +130,7 @@ export default function ListingDetail(built: { listing: Listing; related: Listin
                 {t("cmp.cityInDrc", { city: listing.city })}
               </span>
               <RatingBadge rating={listing.rating} count={listing.reviewCount} size="sm" />
+              <InternationalChip listing={listing} />
             </p>
           </div>
           <SaveButton slug={listing.slug} />

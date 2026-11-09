@@ -76,7 +76,7 @@ export default function ListingVideo({
   poster?: string;
   title: string;
 }) {
-  const { t, lowData } = usePrefs();
+  const { t } = usePrefs();
   /**
    * WHICH video was asked for, not merely whether one was. Going from one
    * item's page to the next hands this same component the next address, and a
@@ -165,8 +165,7 @@ export default function ListingVideo({
           />
         ) : (
           <>
-            {/* Low-data mode keeps the button and drops the picture. */}
-            {poster && !lowData && (
+            {poster && (
               <Image
                 src={mediaUrl(poster)}
                 alt=""

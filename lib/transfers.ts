@@ -23,7 +23,15 @@ import { intlLocale, localized } from "./i18n";
 
 /* ------------------------------------------------------------------ places */
 
-export type PlaceKind = "AIRPORT" | "HOTEL" | "STATION" | "PORT" | "LANDMARK" | "OTHER";
+export type PlaceKind =
+  | "AIRPORT"
+  | "HOTEL"
+  | "STATION"
+  | "PORT"
+  | "LANDMARK"
+  | "RESTAURANT"
+  | "PARKING"
+  | "OTHER";
 
 /** One of the office's saved points — or, `external`, a geocoding suggestion. */
 export interface TransferPlace {

@@ -12,6 +12,7 @@ import { useCheckout } from "@/lib/checkout";
 import { resolve } from "@/lib/money";
 import { useOnlinePayment } from "@/lib/payments";
 import { usePrefs } from "@/lib/prefs";
+import { isInternational } from "@/lib/routes";
 import { transferRefusalKey } from "@/lib/transfers";
 import { cn } from "@/lib/utils";
 import { AlertTriangle, Loader2 } from "lucide-react";
@@ -43,7 +44,15 @@ export default function PaymentStep() {
   const charged = resolve(total, currency).currency;
 
   const [terms, setTerms] = useState(false);
-  const [errors, setErrors] = useState<{ consent?: boolean; terms?: boolean }>({});
+  const [errors, setErrors] = useState<{ consent?: boolean; terms?: boolean; visa?: boolean }>({});
+  /**
+   * An international bus or flight: the customer confirms a visa, or that none
+   * is needed. Also when the server asked for it (VISA_CONFIRMATION_REQUIRED)
+   * on a choice kept from before the trip was marked international.
+   */
+  const [visa, setVisa] = useState(false);
+  const [visaAsked, setVisaAsked] = useState(false);
+  const needsVisa = Boolean(selection && isInternational(selection)) || visaAsked;
   const policy = useNoRefundPolicy();
   // What the server offers now decides, not what was chosen earlier: a choice
   // of "online" kept from before it was switched off is a cash booking.
@@ -53,8 +62,8 @@ export default function PaymentStep() {
   // the text is still loading, not after the language (so the version) changed,
   // and not when it comes back from an earlier visit to this page.
   const agreed = Boolean(consentAccepted && policy.shown && consentFor === policy.shown);
-  /** §2.2: both acknowledgements are blocking, and neither is pre-ticked. */
-  const blocked = !agreed || !terms;
+  /** §2.2: both acknowledgements are blocking, and neither is pre-ticked. So is the visa box. */
+  const blocked = !agreed || !terms || (needsVisa && !visa);
   // §11.6: never leave someone staring at a spinner that has given up — this
   // state says what is happening while the booking is filed.
   const [waiting, setWaiting] = useState(false);
@@ -92,7 +101,8 @@ export default function PaymentStep() {
         currency: charged,
         locale,
         policyVersionId: policy.versionId,
-        paymentMethod: method
+        paymentMethod: method,
+        visaConfirmed: needsVisa && visa
       });
       reference = order.reference;
       const result = await startPayment(order.reference, method, locale);
@@ -128,6 +138,12 @@ export default function PaymentStep() {
         update({ consentAccepted: false, consentFor: undefined });
         policy.replace((err as ApiError).body?.policy);
       }
+      // The trip is international on the server: the visa box shows, required.
+      if (code === "VISA_CONFIRMATION_REQUIRED") {
+        setVisaAsked(true);
+        setVisa(false);
+        setErrors((e) => ({ ...e, visa: true }));
+      }
       const byCode: Record<string, string> = {
         /**
          * The hold ran out and the server released the seats, so this order can
@@ -155,7 +171,8 @@ export default function PaymentStep() {
         // often a pick-up hour that has passed while the form was open.
         INVALID_DATES: t("err.datesInvalid"),
         PAYMENT_BEING_CONFIRMED: t("payReturn.confirmingTitle"),
-        RAIL_INVALID: t("pay.errGeneric")
+        RAIL_INVALID: t("pay.errGeneric"),
+        VISA_CONFIRMATION_REQUIRED: t("trip.visaRequired")
       };
       // A ride the server would not book as asked says which box is wrong, in
       // its own words — before the bus/flight reading of the same codes.
@@ -170,9 +187,9 @@ export default function PaymentStep() {
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    const next = { consent: !agreed, terms: !terms };
+    const next = { consent: !agreed, terms: !terms, visa: needsVisa && !visa };
     setErrors(next);
-    if (next.consent || next.terms) return;
+    if (next.consent || next.terms || next.visa) return;
     setWaiting(true);
     void finish();
   }
@@ -269,6 +286,41 @@ export default function PaymentStep() {
                 </p>
               )}
             </div>
+
+            {/* An international trip: the visa, confirmed, with where to get one. */}
+            {needsVisa && (
+              <div
+                className={cn(
+                  "rounded-lg border bg-white p-4",
+                  errors.visa ? "border-bad-600" : "border-ink-100"
+                )}
+              >
+                <label className="flex cursor-pointer gap-3 text-sm text-ink-900">
+                  <input
+                    type="checkbox"
+                    checked={visa}
+                    onChange={(e) => {
+                      setVisa(e.target.checked);
+                      setErrors((x) => ({ ...x, visa: false }));
+                    }}
+                    aria-invalid={errors.visa || undefined}
+                    className="mt-0.5 size-4 shrink-0 accent-brand-900"
+                  />
+                  <span>{t("trip.visaConfirm")}</span>
+                </label>
+                <p className="mt-2 ps-7 text-sm">
+                  {/* A new tab: what was typed on this step stays. */}
+                  <Link href="/e-visa" target="_blank" rel="noopener" className="text-brand-500 underline">
+                    {t("trip.visaApply")}
+                  </Link>
+                </p>
+                {errors.visa && (
+                  <p role="alert" className="mt-2 ps-7 text-sm font-semibold text-bad-600">
+                    {t("err.required")}
+                  </p>
+                )}
+              </div>
+            )}
 
             {/*
               The failure message. It was being set and never rendered: a
@@ -397,7 +449,7 @@ export default function PaymentStep() {
                 </button>
                 {blocked && (
                   <p id="consent-required" className="text-sm text-ink-500">
-                    {t("pg.payment.tickBoth")}
+                    {t(needsVisa ? "trip.tickAll" : "pg.payment.tickBoth")}
                   </p>
                 )}
               </div>

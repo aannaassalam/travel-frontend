@@ -23,6 +23,14 @@ import { multiply } from "./money";
 export const isRoute = (l: Pick<Listing, "vertical">) =>
   l.vertical === "BUS" || l.vertical === "FLIGHT";
 
+/**
+ * An international bus or flight: shown with a chip, and booked only once the
+ * customer confirms a visa (the server answers VISA_CONFIRMATION_REQUIRED
+ * otherwise). A listing or a checkout selection; no `tripScope` is national.
+ */
+export const isInternational = (l: Pick<Listing, "vertical" | "tripScope">) =>
+  isRoute(l) && l.tripScope === "INTERNATIONAL";
+
 /** The day of the week of a YYYY-MM-DD, as written: 0 = Sunday. */
 export const weekdayOf = (day: string) => new Date(`${day}T00:00:00Z`).getUTCDay();
 

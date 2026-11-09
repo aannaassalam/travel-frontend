@@ -1,6 +1,6 @@
 // import EventListeners from "@/components/EventListener/EventListener";
 import RouteTransition from "@/components/site/RouteTransition";
-import { CartProvider } from "@/lib/cart";
+import { CartProvider, DutyFreeCartProvider } from "@/lib/cart";
 import { CheckoutProvider } from "@/lib/checkout";
 import { fraunces, inter } from "@/lib/fonts";
 import { checkWindow } from "@/lib/functions/_helpers.lib";
@@ -45,7 +45,9 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
-      refetchOnMount: false,
+      // A page opened again reloads what is older than this (it used to keep
+      // its first copy for ever, so a change made on another page stayed invisible).
+      staleTime: 30_000,
       retry: 0
     }
   },
@@ -60,6 +62,11 @@ export const queryClient = new QueryClient({
       if (showToast && message) {
         toast.success(message);
       }
+      // Whatever a change touched, every screen showing it must see it: all
+      // cached answers are marked out of date, those on screen reload now and
+      // the rest when next opened (2026-11-06). A mutation can opt out with
+      // meta.invalidate = false.
+      if (mutation.meta?.invalidate !== false) void queryClient.invalidateQueries();
     },
     onError: (res) => {
       const result = res as unknown as ErrorData;
@@ -92,6 +99,7 @@ export default function CustomApp({ Component, pageProps }: AppProps) {
         <PrefsProvider>
           <CheckoutProvider>
             <CartProvider>
+            <DutyFreeCartProvider>
             {/* <EventListeners /> */}
             <Toaster
               richColors
@@ -103,6 +111,7 @@ export default function CustomApp({ Component, pageProps }: AppProps) {
             <RouteTransition>
               <Component {...pageProps} />
             </RouteTransition>
+            </DutyFreeCartProvider>
             </CartProvider>
           </CheckoutProvider>
         </PrefsProvider>

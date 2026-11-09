@@ -222,9 +222,12 @@ export interface OrderDraft {
     transfer?: TransferRequest;
   }[];
   contact: { firstName: string; lastName: string; phone: string; email?: string };
-  /** Restaurant orders only. The server re-reads the zone and its fee — this
-   *  only says which one was chosen, never what it costs. */
-  delivery?: { address: string; zoneId: string; notes?: string };
+  /** Restaurant and Duty Free orders only. The server re-reads the zone (a Duty
+   *  Free delivery point) and its fee — this only says which one was chosen,
+   *  never what it costs. No address for Duty Free's "Our office" point. */
+  delivery?: { address?: string; zoneId: string; notes?: string };
+  /** An international bus or flight: the customer ticked the visa box. */
+  visaConfirmed?: boolean;
   travellers?: {
     firstName: string;
     lastName: string;
@@ -551,7 +554,8 @@ export const getMyOrders = () =>
 /** POST /enquiries */
 export async function createEnquiry(body: {
   kind: string;
-  vertical: string;
+  /** None on a contact message. */
+  vertical?: string;
   customerName: string;
   phone: string;
   email?: string;

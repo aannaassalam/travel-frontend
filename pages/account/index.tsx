@@ -3,10 +3,9 @@ import { OrderStatusBadges, rentalSpan } from "@/components/account/order";
 import { Price } from "@/components/site/bits";
 import { fmtDate } from "@/lib/format";
 import { usePrefs } from "@/lib/prefs";
-import { getEnquiries, getSaved } from "@/lib/store";
+import { getSaved } from "@/lib/store";
 import { useMyOrders } from "@/lib/orders";
-import { Enquiry } from "@/typescript/interface/domain.interface";
-import { ArrowRight, CalendarCheck, Heart, MessageSquareText } from "lucide-react";
+import { ArrowRight, CalendarCheck, Heart } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -14,13 +13,9 @@ import { useEffect, useState } from "react";
 export default function AccountDashboard() {
   const { t, locale } = usePrefs();
   const { data: orders = [], isPending, isError } = useMyOrders();
-  const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
   const [saved, setSaved] = useState<string[]>([]);
 
-  useEffect(() => {
-    setEnquiries(getEnquiries());
-    setSaved(getSaved());
-  }, []);
+  useEffect(() => setSaved(getSaved()), []);
 
   const upcoming = orders.filter(
     (o) => o.status !== "CANCELLED" && o.status !== "COMPLETED"
@@ -30,19 +25,13 @@ export default function AccountDashboard() {
     <AccountLayout title={t("account.dashboard")}>
       {() => (
         <div className="space-y-6">
-          <ul className="grid gap-4 sm:grid-cols-3">
+          <ul className="grid gap-4 sm:grid-cols-2">
             {[
               {
                 Icon: CalendarCheck,
                 label: t("account.upcoming"),
                 value: upcoming.length,
                 href: "/account/bookings"
-              },
-              {
-                Icon: MessageSquareText,
-                label: t("account.enquiries"),
-                value: enquiries.length,
-                href: "/account/enquiries"
               },
               {
                 Icon: Heart,

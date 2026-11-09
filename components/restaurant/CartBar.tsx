@@ -1,4 +1,4 @@
-import { useCart } from "@/lib/cart";
+import { Cart, useCart } from "@/lib/cart";
 import { multiply, price } from "@/lib/money";
 import { usePrefs } from "@/lib/prefs";
 import { cn } from "@/lib/utils";
@@ -20,8 +20,23 @@ import { useEffect, useId, useState } from "react";
  * scrolling back through the menu is the point where an order gets abandoned.
  *
  * Renders nothing when empty, so it never occupies space it has not earned.
+ *
+ * The restaurant basket by default; Duty Free passes its own basket, checkout
+ * link, title and note.
  */
-export default function CartBar() {
+export default function CartBar({
+  useCartState = useCart,
+  href = "/restaurants/checkout",
+  title,
+  note
+}: {
+  /** Which basket: a hook, called once per render like any other. */
+  useCartState?: () => Cart;
+  href?: string;
+  /** In place of the restaurant's name. */
+  title?: string;
+  note?: string;
+}) {
   const { t, locale, currency } = usePrefs();
   const {
     ready,
@@ -34,7 +49,7 @@ export default function CartBar() {
     pending,
     confirmReplace,
     cancelReplace
-  } = useCart();
+  } = useCartState();
   const [open, setOpen] = useState(false);
   const panelId = useId();
 
@@ -161,7 +176,7 @@ export default function CartBar() {
                   ))}
                 </ul>
                 <p className="pt-3 text-xs text-ink-500">
-                  {t("cmp.cart.deliveryNote")}
+                  {note ?? t("cmp.cart.deliveryNote")}
                 </p>
               </div>
             </div>
@@ -184,7 +199,7 @@ export default function CartBar() {
                 />
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-semibold text-brand-900">
-                    {restaurantName}
+                    {title ?? restaurantName}
                   </span>
                   <span className="block text-sm text-ink-500">
                     {t(count > 1 ? "cmp.cart.items" : "cmp.cart.item", { n: count })} ·{" "}
@@ -195,7 +210,7 @@ export default function CartBar() {
                 </span>
               </button>
 
-              <Link href="/restaurants/checkout" className="btn btn-md btn-primary shrink-0">
+              <Link href={href} className="btn btn-md btn-primary shrink-0">
                 <ShoppingBag className="size-4" />
                 {t("cmp.cart.checkout")}
               </Link>

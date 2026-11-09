@@ -23,9 +23,12 @@ import {
   Compass,
   Hotel,
   LifeBuoy,
+  MapIcon,
   Menu,
   Plane,
   Building2,
+  ShoppingBag,
+  Stamp,
   User,
   X
 , UtensilsCrossed , Languages, Wallet } from "lucide-react";
@@ -51,8 +54,10 @@ export const VERTICAL_NAV = [
   { href: "/transfers", key: "nav.transfers", Icon: CarTaxiFront, tint: "var(--color-v-transfer)" },
   { href: "/vehicles", key: "nav.vehicles", Icon: CarFront, tint: "var(--color-v-vehicle)" },
   { href: "/restaurants", key: "nav.restaurants", Icon: UtensilsCrossed, tint: "var(--color-v-restaurant)" },
+  { href: "/duty-free", key: "nav.dutyFree", Icon: ShoppingBag, tint: "var(--color-v-dutyfree)" },
   { href: "/property", key: "nav.property", Icon: Building2, tint: "var(--color-v-property)" },
-  { href: "/activities", key: "nav.activities", Icon: Compass, tint: "var(--color-v-activity)" }
+  { href: "/activities", key: "nav.activities", Icon: Compass, tint: "var(--color-v-activity)" },
+  { href: "/e-visa", key: "nav.evisa", Icon: Stamp, tint: "var(--color-v-visa)" }
 ];
 type Service = (typeof VERTICAL_NAV)[number];
 
@@ -267,6 +272,14 @@ export default function Header({ transparent = false }: { transparent?: boolean 
             </div>
 
             <Link
+              href="/carte"
+              className="hidden items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-white/85 transition-colors hover:bg-white/10 hover:text-white md:inline-flex"
+            >
+              <MapIcon className="size-4" />
+              {t("map.nav")}
+            </Link>
+
+            <Link
               href="/help"
               className="hidden items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-white/85 transition-colors hover:bg-white/10 hover:text-white md:inline-flex"
             >
@@ -329,6 +342,13 @@ export default function Header({ transparent = false }: { transparent?: boolean 
             >
               <User className="size-5" />
               {user ? t("nav.account") : t("nav.signin")}
+            </Link>
+            <Link
+              href="/carte"
+              className="flex items-center gap-3 rounded-md px-3 py-3 text-[15px] font-medium hover:bg-white/10"
+            >
+              <MapIcon className="size-5" />
+              {t("map.nav")}
             </Link>
             <Link
               href="/help"
